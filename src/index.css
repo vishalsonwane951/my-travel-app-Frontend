@@ -1,0 +1,422 @@
+
+* {
+    margin: 0;
+    padding: 0;
+
+   
+    
+}
+/* button{
+    border: none;
+    background-color: blue;
+    color: white;
+    cursor: pointer;
+} */
+ button{
+    color: black;
+    background-color: tomato;
+ }
+
+
+body {
+    font-family:'Times New Roman', Times, serif;
+}
+/* Navbar container */
+
+.navbar {
+    /* display: flex ; */
+    /* justify-content: space-between; */
+    /* align-items: center; */
+    /* background-color: #6f42c1; */
+    /* padding: 0px 0px;  */
+    margin-top: 10px;
+    margin-right:15px ;
+    border: 2px solid black;
+    /* height: 55px;  */
+    /* position: relative; */
+    z-index: 1000;
+    
+    
+}
+.theme-purple {
+  background-color: #f3e8ff;
+}
+.logo {
+    display: flex;
+    /* align-items: center;*/
+} 
+.logo img {
+    height: 80px;  /* Adjust size */
+    width: auto;
+    max-width: 100%;
+    margin-left: 15px;
+    background-color: white;
+    border-radius: 50px;
+
+}
+
+.navbar .logo {
+    
+   list-style: none;
+   display: flex;
+    
+}
+
+
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    /* text-align: center; */
+    /* margin-left: 15px; */
+    /* padding-top: 5px; */
+    
+}
+.nav-links1 {
+    list-style: none;
+    display: inline-flex;
+    text-align:center ;
+    align-items: center;
+    margin-left: 15px;
+    position: relative;
+   
+   
+}
+marquee{
+    color: red;
+    font-style: italic;
+    padding: 2px;
+    font-size: large;
+    font-family: 'Times New Roman', Times, serif;
+}
+marquee Link{
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+.nav-links li {
+    margin: 0 15px;
+    
+}
+.nav-links1 li {
+   text-align: center;
+   display: flex;
+   
+  
+}
+
+/* li input{
+    border-radius: 5px;
+    margin-left: 25px;
+   
+} */
+
+.nav-links li a:hover {
+    border: 2px solid black;
+    text-decoration: none;
+    padding: 2px;
+   border-radius: 5px;
+    color: blue;
+    font-family: 'Times New Roman', Times, serif;
+   
+   
+}
+
+.nav-links a {
+    color: black;
+    text-decoration: none;
+    font-size: 1rem;
+    
+    
+}
+.nav-links1 a {
+
+    color: black;
+    text-decoration: none;
+    font-size: 1rem;
+    margin: 0 15px;
+   
+
+}
+
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.menu-toggle div {
+    width: 25px;
+    height: 3px;
+    background-color: white;
+    margin: 5px;
+}
+/* PARAGRAPH */
+
+
+
+
+/* CARD */
+
+.card{
+    
+        /* justify-items: right; */
+        /* margin-right: 10px; */   
+        padding: 5px; 
+       
+    
+}
+.card a{
+    margin-top: 15px;
+}
+.card h6{
+    width: 18rem;
+    text-align: justify;
+ }
+
+
+/* carsol slide */
+
+
+    
+.carousel-item img {
+    height: 100%; /* Ensure all images are same height */
+    /* object-fit: cover; */
+}
+.s1{
+    margin-bottom: 10px;
+}
+
+
+.carousel-caption h5 {
+    color: white;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-size: 100px ;
+    background: transparent;
+}
+
+ .card .btn{
+    margin-left: 5px;
+    margin-right: 70px;
+
+ }
+ img:hover{
+    margin-top: -5px;
+ }
+.inner{
+    margin-bottom: 15px;
+    margin-left: 20px;
+    
+}
+  /* carsole caption  */
+  .carousel-caption input {
+    width: 500px;
+    height: 50px;
+    border-radius: 50px;  
+    background-color: transparent;
+    border: 2px solid white; 
+    color: black;
+    padding: 25px;
+    margin: 15px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+  .carousel-caption h5{
+    font-family: 'Times New Roman', Times, serif;
+  }
+  .carousel-caption p{
+    line-height: 0.5;
+    font-family: 'Times New Roman', Times, serif;
+    
+  }
+  .carousel-caption p a{
+    text-decoration: none;
+    color: white;
+    
+  }
+
+
+/* Font */
+
+.font{
+    font-size: 103px ;
+    font-family: sans-serif;
+    margin: 25px 25px 35px 50px;
+}
+h5{
+    font-size: 18px ;
+    font-family: sans-serif;
+    margin: 25px 25px 35px 70px;
+    padding-bottom: 25px;
+}
+
+/* footer */
+
+
+
+/* Dropdown*/
+.dropdown {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    padding-left: 15px;
+    /* border-radius: 5px; */
+    /* border: 2px solid red; */
+}
+
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    min-width: 170px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+    color:black;
+    text-decoration: none;
+    display: block;
+    padding: 5px;
+    /* width: 500px; */
+}
+
+/* Change color on hover */
+.dropdown-content a:hover {
+    background-color: black;
+    text-decoration: none;
+    color: white;
+    /* width: 500px; */
+
+}
+/* span:hover{
+    border: 2px solid black;
+    padding: 2px;
+   border-radius: 5px;
+    color:blue;
+    font-family: 'Times New Roman', Times, serif;
+   
+} */
+/* Show the dropdown content on hover */
+.dropdown:hover .dropdown-content {
+    display: block;
+    color: white;
+   
+    /* width: 500px; */
+    
+}
+
+/* FOOTER */
+/* table */
+
+
+ .f1{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    background-color: black;
+    font-family: 'Times New Roman', Times, serif;
+    height: 250px;
+    border: 2px solid red; 
+    border-radius: 25px;
+     margin-left: 25px; 
+     margin: 10px;
+     width: calc(100% - 50px); /*Ensuring it fits within the page */
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 40px;
+   
+}
+
+.logof {
+    flex: 0 0 auto;
+    margin-right: 20px;
+}
+
+.logof img {
+    border-radius: 50%;
+}
+
+.table1 {
+    flex-grow: 1;
+    margin-left: 50px; 
+    
+}
+
+.table1 table {
+    width: 100%;
+    text-align: left;
+}
+
+.table1 th, .table1 td {
+    padding: 5px 10px;
+    
+}
+.table1 table td a{
+    text-decoration: none;
+    color: white;
+}
+
+.text #p1{
+    /* font-family:Lucida Calligraphy ; */
+    font-style: italic ;
+    font-weight: bold;
+    margin-top: -15px;
+    
+    
+}
+
+.text #p2, .text1 p{
+    font-family:'Times New Roman', Times, serif;
+    font-style:  0px;
+    margin-top:-18px ;
+    text-align: center;
+    padding-top: 0px;
+   
+}
+.text1{
+    border: 2px solid white;
+    border-radius: 25px;
+    padding: 15px;
+    padding-top: 40px; 
+
+}
+
+
+.box img{
+  padding: 25px;
+}
+
+
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        background-color: #333;
+        position: absolute;
+        top: 50px;
+        left: 0;
+        text-align: center;
+    }
+
+    .nav-links.show {
+        display: flex;
+    }
+
+    .menu-toggle {
+        display: flex;
+    }
+}
+
+
+

@@ -242,10 +242,13 @@ const loadConfirmedBookings = async () => {
 
   .logo {
     height: 170px;
-    width: auto;
+    width: 150px;
     object-fit: contain;
     filter: brightness(0) invert(1);
   }
+    .company-info {
+    margin-top: 20px;
+    }
 
   .company-info h1 {
     font-family: 'Fraunces', serif;
@@ -259,9 +262,10 @@ const loadConfirmedBookings = async () => {
     font-family: Space Grotesk
     }
 
-  .company-info .tagline {
+  .tagline p {
     font-size: 14px;
     opacity: 0.9;
+    margin-top: -20px;
   }
 
   .booking-badge {
@@ -471,38 +475,254 @@ const loadConfirmedBookings = async () => {
     box-shadow: 0 5px 15px rgba(26, 115, 232, 0.3);
   }
 
-  /* Print Styles */
-  @media print {
-    body {
-      padding: 0;
-      background: white;
-    }
+    /* Print Styles */
+    @media print {
+      body {
+        padding: 0;
+        background: white;
+      }
+      
+      .itinerary-container {
+        box-shadow: none;
+        border-radius: 0;
+      }
+      
+      .print-btn {
+        display: none;
+      }
+      
+      .itinerary-header {
+        background: #1a73e8 !important;
+        -webkit-print-color-adjust: exact;
+        
+      }
+      
+      .detail-card:hover {
+        transform: none;
+      }
+
+
+/* Print Styles -----*/
+      .itinerary-header {
+    padding: 16px 20px !important;
     
-    .itinerary-container {
-      box-shadow: none;
-      border-radius: 0;
-    }
-    
-    .print-btn {
-      display: none;
-    }
-    
-    .itinerary-header {
-      background: #1a73e8 !important;
-      -webkit-print-color-adjust: exact;
-    }
-    
-    .detail-card:hover {
-      transform: none;
-    }
   }
+
+  .header-top {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 12px;
+  }
+
+  /* FIX logo size */
+  
+
+  /* REMOVE negative spacing */
+  .logo-container {
+    margin-top: 0 !important;
+    align-items: left !important;
+    display: flex !important;
+  }
+
+  .company-info h1 {
+    font-size: 24px !important;
+    margin-top: 0 !important;
+    line-height: 1.2;
+  }
+
+  .company-info span {
+    font-size: 14px;
+    display: block;
+  }
+
+  .tagline {
+    margin-top: 5px !important;
+    margin-left: 20px;
+
+  .tagline p{
+    font-size: 12px;
+    margin-bottom: 5px !important;
+    margin-top: 15px !important;
+    text-align: left;
+    
+  }
+
+  /* Booking badge fix */
+  .booking-badge {
+    padding: 10px 10px !important;
+    text-align: left;
+    word-break: break-word;
+  }
+
+  .booking-id {
+    font-size: 14px !important;
+  }
+
+  .reference {
+    font-size: 11px !important;
+    text-align: left;
+  }
+
+  /* Generated date line */
+  .itinerary-header > p {
+    margin-top: 8px !important;
+    font-size: 12px !important;
+  }
+    }
+
+
+    /* =============================================
+   PRINT STYLES - HEADER SECTION & PAGE BREAKS
+============================================= */
+@media print {
+  /* ===== PAGE SETUP ===== */
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  /* ===== HEADER SECTION - COMPACT & PRINT-OPTIMIZED ===== */
+  .itinerary-header {
+    background: #1a73e8 !important;
+    color: white !important;
+    padding: 10mm 0 6mm 0 !important;
+    margin: 0 0 8mm 0 !important;
+    page-break-after: avoid;
+    break-after: avoid-page;
+    max-heght: 50mm !important;
+  }
+
+  .header-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    flex-wrap: nowrap !important;
+    gap: 15mm !important;
+    margin: 0 5mm !important;
+    page-break-inside: avoid;
+  }
+
+  .logo-container {
+    flex: 0 0 10% !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 4mm !important;
+    min-width: 70mm !important;
+  }
+
+  .logo {
+    height: 35mm !important;
+    width: auto !important;
+    margin-left:-5mm;
+    margin-right:-10mm;
+    margin-top: -9mm;
+    max-width: 50mm !important;
+    object-fit: contain !important;
+    filter: brightness(0) invert(1) !important;
+  }
+
+  .company-info {
+    flex: 1 !important;
+    min-width: 0 !important; /* Allows text wrapping */
+    max-width: 55mm;
+    margin-top: -4mm !important;
+    
+
+  }
+
+  .company-info h1 {
+    font-size: 20pt !important;
+    font-weight: bold !important;
+    color: white !important;
+    line-height: 1.2 !important;
+    word-break: break-word;
+    margin-top: 5mm !important;
+  }
+
+
+
+  .booking-badge {
+    background: white !important;
+    color: #000 !important;
+    padding: 1mm 2mm !important;
+    border-radius: 2mm !important;
+    box-shadow: 0 1mm 2mm rgba(0,0,0,0.1) !important;
+    flex: 0 0 5mm !important;
+    min-width: 85mm !important;
+    max-width: 100mm !important;
+    page-break-inside: avoid;
+  }
+
+  .booking-id {
+    font-size: 13pt !important;
+    font-weight: bold !important;
+    margin: 0 0 1mm 0 !important;
+    color: #1a73e8 !important;
+  }
+
+  .reference {
+    font-size: 10pt !important;
+    margin: 0 !important;
+    color: #666 !important;
+    word-break: break-all;
+  }
+
+  
+
+  /* ===== PAGE BREAK CONTROL ===== */
+  .page-break-before {
+    page-break-before: always !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+  }
+
+  .avoid-break-inside {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .allow-break-inside {
+    page-break-inside: auto !important;
+  }
+
+  /* Keep section headers with their content */
+  h2, h3, .section-title {
+    page-break-after: avoid !important;
+  }
+
+  /* Prevent breaking in the middle of important content */
+  table, tr, .day-card, .activity-group {
+    page-break-inside: avoid !important;
+  }
+
+  /* Allow breaking between list items */
+  li {
+    page-break-inside: avoid !important;
+  }
+
+  /* Force break before major sections if needed */
+  .major-section {
+    page-break-before: auto !important;
+  }
+
+  /* Ensure minimum lines stay together */
+  .keep-together {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+   
 
   /* Responsive */
   @media (max-width: 768px) {
     .header-top {
-      flex-direction: column;
+      flex-direction: row;
       gap: 15px;
       text-align: center;
+      display; flex;
     }
     
     .details-grid {
@@ -546,16 +766,19 @@ const loadConfirmedBookings = async () => {
         <div class="company-info">
           <h1>DESIVDESI</h1>
           <span>Tours & Travel</span>
-          <p class="tagline">Crafting Extraordinary Journeys Since 2005</p>
         </div>
       </div>
+
       
       <div class="booking-badge">
         <div class="booking-id">ITINERARY #${booking._id}</div>
         <div class="reference">Reference: ${booking._id.slice(-8).toUpperCase()}</div>
       </div>
     </div>
-    <p style="font-size: 14px; opacity: 0.9; margin-top: -15px;">
+      <div class="tagline">
+        <p >Crafting Extraordinary Journeys Since 2005</p>
+        <p style="font-size: 14px; opacity: 0.9; margin-top:5px; ">
+    
       <i class="fas fa-calendar-alt"></i> Generated on ${new Date().toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -565,6 +788,7 @@ const loadConfirmedBookings = async () => {
       minute: '2-digit'
     })}
     </p>
+    </div>
   </div>
 
   <!-- Passenger Information -->
@@ -753,9 +977,6 @@ const loadConfirmedBookings = async () => {
       <i class="fas fa-print"></i>
       Print Itinerary
     </button>
-    <p style="font-size: 12px; color: #666; margin-top: 10px;">
-      For best results, use landscape orientation when printing
-    </p>
   </div>
 
 </div>
@@ -1326,11 +1547,7 @@ const loadConfirmedBookings = async () => {
             color: #2c3e50;
             margin-bottom: 5px;
         }
-        .company-tagline {
-            font-size: 16px;
-            color: #7f8c8d;
-            margin-bottom: 5px;
-        }
+        
         .header {
             display: flex;
             justify-content: space-between;
@@ -1418,18 +1635,7 @@ const loadConfirmedBookings = async () => {
         .print-btn:hover {
             background-color: #2980b9;
         }
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
-            .print-container {
-                box-shadow: none;
-                padding: 0;
-            }
-            .print-btn {
-                display: none;
-            }
+       
         `}
       </style>
     </div>

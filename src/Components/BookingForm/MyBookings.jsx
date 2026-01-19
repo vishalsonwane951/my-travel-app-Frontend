@@ -32,7 +32,7 @@ const BookingUI = () => {
 
       setIsLoading(true);
 
-      const url = user?.isAdmin ? `${API_URL}/bookings/confirmed` : `${API_URL}/bookings/confirmed-user`;      
+      const url = user?.isAdmin ? `/bookings/confirmed` : `/bookings/confirmed-user`;      
 
       const { data } = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },

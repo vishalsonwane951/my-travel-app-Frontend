@@ -95,7 +95,7 @@ const MyEnquiry = ({ onClose }) => {
       // const res = await api.put(
       //   `/bookings/update-status/${bookingId}`,
       //   { status },
-      const res = await axios.put(`http://localhost:5000/api/bookings/update-status/${bookingId}`,
+      const res = await axios.put(`/bookings/update-status/${bookingId}`,
         { status },
         {
           headers: {

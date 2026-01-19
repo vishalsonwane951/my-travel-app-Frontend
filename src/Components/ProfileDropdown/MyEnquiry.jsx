@@ -92,8 +92,10 @@ const MyEnquiry = ({ onClose }) => {
     if (!user.isAdmin) return;
 
     try {
-      const res = await api.put(
-        `/bookings/update-status/${bookingId}`,
+      // const res = await api.put(
+      //   `/bookings/update-status/${bookingId}`,
+      //   { status },
+      const res = await axios.put(`http://localhost:5000/api/bookings/update-status/${bookingId}`,
         { status },
         {
           headers: {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../Context/AuthContext";
 import axios from "axios";
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = 'http://localhost:5000/api'
 import api from "../../utils/api";
 
 
@@ -15,44 +15,44 @@ const BookingUI = () => {
 
   // ✅ Define bookings state BEFORE using in useEffect
   const [booking, setBooking] = useState([]);
-    const [error, setError] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  
+  const userRole = user?.isAdmin ? "admin" : "user";
 
-const loadConfirmedBookings = async () => {
-  try {
-    if (!user) return; // safety
+  const loadConfirmedBookings = async () => {
+    try {
+      if (!user) return; // safety
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setError("Token missing, please login again.");
-      return;
-    }
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Token missing, please login again.");
+        return;
+      }
 
-    setIsLoading(true);
+      setIsLoading(true);
 
-    const url = user?.isAdmin ? "/bookings" : "/bookings/confirmed-user";
+      const url = user?.isAdmin ? `${API_URL}/bookings/confirmed` : `${API_URL}/bookings/confirmed-user`;      
 
-    const { data } = await api.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      const { data } = await api.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    if (data.success) {
-      setBooking(data.bookings || []);
-      console.log("Confirmed bookings loaded:", data.bookings)
-    } else {
+      if (data.success) {
+        setBooking(data.bookings || []);
+        console.log("Confirmed bookings loaded:", data.bookings)
+      } else {
+        setBooking([]);
+        setError(data.message || "Failed to fetch confirmed bookings");
+      }
+    } catch (err) {
+      console.error(err);
       setBooking([]);
-      setError(data.message || "Failed to fetch confirmed bookings");
+      setError(err.response?.data?.message || "Failed to fetch confirmed bookings");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-    setBooking([]);
-    setError(err.response?.data?.message || "Failed to fetch confirmed bookings");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
 
   useEffect(() => {
@@ -159,7 +159,7 @@ const loadConfirmedBookings = async () => {
 
   if (isLoading) return <p>Loading bookings...</p>;
 
-  
+
 
   const handlePrintBooking = (booking) => {
     console.log("BOOKING RECEIVED:", booking);
@@ -899,33 +899,31 @@ const loadConfirmedBookings = async () => {
   ${booking.status === "Confirmed" && (booking.createdAt) ? `
   <div style="margin-top: 15px; display: flex; align-items: center; gap: 8px;">
     <i class="fas fa-calendar-plus"></i>
-    Booking Created on ${
-      new Date( booking.createdAt).toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    }
+    Booking Created on ${new Date(booking.createdAt).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+        }
   </div>
   ` : ''
-}>
+      }>
 
   <!-- Confirmed date (show only if confirmed) -->
    ${booking.status === "Confirmed" && (booking.updatedAt) ? `
   <div style="margin-top: 15px; display: flex; align-items: center; gap: 8px;">
     <i class="fas fa-check-circle" style="color: green;"></i>
-    Booking Confirmed on ${
-      new Date( booking.updatedAt).toLocaleDateString('en-US', {
+    Booking Confirmed on ${new Date(booking.updatedAt).toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
-    }
+        }
   </div>
   ` : ''
-}
+      }
 
 
 
@@ -1432,27 +1430,30 @@ const loadConfirmedBookings = async () => {
                           {isExpanded ? 'Less' : 'More'}
                         </button>
 
-                        <button
-                          onClick={() => handlePrintBooking(booking)}
-                          style={{
-                            padding: '8px 12px',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.8rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '5px',
-                            fontFamily: 'inherit',
-                            background: '#6c757d',
-                            color: 'white'
-                          }}
-                        >
-                          <span>🖨️</span>
-                          Print
-                        </button>
+                        {userRole === 'user' && (
+                          <button
+                            onClick={() => handlePrintBooking(booking)}
+                            style={{
+                              padding: '8px 12px',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: '600',
+                              fontSize: '0.8rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '5px',
+                              fontFamily: 'inherit',
+                              background: '#6c757d',
+                              color: 'white'
+                            }}
+                          >
+                            <span>🖨️</span>
+                            Print
+                          </button>
+                        )}
+
 
                         <button
                           onClick={() => handleDeleteBooking(booking._id)}

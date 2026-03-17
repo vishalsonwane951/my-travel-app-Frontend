@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useContext, useEffect, useCallback, useMemo, useRef } from "react";
-import LoginRegister from "../../Pages/loginRegister.jsx";
-import { AuthContext } from "../../Context/AuthContext.jsx";
+import LoginRegister from "../../Pages/LoginRegister.jsx";
+    import { AuthContext } from "../../Context/AuthContext.jsx";
 import ProfileDropdown from "../ProfileDropdown/ProfileDropdown.jsx";
 import UserProfilePopup from "../Profile/Profile.jsx";
 

@@ -1,136 +1,114 @@
-import React, { Suspense, lazy, useState } from 'react';
-import Services from './Pages/Services.jsx'
-import { Outlet, Route, Routes } from 'react-router-dom';
-import './App.css';
-// import Start from './Pages/Start';
-const Start = lazy(() => import('./Pages/Start'));
-const CustomTourP = lazy(() => import('./Pages/Packages/CustomTourP'));
-const AdventureTourP = lazy(() => import('./Pages/Packages/AdventureTourP'));
-const FamilyTourP = lazy(() => import('./Pages/Packages/FamilyTourP'));
-const GroupTourP = lazy(() => import('./Pages/Packages/GroupTourP'));
-const CityTourP = lazy(() => import('./Pages/Packages/CityTourP'));
-const Manali = lazy(() => import('./Pages/Explore-Packages/Manali'));
-const Goa = lazy(() => import('./Pages/Explore-Packages/Goa'));
-import Kerala from './Pages/Explore-Packages/Kerala';
-import Rajasthan from './Pages/Explore-Packages/Rajasthan'; 
-import Sikkim from './Pages/Explore-Packages/Sikkim';
-import Kashmir from './Pages/Explore-Packages/Kashmir';
-import Rishikesh from './Pages/Explore-Packages/Rishikesh';
-import Andman from './Pages/Explore-Packages/Andman';
-import Agra from './Pages/Explore-Packages/Agra';
-import Udaipur from './Pages/Explore-Packages/Udaipur';
-import Ladakh from './Pages/Explore-Packages/Ladakh';
-import Ooty from './Pages/Explore-Packages/Ooty';
-import Header from './Components/Header/Header';
-const Maharashtra = lazy(() => import('./Pages/Domestic/Maharashtra'));
-// import Maharashtra from "./Pages/Domestic/Maharashtra";
-import PageNotFound from './Pages/PageNotFound';
-import BookingForm from './Components/BookingForm/BookingForm.jsx';
-import UserProfilePopup from './Components/Profile/Profile.jsx';
-import MyBookings from './Components/BookingForm/MyBookings.jsx';
-import RegisterPage from './Pages/Register.jsx';
-import UploadImagesByTitle from './Components/ImageUpload.jsx';
+import React, { Suspense, lazy } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import "./App.css";
+
+import Services from "./Pages/Services.jsx";
+import Header from "./Components/Header/Header";
+import PageNotFound from "./Pages/PageNotFound";
+
+import Kerala from "./Pages/Explore-Packages/Kerala";
+import Rajasthan from "./Pages/Explore-Packages/Rajasthan";
+import Sikkim from "./Pages/Explore-Packages/Sikkim";
+import Kashmir from "./Pages/Explore-Packages/Kashmir";
+import Rishikesh from "./Pages/Explore-Packages/Rishikesh";
+import Andman from "./Pages/Explore-Packages/Andman";
+import Agra from "./Pages/Explore-Packages/Agra";
+import Udaipur from "./Pages/Explore-Packages/Udaipur";
+import Ladakh from "./Pages/Explore-Packages/Ladakh";
+import Ooty from "./Pages/Explore-Packages/Ooty";
+
+import BookingForm from "./Components/BookingForm/BookingForm.jsx";
+import MyBookings from "./Components/BookingForm/MyBookings.jsx";
+import UserProfilePopup from "./Components/Profile/Profile.jsx";
+import UploadImagesByTitle from "./Components/ImageUpload.jsx";
+
+import PackageDetail from "./Pages/Packages/PackageDetail.jsx";
+import BaseTourPage from "./Pages/Packages/BaseTourPage.jsx";
+import ItineraryPage from "./Pages/ItineraryPage.jsx";
+
+import Login from "./Pages/Login.jsx";
+import { PackageProvider } from "./Context/PackageContext.jsx";
+import BlogsPage from "./Components/blogs.jsx";
+
+/* Lazy Pages */
+const Start = lazy(() => import("./Pages/Start"));
+const CustomTourP = lazy(() => import("./Pages/Packages/CustomTourP"));
+const AdventureTourP = lazy(() => import("./Pages/Packages/AdventureTourP"));
+const FamilyTourP = lazy(() => import("./Pages/Packages/FamilyTourP"));
+const GroupTourP = lazy(() => import("./Pages/Packages/GroupTourP"));
+const CityTourP = lazy(() => import("./Pages/Packages/CityTourP"));
+
+const Manali = lazy(() => import("./Pages/Explore-Packages/Manali"));
+const Goa = lazy(() => import("./Pages/Explore-Packages/Goa"));
+const Maharashtra = lazy(() => import("./Pages/Domestic/Maharashtra"));
+
 const App = () => {
-
-
-
   return (
     <>
-    
+      <Header />
 
-     <Header/>
-     
-      <Suspense fallback={<div className="loading">Loading...</div>}>
-        <Routes>
-          {/* login /reg */}
+      <PackageProvider>
+        <Suspense fallback={<div className="loading">Loading...</div>}>
+          <Routes>
 
-          {/* <Route path="/login" element={<Login></Login>} />
-        <Route path="/register" element={<Register></Register>} /> */}
-          <Route path="/register" element={<RegisterPage />} />
+            {/* Landing */}
+            <Route path="/" element={<Start />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Main Page Route */}
+            {/* Tour Categories */}
+            {/* <Route path="/tourcard" element={<BaseTourPage />} /> */}
+            <Route path="/tourcard/:type" element={<BaseTourPage />} />
 
-          <Route path="services" element={<Services />}>
+            <Route path="/adventure-tours" element={<AdventureTourP />} />
+            <Route path="/family-tours" element={<FamilyTourP />} />
+            <Route path="/group-tours" element={<GroupTourP />} />
+            <Route path="/city-tours" element={<CityTourP />} />
+            <Route path="/custom-tours" element={<CustomTourP />} />
 
-          </Route>
+            {/* Package Details */}
+            <Route path="/package/:type/:location" element={<ItineraryPage />} />
 
-          <Route path="" element={<Start />}>
-          </Route>
+            {/* Legacy redirect */}
+            <Route
+              path="/package/:location"
+              element={<Navigate to="/services" replace />}
+            />
 
-          {/* Service Page Route */}
+            {/* Explore Packages */}
+            <Route path="/manali-Packages" element={<Manali />} />
+            <Route path="/goa-Packages" element={<Goa />} />
+            <Route path="/kerala-Packages" element={<Kerala />} />
+            <Route path="/rajasthan-Packages" element={<Rajasthan />} />
+            <Route path="/sikkim-Packages" element={<Sikkim />} />
+            <Route path="/kashmir-Packages" element={<Kashmir />} />
+            <Route path="/rishikesh-Packages" element={<Rishikesh />} />
+            <Route path="/andaman-Packages" element={<Andman />} />
+            <Route path="/agra-Packages" element={<Agra />} />
+            <Route path="/udaipur-Packages" element={<Udaipur />} />
+            <Route path="/ladakh-Packages" element={<Ladakh />} />
+            <Route path="/ooty-Packages" element={<Ooty />} />
 
-          <Route path="/custom-tours" element={<CustomTourP />}></Route>
-          <Route path="/Adventure-tours" element={<AdventureTourP />}></Route>
-          <Route path="/family-tours" element={<FamilyTourP />}></Route>
-          <Route path="/group-tours" element={<GroupTourP />}></Route>
-          <Route path="/city-tours" element={<CityTourP />}></Route>
+            {/* Booking */}
+            <Route path="/booking/:packageId" element={<BookingForm />} />
+            <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/my-profile" element={<UserProfilePopup />} />
 
-          <Route path="/update" element={<UploadImagesByTitle/>}></Route>
+            {/* Admin Upload */}
+            <Route path="/update" element={<UploadImagesByTitle />} />
 
+            {/* State Pages */}
+            <Route path="/maharashtra" element={<Maharashtra />} />
+            <Route path="/blogs" element={<BlogsPage />} />
 
+            {/* 404 */}
+            <Route path="*" element={<PageNotFound />} />
 
-          {/* Package Page Route */}
-
-          {/* <Route path="rishikesh-Packages" element={<Rishikesh></Rishikesh>}></Route>
-        <Route path="kerala-Packages" element={<Kerala></Kerala>}></Route>
-        <Route path="rajasthan-Packages" element={<Rajasthan></Rajasthan>}></Route>
-        <Route path="sikkim-Packages" element={<Sikkim></Sikkim>}></Route>
-        <Route path="kashmir-Packages" element={<Kashmir></Kashmir>}></Route>
-        <Route path="andaman-Packages" element={<Andaman></Andaman>}></Route>
-        <Route path="agra-Packages" element={<Agra></Agra>}></Route>
-        <Route path="udaipur-Packages" element={<Udaipur></Udaipur>}></Route>
-        <Route path="ladakh-Packages" element={<Ladakh></Ladakh>}></Route>
-        <Route path="ooty-Packages" element={<Ooty></Ooty>}></Route>
-        <Route path="manali-Packages" element={<Manali></Manali>} />
-        <Route path="goa-Packages" element={<Goa></Goa>} /> */}
-
-          {/* Explore-Packgess Page Route */}
-
-          <Route path="/manali-Packages" element={<Manali />} />
-          <Route path="/goa-Packages" element={<Goa />} />
-          <Route path="/kerala-Packages" element={<Kerala />} />
-          <Route path="/rajasthan-Packages" element={<Rajasthan />} />
-          <Route path="/sikkim-Packages" element={<Sikkim />} />
-          <Route path="/kashmir-Packages" element={<Kashmir />} />
-          <Route path="/rishikesh-Packages" element={<Rishikesh />} />
-          <Route path="/andaman-Packages" element={<Andman />} />
-          <Route path="/agra-Packages" element={<Agra />} />
-          <Route path="/Udaipur-Packages" element={<Udaipur />} />
-          <Route path="/ladakh-Packages" element={<Ladakh />} />
-          <Route path="/Ooty-Packages" element={<Ooty />} />
-          <Route path="/ladakh-Packages" element={<Ooty />} />
-
-
-
-          <Route path="/booking/:packageId" element={<BookingForm />} />
-          <Route path="/my-bookings" element={<MyBookings />} >
-          </Route>
-
-          <Route path="/my-profile" element={<UserProfilePopup />} />
-
-
-          {/* All States Routing */}
-          <Route path="/Maharashtra" element={<Maharashtra />} />
-
-          {/* While */}
-          <Route path="*" element={<PageNotFound />} />
-
-
-
-
-
-
-          {/* <Route path="2N-3D" element={<CustomTourPage></CustomTourPage>} /> */}
-
-        </Routes>
-      </Suspense>
-
-      <Outlet />
-
+          </Routes>
+        </Suspense>
+      </PackageProvider>
     </>
   );
-}
-
-
+};
 
 export default App;

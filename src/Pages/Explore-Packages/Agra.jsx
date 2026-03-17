@@ -1,17 +1,32 @@
 import React from "react";
 import { useState, useEffect, useContext } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import axios from "axios";
-// import BookingForm from "./Components/BookingForm";
 import BookingForm from "../../Components/BookingForm/BookingForm";
-import Register from "../Login";
-import { AuthContext } from "../../Context/AuthContext";
 import Login from "../Login";
+import { AuthContext } from "../../Context/AuthContext";
 import api from "../../utils/api";
-import { FaXing } from "react-icons/fa";
+import {
+  FaMapMarkedAlt,
+  FaStar,
+  FaCamera,
+  FaUtensils,
+  FaShoppingBag,
+  FaChevronRight,
+  FaCalendarAlt,
+  FaUsers,
+  FaClock,
+  FaShieldAlt,
+  FaHeart,
+  FaShare,
+  FaTimes,
+  FaArrowRight,
+  FaCheckCircle
+} from "react-icons/fa";
+import { useParams } from "react-router-dom";
+// import { MdLocationOn, MdSecurity } from "react-icons/md";
+// import { GiIndiaGate, GiSpices, GiTempleDoor } from "react-icons/gi";
 
 function Agra() {
-
   // State for package data
   const [packageData, setPackageData] = useState({
     name: "",
@@ -26,9 +41,8 @@ function Agra() {
       discounted: ""
     }
   });
-
-
-  const { user } = useContext(AuthContext); // check if logged in
+const { location } = useParams(); 
+  const { user } = useContext(AuthContext);
   const [showBooking, setShowBooking] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -37,101 +51,44 @@ function Agra() {
   const [allPackagesData, setAllPackagesData] = useState([]);
   const [pendingBooking, setPendingBooking] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
-
-  const handleBookNow = () => {
-    if (!user) {
-      setShowAlert(true);       // show alert popup
-      setPendingBooking(true);  // mark booking pending
-    } else {
-      setShowBooking(true);
-    }
-  };
-
-  // Called after alert OK is clicked
-  const handleAlertClose = () => {
-    setShowAlert(false);       // close alert
-    setShowLogin(true);        // open login form now
-  };
-
-  // Called after successful login
-  const handleLoginSuccess = (loggedInUser) => {
-    setUser(loggedInUser);
-    setShowLogin(false);
-
-    if (pendingBooking) {        // if user tried booking before login
-      setShowBooking(true);      // open booking form automatically
-      setPendingBooking(false);  // reset flag
-    }
-  };
-
+  const [activeImage, setActiveImage] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [error,setError] =useState()
 
   // Package Categories
   const packageCategories = [
-    { id: 1, name: "3D/2N", axiosEndpoint: "/axios/packages/3d2n" },
-    { id: 2, name: "4D/3N", axiosEndpoint: "/axios/packages/4d3n" },
-    { id: 3, name: "5D/4N", axiosEndpoint: "/axios/packages/5d4n" },
-    { id: 4, name: "7D/6N", axiosEndpoint: "/axios/packages/7d6n" }
+    { id: 1, name: "3D/2N", axiosEndpoint: "/axios/packages/3d2n", price: 7499, tag: "Quick Escape" },
+    { id: 2, name: "4D/3N", axiosEndpoint: "/axios/packages/4d3n", price: 9999, tag: "Popular Choice" },
+    { id: 3, name: "5D/4N", axiosEndpoint: "/axios/packages/5d4n", price: 11999, tag: "Best Value" },
+    { id: 4, name: "7D/6N", axiosEndpoint: "/axios/packages/7d6n", price: 17999, tag: "Ultimate Experience" }
   ];
 
-  const [activeCategory, setActiveCategory] = useState(1);
+  const [activeCategory, setActiveCategory] = useState(2); // Default to 4D/3N as most popular
 
-  // Fetch all packages data from axios
+  // Fetch all packages data
   useEffect(() => {
-    const fetchAllPackagesData = async () => {
-      setLoading(true);
+    const fetchPackages = async () => {
       try {
-        // note: endpoint matches server route
-        const response = await api.get('/explore-packages/agra/getallpackage');
-        if (!response.data || !Array.isArray(response.data.data)) {
-          console.error("Invalid axios response:", response.data);
-          setLoading(false);
-          return;
-        }
+        setLoading(true);
+        if (!location) return;
 
-        // Normalize: ensure each package has a pricing object at pkg.pricingObj (safe for UI)
-        const normalized = response.data.data.map((pkg) => {
-          // normalizedPricing created server-side too, but handle here as fallback
-          const serverNormalized = pkg.normalizedPricing;
-          const pricingObj =
-            serverNormalized ||
-            (Array.isArray(pkg.pricing) && pkg.pricing.length > 0 ? pkg.pricing[0] : (pkg.pricing && typeof pkg.pricing === "object" ? pkg.pricing : { currency: "₹", original: "", discounted: "" }));
-
-          // ensure fields exist to avoid undefined crashes
-          return {
-            ...pkg,
-            pricingObj: {
-              currency: pricingObj.currency || "₹",
-              original: pricingObj.original || "",
-              discounted: pricingObj.discounted || ""
-            }
-          };
-        });
-
-        setAllPackagesData(normalized);
-        // Set initial package based on activeCategory
-        const initialPackage = findPackageByCategory(normalized, activeCategory);
-        if (initialPackage) {
-          setPackageData(initialPackage);
-        } else if (normalized.length > 0) {
-          setPackageData(normalized[0]);
-        }
-        console.log("Fetched packages:", normalized);
-      } catch (error) {
-        console.error("Error fetching package data:", error);
+        const res = await api.get(`/explore/${location}`);
+        setPackageData(res.data); // assuming API returns an array of packages
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch packages.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllPackagesData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchPackages();
   }, []);
 
-  // Improved package finder function
+
   const findPackageByCategory = (packages, category) => {
     if (!Array.isArray(packages)) return null;
 
-    // Determine category name from id or string
     let categoryName = "";
     if (typeof category === "number") {
       const categoryObj = packageCategories.find((c) => c.id === category);
@@ -143,7 +100,6 @@ function Agra() {
       return null;
     }
 
-    // Find package where duration matches categoryName (data uses duration)
     const found = packages.find((pkg) => {
       const pkgDuration = (pkg.duration || "").toString().trim();
       return pkgDuration.toLowerCase() === categoryName.toLowerCase();
@@ -152,16 +108,12 @@ function Agra() {
     return found || null;
   };
 
-  // Update package data when activeCategory or allPackagesData changes
   useEffect(() => {
     if (allPackagesData.length > 0) {
       const currentPackageData = findPackageByCategory(allPackagesData, activeCategory);
       if (currentPackageData) {
-        console.log("Setting package data:", currentPackageData);
         setPackageData(currentPackageData);
       } else {
-        console.log(`No package found for category ${activeCategory}`);
-        // clear to default empty object (UI handles missing gracefully)
         setPackageData({
           name: "",
           category: "",
@@ -173,14 +125,34 @@ function Agra() {
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory, allPackagesData]);
+
+  const handleBookNow = () => {
+    if (!user) {
+      setShowAlert(true);
+      setPendingBooking(true);
+    } else {
+      setShowBooking(true);
+    }
+  };
+
+  const handleAlertClose = () => {
+    setShowAlert(false);
+    setShowLogin(true);
+  };
+
+  const handleLoginSuccess = (loggedInUser) => {
+    setShowLogin(false);
+    if (pendingBooking) {
+      setShowBooking(true);
+      setPendingBooking(false);
+    }
+  };
 
   const handleCategoryChange = (categoryId) => {
     setActiveCategory(categoryId);
   };
 
-  // Compare packages function (unchanged, mock data)
   const comparePackages = () => {
     const dataForComparison = allPackagesData.map(pkg => ({
       name: pkg.duration || pkg.name || "Unknown Package",
@@ -193,13 +165,11 @@ function Agra() {
     }));
 
     setComparedPackages(dataForComparison);
-
     setShowComparison(true);
   };
+
   const closeComparison = () => setShowComparison(false);
 
-  // Helper to get pricing for current packageData
-  // packageData may contain pricingObj (normalized) or pricing array; we prefer pricingObj
   const getPricing = (pkg) => {
     if (!pkg) return { currency: "₹", original: "", discounted: "" };
     if (pkg.pricingObj) return pkg.pricingObj;
@@ -210,6 +180,7 @@ function Agra() {
 
   const pricing = getPricing(packageData);
 
+  // Custom styles
   const styles = {
     alertOverlay: {
       position: "fixed",
@@ -222,86 +193,228 @@ function Agra() {
       alignItems: "center",
       justifyContent: "center",
       zIndex: 1000,
+      backdropFilter: "blur(5px)"
     },
     alertBox: {
       backgroundColor: "#fff",
-      padding: "20px 30px",
-      borderRadius: "10px",
-      width: "350px",
-      height: "120px",
+      padding: "30px",
+      borderRadius: "16px",
+      width: "400px",
       textAlign: "center",
-      boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+      boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+      animation: "slideUp 0.3s ease"
     },
     alertButton: {
-      marginTop: "15px",
-      padding: "10px 20px",
-      backgroundColor: "#007bff",
+      marginTop: "20px",
+      padding: "12px 30px",
+      backgroundColor: "#8B5A2B",
       color: "#fff",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "8px",
       cursor: "pointer",
       fontSize: "16px",
-    },
-    categoryPanel:{
-      zIndex:1
+      fontWeight: "600",
+      transition: "all 0.3s ease"
     }
   };
 
-
   return (
-    <div className="goa-package">
-      {/* Hero Section */}
-      <div className="hero-section text-center text-white position-relative">
-        <div className="package-tag">
-          {packageCategories.find((p) => p.id === activeCategory)?.name} PREMIUM EXPERIENCE
-        </div>
-        <div className="container position-relative z-index-1 py-5">
-          <h1 className="display-3 fw-bold mb-3">Agra Golden Escape</h1>
-          <p className="lead fs-2 mb-4">Where Every Moment Shines Brighter</p>
-          <div className="d-flex justify-content-center gap-3">
-            <button className="btn btn-light btn-lg px-4 fw-bold book-now-btn" onClick={handleBookNow} >
-              Book Now @ {pricing?.currency || "₹"}
-              {pricing?.discounted || "--"}
-            </button>
-            <button className="btn btn-outline-light btn-lg ml-2 px-4">Watch Video</button>
-          </div>
-        </div>
+    <div className="agra-package">
+      {/* Hero Section - Redesigned */}
+      <section className="hero-section">
         <div className="hero-overlay"></div>
-      </div>
+        <div className="hero-content">
+          <div className="container">
+            <div className="row align-items-center min-vh-80">
+              <div className="col-lg-7 hero-text">
+                <div className="badge-container mb-4">
+                  <span className="featured-badge">
+                    <FaStar className="me-2" /> Featured Destination 2024
+                  </span>
+                </div>
+                <h1 className="hero-title">
+                  Discover the Eternal<br />
+                  <span className="highlight">Magic of Agra</span>
+                </h1>
+                <p className="hero-subtitle">
+                  Experience the timeless beauty of the Taj Mahal, explore majestic forts,
+                  and immerse yourself in the rich Mughal heritage
+                </p>
 
-      {/* Package Highlights */}
-      <div className="container my-5">
-        {loading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+                <div className="hero-stats">
+                  <div className="stat-item">
+                    <span className="stat-value">5+</span>
+                    <span className="stat-label">UNESCO Sites</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-value">1000+</span>
+                    <span className="stat-label">Happy Travelers</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-value">4.8</span>
+                    <span className="stat-label">Rating</span>
+                  </div>
+                </div>
+
+                <div className="hero-actions">
+                  <button className="btn btn-primary btn-lg" onClick={handleBookNow}>
+                    Book Your Escape <FaArrowRight className="ms-2" />
+                  </button>
+                  <button className="btn btn-outline-light btn-lg ms-3" onClick={() => setShowShareModal(true)}>
+                    <FaShare className="me-2" /> Share
+                  </button>
+                </div>
+              </div>
+
+              <div className="col-lg-5">
+                <div className="price-card">
+                  <div className="price-header">
+                    <span className="offer-tag">Limited Offer</span>
+                    <FaHeart className="wishlist-icon" />
+                  </div>
+                  <div className="price-body">
+                    <div className="package-name">
+                      {packageCategories.find(p => p.id === activeCategory)?.name} Premium Package
+                    </div>
+                    <div className="price-tag">
+                      <span className="currency">{pricing.currency}</span>
+                      <span className="amount">{pricing.discounted || "7,499"}</span>
+                      <span className="duration">/person</span>
+                    </div>
+                    <div className="price-original">
+                      <span className="original-price">₹{pricing.original || "8,500"}</span>
+                      <span className="discount-badge">Save 20%</span>
+                    </div>
+                    <div className="price-features">
+                      <div className="feature">
+                        <FaCheckCircle className="text-success me-2" /> Free Cancellation
+                      </div>
+                      <div className="feature">
+                        <FaCheckCircle className="text-success me-2" /> Breakfast Included
+                      </div>
+                      <div className="feature">
+                        <FaCheckCircle className="text-success me-2" /> Guided Tours
+                      </div>
+                    </div>
+                    <button className="btn btn-book w-100 mt-3" onClick={handleBookNow}>
+                      Book Now
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="row g-4">
-            {packageData.highlights?.map((item, index) => (
-              <div className="col-md-4 col-6" key={index}>
-                <div className="highlight-card p-3 text-center h-100">
-                  <div className="highlight-icon fs-1 mb-2">{item.icon}</div>
-                  <p className="mb-0 fw-medium">{item.text}</p>
-                </div>
+        </div>
+      </section>
+
+      {/* Quick Info Bar */}
+      <div className="quick-info-bar">
+        <div className="container">
+          <div className="info-items">
+            <div className="info-item">
+              <FaCalendarAlt className="info-icon" />
+              <div>
+                <div className="info-label">Best Time</div>
+                <div className="info-value">Oct - March</div>
+              </div>
+            </div>
+            <div className="info-item">
+              <FaClock className="info-icon" />
+              <div>
+                <div className="info-label">Duration</div>
+                <div className="info-value">3-7 Days</div>
+              </div>
+            </div>
+            <div className="info-item">
+              <FaUsers className="info-icon" />
+              <div>
+                <div className="info-label">Group Size</div>
+                <div className="info-value">2-12 People</div>
+              </div>
+            </div>
+            <div className="info-item">
+              <FaShieldAlt className="info-icon" />
+              <div>
+                <div className="info-label">Safety</div>
+                <div className="info-value">Certified</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Package Duration Selector */}
+      <section className="duration-section">
+        <div className="container">
+          <div className="section-header text-center">
+            <h2 className="section-title">Choose Your Perfect Duration</h2>
+            <p className="section-subtitle">Select from our carefully crafted packages</p>
+          </div>
+
+          <div className="duration-cards">
+            {packageCategories.map((category) => (
+              <div
+                key={category.id}
+                className={`duration-card ${activeCategory === category.id ? 'active' : ''}`}
+                onClick={() => handleCategoryChange(category.id)}
+              >
+                <div className="card-badge">{category.tag}</div>
+                <h3 className="duration">{category.name}</h3>
+                <div className="price">₹{category.price}</div>
+                <p className="per-person">per person</p>
+                {activeCategory === category.id && (
+                  <div className="selected-indicator">
+                    <FaCheckCircle />
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        )}
-      </div>
-      {/* Itinerary and Category Panel */}
-      <div className="container-fluid">
-        <div className="row">
-          {/* Itinerary Section */}
-          <div className="col-lg-9">
-            <div className="container my-5 py-4">
-              <div className="section-header mb-5 text-center">
-                <h2 className="display-5 fw-bold">Your Curated Itinerary</h2>
-                <p className="lead">Every Hour Planned for Maximum Enjoyment</p>
-                <div className="header-divider"></div>
-              </div>
+        </div>
+      </section>
 
+      {/* Highlights Section - Redesigned */}
+      <section className="highlights-section">
+        <div className="container">
+          <div className="section-header text-center">
+            <h2 className="section-title">Experience the Best of Agra</h2>
+            <p className="section-subtitle">What makes your journey unforgettable</p>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          ) : (
+            <div className="highlights-grid">
+              {packageData.highlights?.map((item, index) => (
+                <div className="highlight-card" key={index}>
+                  <div className="highlight-icon-wrapper">
+                    <span className="highlight-icon">{item.icon}</span>
+                  </div>
+                  <h4 className="highlight-title">{item.text}</h4>
+                  <p className="highlight-description">
+                    Experience the magic of Agra's most cherished attractions
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Itinerary Section - Redesigned */}
+      <section className="itinerary-section">
+        <div className="container">
+          <div className="section-header text-center">
+            <h2 className="section-title">Your Journey, Day by Day</h2>
+            <p className="section-subtitle">Every moment crafted for perfection</p>
+          </div>
+
+          <div className="row">
+            <div className="col-lg-8">
               {loading ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary" role="status">
@@ -309,232 +422,208 @@ function Agra() {
                   </div>
                 </div>
               ) : (
-                <div className="itinerary-timeline">
+                <div className="timeline">
                   {packageData.itinerary?.map((day, index) => (
-                    <div className="timeline-day" key={index}>
-                      <div className="timeline-badge">
-                        <span className="day-icon">{day.icon}</span>
+                    <div className="timeline-item" key={index}>
+                      <div className="timeline-marker">
+                        <span className="marker-icon">{day.icon}</span>
                       </div>
                       <div className="timeline-content">
-                        <h3>{day.day}</h3>
-                        <ul className="activity-list">
+                        <h3 className="day-title">{day.day}</h3>
+                        <div className="activities">
                           {day.activities.map((activity, i) => {
                             const [time, desc] = activity.split(" - ");
                             return (
-                              <li key={i}>
+                              <div className="activity-item" key={i}>
                                 <span className="activity-time">{time}</span>
                                 <span className="activity-desc">{desc}</span>
-                              </li>
+                              </div>
                             );
                           })}
-                        </ul>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Category Panel */}
-          <div className="col-lg-3" style={styles.categoryPanel}>
-            <div className="category-sidebar">
-              <div className="category-panel p-4 sticky-top">
-                <h4 className="mb-4">Package Duration</h4>
-                <ul className="category-list">
-                  {packageCategories.map((category) => (
-                    <li
-                      key={category.id}
-                      className={activeCategory === category.id ? "active" : ""}
-                      onClick={() => handleCategoryChange(category.id)}
-                    >
-                      {category.name}
-                      {activeCategory === category.id && <span className="category-badge">Most Popular</span>}
-                    </li>
-                  ))}
-                </ul>
-                <div className="category-info mt-4">
-                  <p>Select duration to see itinerary and pricing details.</p>
-                  <button className="btn btn-outline-primary w-100 mt-2 text-dark border border-3 border-primary" onClick={comparePackages}>
-                    Compare All
+            <div className="col-lg-4">
+              <div className="itinerary-sidebar">
+                <div className="info-card">
+                  <h4>Package Includes</h4>
+                  <ul className="includes-list">
+                    <li><FaCheckCircle className="text-success me-2" /> Accommodation</li>
+                    <li><FaCheckCircle className="text-success me-2" /> Daily Breakfast</li>
+                    <li><FaCheckCircle className="text-success me-2" /> Guided Tours</li>
+                    <li><FaCheckCircle className="text-success me-2" /> Transportation</li>
+                    <li><FaCheckCircle className="text-success me-2" /> Monument Entries</li>
+                  </ul>
+
+                  <button className="btn btn-outline-primary w-100 mt-3" onClick={comparePackages}>
+                    Compare Packages
                   </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Image Gallery */}
-      <div className="container-fluid px-0 my-5">
-        <div className="section-header mb-5 text-center">
-          <h2 className="display-5 fw-bold">Visual Journey</h2>
-          <p className="lead">Moments You'll Cherish Forever</p>
-        </div>
-        {loading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
+      {/* Gallery Section - Redesigned */}
+      <section className="gallery-section">
+        <div className="container-fluid px-0">
+          <div className="section-header text-center">
+            <h2 className="section-title">Visual Journey Through Agra</h2>
+            <p className="section-subtitle">Moments you'll cherish forever</p>
           </div>
-        ) : (
-          <div className="row g-0">
-            {packageData.gallery?.map((item, index) => (
-              <div className="col-md-4 col-6" key={index}>
-                <div className="gallery-item">
+
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          ) : (
+            <div className="gallery-grid">
+              {packageData.gallery?.map((item, index) => (
+                <div
+                  className={`gallery-item ${index === 0 ? 'grid-span-2' : ''}`}
+                  key={index}
+                  onClick={() => setActiveImage(index)}
+                >
                   <img
-                    src={item.img || `https://via.placeholder.com/800x600?text=Goa+${index + 1}`}
+                    src={item.img || `https://via.placeholder.com/800x600?text=Agra+${index + 1}`}
                     alt={item.caption || `Gallery image ${index + 1}`}
-                    className="img-fluid"
                     loading="lazy"
                   />
-                  <div className="gallery-caption">
-                    <p>{item.caption || `Image ${index + 1}`}</p>
+                  <div className="gallery-overlay">
+                    <FaCamera className="overlay-icon" />
+                    <p>{item.caption || `View ${index + 1}`}</p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Pricing Section */}
-      <div className="container my-5 py-5">
-        {loading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="pricing-card p-5 rounded-4 shadow-lg">
-            <div className="row align-items-center">
-              <div className="col-lg-7">
-                <h2 className="display-5 fw-bold mb-3">Ready to Experience Agra?</h2>
-                <p className="lead mb-4">
-                  Limited slots available for our premium{" "}
-                  {packageCategories.find((p) => p.id === activeCategory)?.name} package
-                </p>
-                <ul className="package-features">
-                  {packageData.highlights?.slice(0, 4).map((item, index) => (
-                    <li key={index}>✅ {item.text}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="col-lg-5">
-                <div className="price-box text-center p-4">
-                  <div className="price-original text-decoration-line-through">
-                    {pricing.currency || "₹"}
-                    {pricing.original || "--"}
-                  </div>
-                  <div className="price-discounted display-4 fw-bold">
-                    {pricing.currency || "₹"}
-                    {pricing.discounted || "--"}
-                  </div>
-                  <div className="price-note mb-3">Per person (Double occupancy)</div>
-                  <button className="btn btn-primary btn-lg w-100 mb-2" onClick={handleBookNow}>Book Now</button>
-                  <div className="d-flex justify-content-center gap-3">
-                    <span className="badge">Free Cancellation</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Testimonials */}
-      <div className="container my-5 py-4">
-        <div className="section-header mb-5 text-center">
-          <h2 className="display-5 fw-bold">Traveler Stories</h2>
-          <p className="lead">Don't just take our word for it</p>
+          )}
         </div>
-        {loading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
+      </section>
+
+      {/* Testimonials Section - Redesigned */}
+      <section className="testimonials-section">
+        <div className="container">
+          <div className="section-header text-center">
+            <h2 className="section-title">Traveler Stories</h2>
+            <p className="section-subtitle">Don't just take our word for it</p>
           </div>
-        ) : (
-          <div className="row">
-            {packageData.testimonials?.map((testimonial, index) => (
-              <div className="col-md-6 mb-4" key={index}>
-                <div className="testimonial-card h-100 p-4">
-                  <div className="testimonial-header mb-3">
-                    <span className="testimonial-avatar fs-1">{testimonial.avatar || "👤"}</span>
-                    <div>
-                      <div className="testimonial-rating">
-                        {"★".repeat(testimonial.rating || 0)}
-                        {"☆".repeat(5 - (testimonial.rating || 0))}
-                      </div>
-                      <div className="testimonial-author">{testimonial.author || "Anonymous"}</div>
+
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          ) : (
+            <div className="testimonials-grid">
+              {packageData.testimonials?.map((testimonial, index) => (
+                <div className="testimonial-card" key={index}>
+                  <div className="testimonial-content">
+                    <div className="quote-mark">"</div>
+                    <p className="quote">{testimonial.quote || "Great experience!"}</p>
+                    <div className="rating">
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar
+                          key={i}
+                          className={i < (testimonial.rating || 0) ? 'star-filled' : 'star-empty'}
+                        />
+                      ))}
                     </div>
                   </div>
-                  <blockquote className="testimonial-quote">"{testimonial.quote || "Great experience!"}"</blockquote>
+                  <div className="testimonial-author">
+                    <div className="author-avatar">
+                      {testimonial.avatar || "👤"}
+                    </div>
+                    <div className="author-info">
+                      <h5>{testimonial.author || "Anonymous"}</h5>
+                      <p>Verified Traveler</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-      {/* Final CTA */}
-      <div className="container-fluid final-cta py-5 mb-0">
-        <div className="container text-center">
-          <h2 className="display-5 fw-bold text-white mb-4">Your Agra Adventure Awaits</h2>
-          <p className="lead text-white mb-5">Limited slots available for next month. Reserve yours today!</p>
-          <div className="d-flex justify-content-center gap-3">
-            <button className="btn btn-light btn-lg px-5 fw-bold" onClick={handleBookNow}>Book Now</button>
-            {/* Custom Alert Popup */}
-            
-            {showAlert && (
-              <div style={styles.alertOverlay}>
-                <div style={styles.alertBox}>
-                  <p>Please login first to book</p>
-                  <button onClick={ handleAlertClose} style={styles.alertButton}>OK</button>
-                </div>
-              </div>
-            )}
-            {/* Login Form Popup */}
-            {showLogin && (
-              <Login
-                onClose={() => setShowLogin(false)}
-                onLoginSuccess={handleLoginSuccess}
-              />
-            )}
-
-            {/* Booking Form Popup */}
-            {showBooking && (
-              <BookingForm
-                user={user}
-                onClose={() => setShowBooking(false)}
-              />
-            )}
-            <button className="btn btn-outline-light ml-2 btn-lg px-5">Get Brochure</button>
+      {/* CTA Section - Redesigned */}
+      <section className="cta-section">
+        <div className="container">
+          <div className="cta-content">
+            <h2 className="cta-title">Ready to Experience the Magic of Agra?</h2>
+            <p className="cta-text">
+              Join hundreds of happy travelers who've discovered the timeless beauty of this majestic city.
+              Limited slots available for the upcoming season.
+            </p>
+            <div className="cta-buttons">
+              <button className="btn btn-cta-primary" onClick={handleBookNow}>
+                Book Your Adventure Now
+              </button>
+              <button className="btn btn-cta-secondary" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                Explore Packages
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
+      {/* Modals */}
+      {showAlert && (
+        <div style={styles.alertOverlay}>
+          <div style={styles.alertBox}>
+            <FaHeart className="text-danger mb-3" size={40} />
+            <h4 className="mb-3">Login Required</h4>
+            <p className="text-muted mb-4">Please login first to book this amazing package!</p>
+            <button onClick={handleAlertClose} style={styles.alertButton}>
+              Login Now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showLogin && (
+        <Login
+          onClose={() => setShowLogin(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+
+      {showBooking && (
+        <BookingForm
+          user={user}
+          onClose={() => setShowBooking(false)}
+        />
+      )}
+
+      {/* Comparison Modal */}
       {/* Comparison Modal */}
       {showComparison && (
         <div className="comparison-modal">
           <div className="modal-overlay" onClick={closeComparison}></div>
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Compare All Packages</h3>
+              <h3>Compare Packages</h3>
               <button className="close-btn" onClick={closeComparison}>
-                ×
+                <FaTimes />
               </button>
             </div>
 
             <div className="modal-body">
-              <div className="table-responsive comparison-table-container">
-                <table className="table comparison-table">
+              <div className="comparison-table-container">
+                <table className="comparison-table">
                   <thead>
                     <tr>
-                      <th className="sticky-header">Features</th>
+                      <th>Features</th>
                       {comparedPackages.map((pkg, index) => (
-                        <th key={index} className="sticky-header">
+                        <th key={index}>
                           {pkg.name || "Unknown Package"}
                         </th>
                       ))}
@@ -546,38 +635,47 @@ function Agra() {
                       <td>Price</td>
                       {comparedPackages.map((pkg, index) => (
                         <td key={`${index}-price`}>
-                          {pkg.pricing
-                            ? `${pkg.pricing.currency}${pkg.pricing.discounted}`
-                            : pkg.price
-                              ? `₹${pkg.price}`
-                              : "-"}
+                          <span className="price-highlight">
+                            {pkg.pricing
+                              ? `${pkg.pricing.currency || '₹'}${pkg.pricing.discounted || pkg.price || ''}`
+                              : pkg.price
+                                ? `₹${pkg.price}`
+                                : "-"}
+                          </span>
                         </td>
                       ))}
                     </tr>
-
 
                     {/* Rating */}
                     <tr>
                       <td>Rating</td>
                       {comparedPackages.map((pkg, index) => (
                         <td key={`${index}-rating`}>
-                          {pkg.rating ? `${pkg.rating} ★` : "-"}
+                          {pkg.rating ? (
+                            <span className="rating-badge">
+                              {pkg.rating} <FaStar className="ms-1" />
+                            </span>
+                          ) : "-"}
                         </td>
                       ))}
                     </tr>
-                    {/* Highlights (icon + text) */}
-                    {[...Array(Math.max(...comparedPackages.map(pkg => pkg.highlights?.length || 0)))].map((_, index) => (
-                      <tr key={`highlight-${index}`}>
-                        <td>{index === 0 ? "Highlights" : ""}</td>
-                        {comparedPackages.map((pkg, pkgIndex) => (
-                          <td key={`${pkgIndex}-highlight-${index}`}>
-                            {pkg.highlights?.[index]
-                              ? `${pkg.highlights[index].text}`
-                              : "-"}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+
+                    {/* Highlights - Fixed the array creation issue */}
+                    {
+                      comparedPackages.length > 0 &&
+                        [...Array(Math.max(0, ...comparedPackages.map(pkg => pkg.highlights?.length || 0)))].map((_, index) => (
+                          <tr key={`highlight-${index}`}>
+                            <td>{index === 0 ? "Highlights" : ""}</td>
+                            {comparedPackages.map((pkg, pkgIndex) => (
+                              <td key={`${pkgIndex}-highlight-${index}`}>
+                                {pkg.highlights?.[index]
+                                  ? pkg.highlights[index].text
+                                  : "-"}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                    }
                   </tbody>
                 </table>
               </div>
@@ -587,50 +685,26 @@ function Agra() {
               <button className="btn btn-primary" onClick={closeComparison}>
                 Close
               </button>
-              {/* Show Login Popup */}
-              {showLogin && (
-                <Login
-                  onClose={() => setShowLogin(false)}
-                  onLoginSuccess={handleLoginSuccess}
-                />
-              )}
-
-              {/* Show Booking Form Popup */}
-              {showBooking && (
-                <BookingForm onClose={() => setShowBooking(false)} />
-              )}
-
-
             </div>
           </div>
         </div>
       )}
-
       {/* Styles */}
       <style jsx>{`
-        /* Styles (exactly as you provided) */
-        .goa-package {
-          font-family: "Arial", sans-serif;
+        .agra-package {
+          font-family: 'Poppins', sans-serif;
+          overflow-x: hidden;
         }
 
+        /* Hero Section */
         .hero-section {
-          padding: 120px 0 100px;
-          background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
-           url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+          position: relative;
+          min-height: 90vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%),
+                      url('https://images.unsplash.com/photo-1564507592333-c60657eea523?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
           background-size: cover;
           background-position: center;
-          position: relative;
-        }
-
-        .package-tag {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background: rgba(255, 255, 255, 0.2);
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-size: 0.8rem;
-          font-weight: bold;
+          background-blend-mode: overlay;
         }
 
         .hero-overlay {
@@ -642,51 +716,391 @@ function Agra() {
           background: rgba(0, 0, 0, 0.3);
         }
 
-        .z-index-1 {
-          z-index: 1;
+        .hero-content {
+          position: relative;
+          z-index: 2;
+          padding: 100px 0;
+        }
+
+        .hero-text {
+          color: white;
+        }
+
+        .featured-badge {
+          background: rgba(255, 255, 255, 0.2);
+          padding: 8px 16px;
+          border-radius: 30px;
+          font-size: 0.9rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .hero-title {
+          font-size: 4rem;
+          font-weight: 700;
+          line-height: 1.2;
+          margin-bottom: 1.5rem;
+        }
+
+        .hero-title .highlight {
+          color: #FFD700;
+          position: relative;
+          display: inline-block;
+        }
+
+        .hero-title .highlight::after {
+          content: '';
+          position: absolute;
+          bottom: 10px;
+          left: 0;
+          width: 100%;
+          height: 20px;
+          background: rgba(255, 215, 0, 0.3);
+          z-index: -1;
+        }
+
+        .hero-subtitle {
+          font-size: 1.2rem;
+          margin-bottom: 2rem;
+          opacity: 0.9;
+        }
+
+        .hero-stats {
+          display: flex;
+          gap: 3rem;
+          margin-bottom: 2rem;
+        }
+
+        .stat-item {
+          text-align: center;
+        }
+
+        .stat-value {
+          display: block;
+          font-size: 2rem;
+          font-weight: 700;
+        }
+
+        .stat-label {
+          font-size: 0.9rem;
+          opacity: 0.8;
+        }
+
+        /* Price Card */
+        .price-card {
+          background: white;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .price-header {
+          padding: 15px 20px;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .offer-tag {
+          background: #FFD700;
+          color: #333;
+          padding: 5px 15px;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        .wishlist-icon {
+          font-size: 1.2rem;
+          cursor: pointer;
+          transition: transform 0.3s ease;
+        }
+
+        .wishlist-icon:hover {
+          transform: scale(1.1);
+        }
+
+        .price-body {
+          padding: 25px;
+        }
+
+        .package-name {
+          font-size: 1.2rem;
+          color: #666;
+          margin-bottom: 10px;
+        }
+
+        .price-tag {
+          display: flex;
+          align-items: baseline;
+          margin-bottom: 10px;
+        }
+
+        .currency {
+          font-size: 1.5rem;
+          color: #8B5A2B;
+          font-weight: 600;
+        }
+
+        .amount {
+          font-size: 3.5rem;
+          font-weight: 700;
+          color: #333;
+          line-height: 1;
+        }
+
+        .duration {
+          font-size: 1rem;
+          color: #999;
+          margin-left: 5px;
+        }
+
+        .price-original {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+
+        .original-price {
+          font-size: 1.1rem;
+          color: #999;
+          text-decoration: line-through;
+        }
+
+        .discount-badge {
+          background: #28a745;
+          color: white;
+          padding: 3px 10px;
+          border-radius: 15px;
+          font-size: 0.8rem;
+        }
+
+        .price-features {
+          margin-top: 15px;
+        }
+
+        .feature {
+          margin-bottom: 8px;
+          color: #666;
+        }
+
+        .btn-book {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          padding: 15px;
+          border: none;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .btn-book:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Quick Info Bar */
+        .quick-info-bar {
+          background: white;
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+          padding: 20px 0;
+          position: relative;
+          z-index: 10;
+        }
+
+        .info-items {
+          display: flex;
+          justify-content: space-around;
+          flex-wrap: wrap;
+          gap: 20px;
+        }
+
+        .info-item {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .info-icon {
+          font-size: 2rem;
+          color: #8B5A2B;
+        }
+
+        .info-label {
+          font-size: 0.9rem;
+          color: #999;
+        }
+
+        .info-value {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #333;
+        }
+
+        /* Duration Section */
+        .duration-section {
+          padding: 80px 0;
+          background: #f8f9fa;
+        }
+
+        .duration-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+          margin-top: 40px;
+        }
+
+        .duration-card {
+          background: white;
+          border-radius: 15px;
+          padding: 30px 20px;
+          text-align: center;
+          cursor: pointer;
+          position: relative;
+          transition: all 0.3s ease;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .duration-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .duration-card.active {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+        }
+
+        .card-badge {
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #FFD700;
+          color: #333;
+          padding: 5px 15px;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .duration {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 15px 0 5px;
+        }
+
+        .price {
+          font-size: 2rem;
+          font-weight: 700;
+        }
+
+        .per-person {
+          font-size: 0.9rem;
+          opacity: 0.8;
+        }
+
+        .selected-indicator {
+          position: absolute;
+          bottom: -10px;
+          right: -10px;
+          background: #28a745;
+          color: white;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* Highlights Section */
+        .highlights-section {
+          padding: 80px 0;
+        }
+
+        .highlights-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 30px;
+          margin-top: 40px;
         }
 
         .highlight-card {
-          background: #f8f9fa;
-          border-radius: 12px;
-          transition: transform 0.3s ease;
-          border: 1px solid #e9ecef;
+          text-align: center;
+          padding: 30px;
+          background: white;
+          border-radius: 15px;
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+          transition: all 0.3s ease;
         }
 
         .highlight-card:hover {
           transform: translateY(-5px);
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
         }
 
-        .section-header {
-          margin-bottom: 3rem;
+        .highlight-icon-wrapper {
+          width: 80px;
+          height: 80px;
+          margin: 0 auto 20px;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        .header-divider {
-          width: 60px;
-          height: 3px;
-          background: linear-gradient(90deg, #667eea, #764ba2);
-          margin: 0 auto;
-          border-radius: 2px;
+        .highlight-icon {
+          font-size: 2.5rem;
+          color: white;
         }
 
-        .itinerary-timeline {
+        .highlight-title {
+          font-size: 1.2rem;
+          font-weight: 600;
+          margin-bottom: 10px;
+        }
+
+        .highlight-description {
+          color: #999;
+          font-size: 0.9rem;
+        }
+
+        /* Itinerary Section */
+        .itinerary-section {
+          padding: 80px 0;
+          background: #f8f9fa;
+        }
+
+        .timeline {
           position: relative;
-          padding-left: 2rem;
+          padding: 20px 0;
         }
 
-        .timeline-day {
-          position: relative;
-          margin-bottom: 3rem;
-          border-left: 2px solid #e9ecef;
-          padding-left: 3rem;
-        }
-
-        .timeline-badge {
+        .timeline::before {
+          content: '';
           position: absolute;
-          left: -2rem;
+          left: 30px;
           top: 0;
-          width: 3rem;
-          height: 3rem;
+          bottom: 0;
+          width: 2px;
+          background: linear-gradient(to bottom, #667eea, #764ba2);
+        }
+
+        .timeline-item {
+          position: relative;
+          padding-left: 80px;
+          margin-bottom: 50px;
+        }
+
+        .timeline-marker {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 60px;
+          height: 60px;
           background: linear-gradient(135deg, #667eea, #764ba2);
           border-radius: 50%;
           display: flex;
@@ -694,182 +1108,271 @@ function Agra() {
           justify-content: center;
           color: white;
           font-size: 1.5rem;
+          z-index: 2;
         }
 
-        .timeline-content h3 {
+        .timeline-content {
+          background: white;
+          padding: 25px;
+          border-radius: 15px;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .day-title {
+          font-size: 1.3rem;
+          font-weight: 600;
+          margin-bottom: 15px;
           color: #333;
-          font-weight: bold;
-          margin-bottom: 1rem;
         }
 
-        .activity-list {
-          list-style: none;
-          padding: 0;
-        }
-
-        .activity-list li {
-          margin-bottom: 0.5rem;
+        .activity-item {
           display: flex;
-          align-items: flex-start;
+          align-items: baseline;
+          margin-bottom: 10px;
+          padding: 5px 0;
+          border-bottom: 1px dashed #eee;
         }
 
         .activity-time {
-          font-weight: bold;
-          color: #667eea;
-          min-width: 120px;
-          margin-right: 1rem;
+          font-weight: 600;
+          color: #8B5A2B;
+          min-width: 100px;
         }
 
         .activity-desc {
           color: #666;
         }
 
-        .category-sidebar {
-          background: #f8f9fa;
-          min-height: 100vh;
-        }
-
-        .category-panel {
+        .info-card {
           background: white;
-          border-radius: 12px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          padding: 25px;
+          border-radius: 15px;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+          position: sticky;
+          top: 20px;
         }
 
-        .category-list {
+        .includes-list {
           list-style: none;
           padding: 0;
-          margin: 0;
+          margin-top: 15px;
         }
 
-        .category-list li {
-          padding: 1rem;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-bottom: 0.5rem;
-          position: relative;
+        .includes-list li {
+          margin-bottom: 10px;
+          color: #666;
         }
 
-        .category-list li:hover {
-          background: #f0f0f0;
+        /* Gallery Section */
+        .gallery-section {
+          padding: 80px 0;
         }
 
-        .category-list li.active {
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          color: white;
-        }
-
-        .category-badge {
-          position: absolute;
-          right: 10px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: rgba(255, 255, 255, 0.2);
-          padding: 2px 8px;
-          border-radius: 10px;
-          font-size: 0.7rem;
+        .gallery-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+          margin-top: 40px;
         }
 
         .gallery-item {
           position: relative;
-          overflow: hidden;
           height: 250px;
+          overflow: hidden;
+          cursor: pointer;
+        }
+
+        .grid-span-2 {
+          grid-column: span 2;
+          grid-row: span 2;
+          height: 510px;
         }
 
         .gallery-item img {
-          transition: transform 0.5s ease;
-          height: 100%;
           width: 100%;
+          height: 100%;
           object-fit: cover;
+          transition: transform 0.5s ease;
         }
 
         .gallery-item:hover img {
           transform: scale(1.1);
         }
 
-        .gallery-caption {
+        .gallery-overlay {
           position: absolute;
-          bottom: -100%;
+          top: 0;
           left: 0;
           right: 0;
-          background: rgba(0,0,0,0.7);
-          color: white;
-          padding: 15px;
-          transition: bottom 0.3s ease;
-        }
-
-        .gallery-item:hover .gallery-caption {
           bottom: 0;
-        }
-
-        .pricing-card {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
           color: white;
+          opacity: 0;
+          transition: opacity 0.3s ease;
         }
 
-        .price-box {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          backdrop-filter: blur(10px);
+        .gallery-item:hover .gallery-overlay {
+          opacity: 1;
         }
 
-        .price-original {
-          font-size: 1.2rem;
-          color: rgba(255, 255, 255, 0.7);
+        .overlay-icon {
+          font-size: 2rem;
+          margin-bottom: 10px;
         }
 
-        .price-discounted {
-          color: #ffd700;
+        /* Testimonials Section */
+        .testimonials-section {
+          padding: 80px 0;
+          background: #f8f9fa;
         }
 
-        .price-note {
-          font-size: 0.9rem;
-          color: rgba(255, 255, 255, 0.8);
-        }
-
-        .badge {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          padding: 0.3rem 0.8rem;
-          border-radius: 15px;
-          font-size: 0.8rem;
+        .testimonials-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 30px;
+          margin-top: 40px;
         }
 
         .testimonial-card {
           background: white;
-          border-radius: 12px;
-          box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-          border: 1px solid #e9ecef;
+          border-radius: 15px;
+          overflow: hidden;
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+          transition: all 0.3s ease;
         }
 
-        .testimonial-header {
+        .testimonial-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .testimonial-content {
+          padding: 30px;
+          position: relative;
+        }
+
+        .quote-mark {
+          font-size: 4rem;
+          color: #667eea;
+          opacity: 0.2;
+          position: absolute;
+          top: 10px;
+          left: 20px;
+        }
+
+        .quote {
+          font-size: 1rem;
+          line-height: 1.6;
+          color: #666;
+          margin-bottom: 15px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .rating {
           display: flex;
-          align-items: center;
-          gap: 1rem;
+          gap: 5px;
         }
 
-        .testimonial-rating {
-          color: #ffd700;
-          font-size: 1.1rem;
+        .star-filled {
+          color: #FFD700;
+        }
+
+        .star-empty {
+          color: #ddd;
         }
 
         .testimonial-author {
-          font-weight: bold;
-          color: #333;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding: 20px 30px;
+          background: #f8f9fa;
+          border-top: 1px solid #eee;
         }
 
-        .testimonial-quote {
-          font-style: italic;
-          color: #666;
-          border-left: 3px solid #667eea;
-          padding-left: 1rem;
+        .author-avatar {
+          font-size: 2rem;
+        }
+
+        .author-info h5 {
           margin: 0;
+          font-size: 1rem;
+          font-weight: 600;
         }
 
-        .final-cta {
-          background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        .author-info p {
+          margin: 0;
+          font-size: 0.9rem;
+          color: #999;
         }
 
+        /* CTA Section */
+        .cta-section {
+          padding: 100px 0;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        .cta-content {
+          text-align: center;
+          max-width: 700px;
+          margin: 0 auto;
+        }
+
+        .cta-title {
+          font-size: 2.5rem;
+          font-weight: 700;
+          margin-bottom: 20px;
+        }
+
+        .cta-text {
+          font-size: 1.1rem;
+          margin-bottom: 30px;
+          opacity: 0.9;
+        }
+
+        .cta-buttons {
+          display: flex;
+          gap: 15px;
+          justify-content: center;
+        }
+
+        .btn-cta-primary {
+          background: white;
+          color: #667eea;
+          padding: 15px 30px;
+          border: none;
+          border-radius: 30px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .btn-cta-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-cta-secondary {
+          background: transparent;
+          color: white;
+          padding: 15px 30px;
+          border: 2px solid white;
+          border-radius: 30px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .btn-cta-secondary:hover {
+          background: white;
+          color: #667eea;
+        }
+
+        /* Comparison Modal */
         .comparison-modal {
           position: fixed;
           top: 0;
@@ -889,22 +1392,35 @@ function Agra() {
           width: 100%;
           height: 100%;
           background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(5px);
         }
 
         .modal-content {
           background: white;
-          border-radius: 12px;
+          border-radius: 20px;
           max-width: 90vw;
           max-height: 80vh;
           position: relative;
           z-index: 1;
           display: flex;
           flex-direction: column;
+          animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(50px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .modal-header {
-          padding: 1.5rem;
-          border-bottom: 1px solid #e9ecef;
+          padding: 20px 30px;
+          border-bottom: 1px solid #eee;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -913,48 +1429,125 @@ function Agra() {
         .close-btn {
           background: none;
           border: none;
-          font-size: 1.5rem;
+          font-size: 1.2rem;
           cursor: pointer;
           color: #666;
+          transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+          color: #333;
         }
 
         .modal-body {
-          padding: 1.5rem;
+          padding: 30px;
           overflow: auto;
           flex: 1;
         }
 
         .comparison-table-container {
-          max-height: 400px;
+          max-height: 500px;
+          overflow: auto;
         }
 
-        .comparison-table th.sticky-header {
+        .comparison-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .comparison-table th {
           position: sticky;
           top: 0;
           background: #f8f9fa;
-          z-index: 10;
+          padding: 15px;
+          font-weight: 600;
+          color: #333;
+          border-bottom: 2px solid #ddd;
         }
 
-        .comparison-table td, .comparison-table th {
-          padding: 1rem;
+        .comparison-table td {
+          padding: 12px 15px;
+          border: 1px solid #eee;
           text-align: center;
-          border: 1px solid #e9ecef;
+        }
+
+        .comparison-table tr:hover td {
+          background: #f8f9fa;
+        }
+
+        .price-highlight {
+          font-weight: 600;
+          color: #28a745;
+        }
+
+        .rating-badge {
+          display: inline-flex;
+          align-items: center;
+          background: #FFD700;
+          color: #333;
+          padding: 5px 10px;
+          border-radius: 15px;
+          font-weight: 600;
         }
 
         .modal-footer {
-          padding: 1.5rem;
-          border-top: 1px solid #e9ecef;
+          padding: 20px 30px;
+          border-top: 1px solid #eee;
           text-align: right;
         }
 
-        .package-features {
-          list-style: none;
-          padding: 0;
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .hero-title {
+            font-size: 2.5rem;
+          }
+
+          .hero-stats {
+            flex-wrap: wrap;
+            gap: 1rem;
+          }
+
+          .gallery-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .grid-span-2 {
+            grid-column: span 2;
+            grid-row: span 1;
+            height: 250px;
+          }
+
+          .cta-buttons {
+            flex-direction: column;
+          }
+
+          .timeline-item {
+            padding-left: 60px;
+          }
+
+          .timeline-marker {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+          }
         }
 
-        .package-features li {
-          margin-bottom: 0.5rem;
-          color: rgba(255, 255, 255, 0.9);
+        @media (max-width: 576px) {
+          .hero-title {
+            font-size: 2rem;
+          }
+
+          .duration-cards {
+            grid-template-columns: 1fr;
+          }
+
+          .gallery-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .grid-span-2 {
+            grid-column: span 1;
+          }
         }
       `}</style>
     </div>
@@ -962,291 +1555,3 @@ function Agra() {
 }
 
 export default Agra;
-
-
-
-[
-  {
-    "code": "AGR-3D2N",
-    "category": "3D/2N",
-    "duration": "3D/2N",
-    "highlights": [
-      { "icon": "🏰", "text": "Taj Mahal Visit" },
-      { "icon": "🏯", "text": "Agra Fort Tour" },
-      { "icon": "🌅", "text": "Sunset at Mehtab Bagh" },
-      { "icon": "🛍️", "text": "Shopping at Sadar Bazaar" },
-      { "icon": "🍛", "text": "Mughlai Cuisine Experience" }
-    ],
-    "itinerary": [
-      {
-        "day": "Day 1: Arrival & Taj Mahal",
-        "activities": [
-          "12:00 PM - Arrival in Agra",
-          "03:00 PM - Visit Taj Mahal",
-          "06:00 PM - Relax at Mehtab Bagh"
-        ],
-        "icon": "🏰"
-      },
-      {
-        "day": "Day 2: Agra Fort & Local Market",
-        "activities": [
-          "08:00 AM - Explore Agra Fort",
-          "12:00 PM - Shopping at Sadar Bazaar",
-          "05:00 PM - Optional Mughlai Cuisine Dinner"
-        ],
-        "icon": "🏯"
-      },
-      {
-        "day": "Day 3: Fatehpur Sikri & Departure",
-        "activities": [
-          "08:00 AM - Visit Fatehpur Sikri",
-          "01:00 PM - Checkout and departure"
-        ],
-        "icon": "🏛️"
-      }
-    ],
-    "gallery": [
-      { "img": "https://via.placeholder.com/1200x800?text=Taj+Mahal", "caption": "Taj Mahal" },
-      { "img": "https://via.placeholder.com/1200x800?text=Agra+Fort", "caption": "Agra Fort" },
-      { "img": "https://via.placeholder.com/1200x800?text=Fatehpur+Sikri", "caption": "Fatehpur Sikri" },
-      { "img": "https://via.placeholder.com/1200x800?text=Mehtab+Bagh", "caption": "Mehtab Bagh" }
-    ],
-    "testimonials": [
-      {
-        "quote": "Three days in Agra filled with culture and beautiful sights.",
-        "author": "Rahul & Priya",
-        "rating": 5,
-        "avatar": "👫"
-      }
-    ],
-    "pricing": {
-      "original": 8500,
-      "discounted": 7499,
-      "currency": "₹"
-    }
-  },
-  {
-    "code": "AGR-4D3N",
-    "category": "4D/3N",
-    "duration": "4D/3N",
-    "highlights": [
-      { "icon": "🏰", "text": "Taj Mahal & Agra Fort" },
-      { "icon": "🏯", "text": "Fatehpur Sikri & Sikandra" },
-      { "icon": "🕌", "text": "Local Culture & Cuisine" },
-      { "icon": "🛍️", "text": "Traditional Handicrafts Shopping" },
-      { "icon": "🍽️", "text": "Mughlai Food Tasting" }
-    ],
-    "itinerary": [
-      {
-        "day": "Day 1: Arrival & Taj Mahal",
-        "activities": [
-          "12:00 PM - Arrival in Agra",
-          "03:00 PM - Visit Taj Mahal"
-        ],
-        "icon": "🏰"
-      },
-      {
-        "day": "Day 2: Agra Fort & Sadar Bazaar",
-        "activities": [
-          "09:00 AM - Tour Agra Fort",
-          "02:00 PM - Shopping & street food at Sadar Bazaar"
-        ],
-        "icon": "🏯"
-      },
-      {
-        "day": "Day 3: Fatehpur Sikri & Sikandra",
-        "activities": [
-          "08:00 AM - Explore Fatehpur Sikri",
-          "02:00 PM - Visit Akbar’s Tomb at Sikandra"
-        ],
-        "icon": "🏛️"
-      },
-      {
-        "day": "Day 4: Leisure & Departure",
-        "activities": [
-          "08:00 AM - Relaxing morning",
-          "11:00 AM - Checkout and departure"
-        ],
-        "icon": "✈️"
-      }
-    ],
-    "gallery": [
-      { "img": "https://via.placeholder.com/1200x800?text=Sikandra", "caption": "Akbar’s Tomb, Sikandra" },
-      { "img": "https://via.placeholder.com/1200x800?text=Fatehpur+Sikri", "caption": "Fatehpur Sikri" },
-      { "img": "https://via.placeholder.com/1200x800?text=Agra+Market", "caption": "Sadar Bazaar" },
-      { "img": "https://via.placeholder.com/1200x800?text=Taj+Mahal", "caption": "Taj Mahal" }
-    ],
-    "testimonials": [
-      {
-        "quote": "Four days to soak in history, culture, and local flavors.",
-        "author": "Anjali & Vikram",
-        "rating": 5,
-        "avatar": "👩‍❤️‍👨"
-      }
-    ],
-    "pricing": {
-      "original": 11500,
-      "discounted": 9999,
-      "currency": "₹"
-    }
-  },
-  {
-    "code": "AGR-5D4N",
-    "category": "5D/4N",
-    "duration": "5D/4N",
-    "highlights": [
-      { "icon": "🏰", "text": "Extended Agra Exploration" },
-      { "icon": "🏯", "text": "Fatehpur Sikri, Sikandra & Surroundings" },
-      { "icon": "🍛", "text": "Mughlai Cuisine Experiences" },
-      { "icon": "🛍️", "text": "Shopping in Local Bazaars" },
-      { "icon": "🎭", "text": "Cultural Shows & Events" }
-    ],
-    "itinerary": [
-      {
-        "day": "Day 1: Arrival & Taj Mahal",
-        "activities": [
-          "12:00 PM - Arrival in Agra",
-          "03:00 PM - Visit Taj Mahal"
-        ],
-        "icon": "🏰"
-      },
-      {
-        "day": "Day 2: Agra Fort & Market",
-        "activities": [
-          "08:00 AM - Tour Agra Fort",
-          "02:00 PM - Visit local markets and try street food"
-        ],
-        "icon": "🏯"
-      },
-      {
-        "day": "Day 3: Fatehpur Sikri & Sikandra",
-        "activities": [
-          "09:00 AM - Day trip to Fatehpur Sikri",
-          "03:00 PM - Visit Akbar’s Tomb, Sikandra"
-        ],
-        "icon": "🏛️"
-      },
-      {
-        "day": "Day 4: Optional Excursion or Leisure",
-        "activities": [
-          "Free day for shopping, cultural events, or relaxation"
-        ],
-        "icon": "🛍️"
-      },
-      {
-        "day": "Day 5: Departure",
-        "activities": [
-          "08:00 AM - Checkout and depart"
-        ],
-        "icon": "✈️"
-      }
-    ],
-    "gallery": [
-      { "img": "https://via.placeholder.com/1200x800?text=Agra+Fort", "caption": "Agra Fort" },
-      { "img": "https://via.placeholder.com/1200x800?text=Fatehpur+Sikri", "caption": "Fatehpur Sikri" },
-      { "img": "https://via.placeholder.com/1200x800?text=Mughlai+Cuisine", "caption": "Mughlai Cuisine" },
-      { "img": "https://via.placeholder.com/1200x800?text=Shopping+in+Agra", "caption": "Shopping in Agra" }
-    ],
-    "testimonials": [
-      {
-        "quote": "A perfect blend of history, culture, and leisure.",
-        "author": "Sneha & Amit",
-        "rating": 5,
-        "avatar": "👫"
-      }
-    ],
-    "pricing": {
-      "original": 14000,
-      "discounted": 11999,
-      "currency": "₹"
-    }
-  },
-  {
-    "code": "AGR-7D6N",
-    "category": "7D/6N",
-    "duration": "7D/6N",
-    "highlights": [
-      { "icon": "🏰", "text": "In-depth Agra & Nearby Attractions" },
-      { "icon": "🏯", "text": "Fatehpur Sikri, Sikandra & Mathura Visit" },
-      { "icon": "🕌", "text": "Cultural & Culinary Experiences" },
-      { "icon": "🛍️", "text": "Shopping & Leisure Time" },
-      { "icon": "🎭", "text": "Traditional Dance & Music Shows" }
-    ],
-    "itinerary": [
-      {
-        "day": "Day 1: Arrival & Taj Mahal",
-        "activities": [
-          "12:00 PM - Arrival in Agra",
-          "03:00 PM - Taj Mahal Visit"
-        ],
-        "icon": "🏰"
-      },
-      {
-        "day": "Day 2: Agra Fort & Local Market",
-        "activities": [
-          "08:00 AM - Tour Agra Fort",
-          "02:00 PM - Shopping at Sadar Bazaar"
-        ],
-        "icon": "🏯"
-      },
-      {
-        "day": "Day 3: Fatehpur Sikri",
-        "activities": [
-          "09:00 AM - Visit Fatehpur Sikri",
-          "03:00 PM - Return to Agra"
-        ],
-        "icon": "🏛️"
-      },
-      {
-        "day": "Day 4: Sikandra & Mathura",
-        "activities": [
-          "08:00 AM - Visit Akbar’s Tomb, Sikandra",
-          "01:00 PM - Excursion to Mathura"
-        ],
-        "icon": "🕌"
-      },
-      {
-        "day": "Day 5: Cultural Activities & Cuisine",
-        "activities": [
-          "Free day for cultural shows and Mughlai cooking classes"
-        ],
-        "icon": "🎭"
-      },
-      {
-        "day": "Day 6: Leisure & Shopping",
-        "activities": [
-          "09:00 AM - Explore local markets",
-          "06:00 PM - Farewell dinner"
-        ],
-        "icon": "🛍️"
-      },
-      {
-        "day": "Day 7: Departure",
-        "activities": [
-          "08:00 AM - Checkout and departure"
-        ],
-        "icon": "✈️"
-      }
-    ],
-    "gallery": [
-      { "img": "https://via.placeholder.com/1200x800?text=Mathura", "caption": "Mathura" },
-      { "img": "https://via.placeholder.com/1200x800?text=Cultural+Show", "caption": "Cultural Show" },
-      { "img": "https://via.placeholder.com/1200x800?text=Mughlai+Cooking+Class", "caption": "Mughlai Cooking Class" },
-      { "img": "https://via.placeholder.com/1200x800?text=Agra+Market", "caption": "Agra Market" },
-      { "img": "https://via.placeholder.com/1200x800?text=Taj+Mahal", "caption": "Taj Mahal" }
-    ],
-    "testimonials": [
-      {
-        "quote": "Seven days full of rich history, culture, and unforgettable experiences!",
-        "author": "Karan & Anjali",
-        "rating": 5,
-        "avatar": "👨‍👩‍👧‍👦"
-      }
-    ],
-    "pricing": {
-      "original": 21000,
-      "discounted": 17999,
-      "currency": "₹"
-    }
-  }
-]

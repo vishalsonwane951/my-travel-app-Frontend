@@ -594,7 +594,7 @@ const ProfileDropdown = () => {
   }
 
   {/* CSS Animation */ }
-  <style jsx>{`
+  <style >{`
         @keyframes fadeInDown {
           from {
             opacity: 0;

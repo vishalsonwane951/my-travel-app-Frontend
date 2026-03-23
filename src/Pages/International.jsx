@@ -57,145 +57,93 @@ const International = () => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState(null);
-  
+
   // Admin states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editRow, setEditRow] = useState(null);
   const [formData, setFormData] = useState({
-    title: '',
-    images: '',
-    description: '',
-    location: '',
-    price: '',
-    duration: '',
-    rating: '4.5'
+    title: '', images: '', description: '', location: '', price: '', duration: '', rating: '4.5'
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredDestinations, setFilteredDestinations] = useState([]);
 
-  // Refs
-  const observerRef = useRef(null);
   const imageCache = useRef(new Map());
   const initialFetchDone = useRef(false);
 
-  // Helper function to get correct image URL
   const getImageUrl = useCallback((imagePath) => {
-    if (!imagePath) return "/placeholder.jpg";
-    
-    if (imageCache.current.has(imagePath)) {
-      return imageCache.current.get(imagePath);
-    }
-    
-    let url;
-    if (imagePath.startsWith('http')) {
-      url = imagePath;
-    } else {
-      const cleanPath = imagePath.replace(/^\/+/, '');
-      url = `${BASE}/${cleanPath}`;
-    }
-    
+    if (!imagePath) return '/placeholder.jpg';
+    if (imageCache.current.has(imagePath)) return imageCache.current.get(imagePath);
+    const url = imagePath.startsWith('http') ? imagePath : `${BASE}/${imagePath.replace(/^\/+/, '')}`;
     imageCache.current.set(imagePath, url);
     return url;
   }, []);
 
-  // Handle responsive card count
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setWindowWidth(width);
-      
-      if (width < 640) {
-        setCardsToShow(1);
-      } else if (width < 1024) {
-        setCardsToShow(2);
-      } else {
-        setCardsToShow(3);
-      }
+      setCardsToShow(width < 640 ? 1 : width < 1024 ? 2 : 3);
     };
-
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch data
   useEffect(() => {
     const controller = new AbortController();
-    
     async function fetchPackages() {
       if (initialFetchDone.current) return;
-      
       try {
         const [res1, res2] = await Promise.all([
-          api.get('/International-tours/getallInternational', { 
-            signal: controller.signal
-          }),
-          api.get('/International-tours/getallInternational2', { 
-            signal: controller.signal
-          }),
+          api.get('/International-tours/getallInternational', { signal: controller.signal }),
+          api.get('/International-tours/getallInternational2', { signal: controller.signal }),
         ]);
-        
         setInternational1(res1.data || []);
         setInternational2(res2.data || []);
         initialFetchDone.current = true;
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error("Error fetching Data:", err);
-        }
+        if (err.name !== 'AbortError') console.error('Error fetching Data:', err);
       } finally {
         setLoading(false);
       }
     }
-    
     fetchPackages();
     return () => controller.abort();
   }, []);
 
-  // Filter destinations based on search
   useEffect(() => {
-    const allDestinations = [...international1, ...international2];
-    const filtered = allDestinations.filter(dest => 
-      dest.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dest.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dest.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const all = [...international1, ...international2];
+    setFilteredDestinations(
+      all.filter(d =>
+        d.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
-    setFilteredDestinations(filtered);
   }, [searchTerm, international1, international2]);
 
   const handlePrev = useCallback(() => {
-    if (startIndex > 0) {
-      setStartIndex(prev => Math.max(0, prev - cardsToShow));
-    }
+    if (startIndex > 0) setStartIndex(prev => Math.max(0, prev - cardsToShow));
   }, [startIndex, cardsToShow]);
 
   const handleNext = useCallback(() => {
-    const totalCards = Math.max(international1.length, international2.length);
-    if (startIndex + cardsToShow < totalCards) {
-      setStartIndex(prev => prev + cardsToShow);
-    }
+    const total = Math.max(international1.length, international2.length);
+    if (startIndex + cardsToShow < total) setStartIndex(prev => prev + cardsToShow);
   }, [startIndex, cardsToShow, international1.length, international2.length]);
 
-  const openCountryModal = useCallback((country) => {
-    setSelectedCountry(country);
-  }, []);
+  const openCountryModal = useCallback((country) => setSelectedCountry(country), []);
+  const closeCountryModal = useCallback(() => setSelectedCountry(null), []);
 
-  const closeCountryModal = useCallback(() => {
-    setSelectedCountry(null);
-  }, []);
-
-  // Admin Functions
   const handleFileSelect = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, preview: reader.result }));
-      };
+      reader.onloadend = () => setFormData(prev => ({ ...prev, preview: reader.result }));
       reader.readAsDataURL(file);
     }
   }, []);
@@ -206,1570 +154,501 @@ const International = () => {
   }, []);
 
   const resetForm = useCallback(() => {
-    setFormData({
-      title: '',
-      images: '',
-      description: '',
-      location: '',
-      price: '',
-      duration: '',
-      rating: '4.5'
-    });
+    setFormData({ title: '', images: '', description: '', location: '', price: '', duration: '', rating: '4.5' });
     setSelectedFile(null);
     setUploadProgress(0);
   }, []);
 
   const handleAdd = useCallback(async (row) => {
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description || '');
-      formDataToSend.append('location', formData.location || '');
-      formDataToSend.append('price', formData.price || '');
-      formDataToSend.append('duration', formData.duration || '');
-      formDataToSend.append('rating', formData.rating || '4.5');
-      
-      if (selectedFile) {
-        formDataToSend.append('image', selectedFile);
-      }
-
-      const endpoint = row === 'row1' 
-        ? '/International-tours/addInternational'
-        : '/International-tours/addInternational2';
-
-      const res = await api.post(endpoint, formDataToSend, {
+      const fd = new FormData();
+      Object.entries({ title: formData.title, description: formData.description || '', location: formData.location || '', price: formData.price || '', duration: formData.duration || '', rating: formData.rating || '4.5' }).forEach(([k, v]) => fd.append(k, v));
+      if (selectedFile) fd.append('image', selectedFile);
+      const endpoint = row === 'row1' ? '/International-tours/addInternational' : '/International-tours/addInternational2';
+      const res = await api.post(endpoint, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percent);
-        }
+        onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / e.total)),
       });
-
       if (res.data.success) {
-        if (row === 'row1') {
-          setInternational1(prev => [...prev, res.data.data]);
-        } else {
-          setInternational2(prev => [...prev, res.data.data]);
-        }
+        if (row === 'row1') setInternational1(prev => [...prev, res.data.data]);
+        else setInternational2(prev => [...prev, res.data.data]);
         setShowAddModal(false);
         resetForm();
       }
-    } catch (err) {
-      console.error('Error adding destination:', err);
-    }
+    } catch (err) { console.error('Error adding:', err); }
   }, [formData, selectedFile, resetForm]);
 
   const handleUpdate = useCallback(async () => {
     if (!editingItem) return;
-
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('location', formData.location);
-      formDataToSend.append('price', formData.price);
-      formDataToSend.append('duration', formData.duration);
-      formDataToSend.append('rating', formData.rating);
-      
-      if (selectedFile) {
-        formDataToSend.append('image', selectedFile);
-      }
-
+      const fd = new FormData();
+      Object.entries({ title: formData.title, description: formData.description, location: formData.location, price: formData.price, duration: formData.duration, rating: formData.rating }).forEach(([k, v]) => fd.append(k, v));
+      if (selectedFile) fd.append('image', selectedFile);
       const endpoint = editRow === 'row1'
         ? `/International-tours/updateInternational/${editingItem._id}`
         : `/International-tours/updateInternational2/${editingItem._id}`;
-
-      const res = await api.put(endpoint, formDataToSend, {
+      const res = await api.put(endpoint, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percent);
-        }
+        onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / e.total)),
       });
-
       if (res.data.success) {
-        if (editRow === 'row1') {
-          setInternational1(prev => prev.map(item => 
-            item._id === editingItem._id ? res.data.data : item
-          ));
-        } else {
-          setInternational2(prev => prev.map(item => 
-            item._id === editingItem._id ? res.data.data : item
-          ));
-        }
-        setShowEditModal(false);
-        setEditingItem(null);
-        resetForm();
+        if (editRow === 'row1') setInternational1(prev => prev.map(i => i._id === editingItem._id ? res.data.data : i));
+        else setInternational2(prev => prev.map(i => i._id === editingItem._id ? res.data.data : i));
+        setShowEditModal(false); setEditingItem(null); resetForm();
       }
-    } catch (err) {
-      console.error('Error updating destination:', err);
-    }
+    } catch (err) { console.error('Error updating:', err); }
   }, [editingItem, editRow, formData, selectedFile, resetForm]);
 
   const handleDelete = useCallback(async (id, row) => {
     if (!window.confirm('Are you sure you want to delete this destination?')) return;
-
     try {
-      const endpoint = row === 'row1'
-        ? `/International-tours/deleteInternational/${id}`
-        : `/International-tours/deleteInternational2/${id}`;
-
+      const endpoint = row === 'row1' ? `/International-tours/deleteInternational/${id}` : `/International-tours/deleteInternational2/${id}`;
       const res = await api.delete(endpoint);
-
       if (res.data.success) {
-        if (row === 'row1') {
-          setInternational1(prev => prev.filter(item => item._id !== id));
-        } else {
-          setInternational2(prev => prev.filter(item => item._id !== id));
-        }
+        if (row === 'row1') setInternational1(prev => prev.filter(i => i._id !== id));
+        else setInternational2(prev => prev.filter(i => i._id !== id));
       }
-    } catch (err) {
-      console.error('Error deleting destination:', err);
-    }
+    } catch (err) { console.error('Error deleting:', err); }
   }, []);
 
   const openEditModal = useCallback((item, row) => {
-    setEditingItem(item);
-    setEditRow(row);
-    setFormData({
-      title: item.title || '',
-      images: item.images || '',
-      description: item.description || '',
-      location: item.location || '',
-      price: item.price || '',
-      duration: item.duration || '',
-      rating: item.rating || '4.5'
-    });
-    setSelectedFile(null);
-    setShowEditModal(true);
+    setEditingItem(item); setEditRow(row);
+    setFormData({ title: item.title || '', images: item.images || '', description: item.description || '', location: item.location || '', price: item.price || '', duration: item.duration || '', rating: item.rating || '4.5' });
+    setSelectedFile(null); setShowEditModal(true);
   }, []);
 
-  // Computed values
-  const totalCards = useMemo(() => 
-    Math.max(international1.length, international2.length), 
-    [international1.length, international2.length]
-  );
+  const totalCards = useMemo(() => Math.max(international1.length, international2.length), [international1.length, international2.length]);
+  const progressPercent = useMemo(() => totalCards > 0 ? ((startIndex + cardsToShow) / totalCards) * 100 : 0, [totalCards, startIndex, cardsToShow]);
+  const visibleCards1 = useMemo(() => international1.slice(startIndex, startIndex + cardsToShow), [international1, startIndex, cardsToShow]);
+  const visibleCards2 = useMemo(() => international2.slice(startIndex, startIndex + cardsToShow), [international2, startIndex, cardsToShow]);
+  const featuredDestinations = useMemo(() => [...international1, ...international2].slice(0, 3), [international1, international2]);
 
-  const progressPercent = useMemo(() => 
-    totalCards > 0 ? ((startIndex + cardsToShow) / totalCards) * 100 : 0,
-    [totalCards, startIndex, cardsToShow]
-  );
-
-  const visibleCards1 = useMemo(() => 
-    international1.slice(startIndex, startIndex + cardsToShow),
-    [international1, startIndex, cardsToShow]
-  );
-
-  const visibleCards2 = useMemo(() => 
-    international2.slice(startIndex, startIndex + cardsToShow),
-    [international2, startIndex, cardsToShow]
-  );
-
-  const featuredDestinations = useMemo(() => 
-    [...international1, ...international2].slice(0, 6),
-    [international1, international2]
-  );
-
-  const stats = useMemo(() => [
-    { icon: <FaGlobe />, number: international1.length + international2.length, label: 'Destinations' },
-    { icon: <FaPlane />, number: Math.floor((international1.length + international2.length) * 2.5), label: 'Active Tours' },
-    { icon: <FaUsers />, number: '24/7', label: 'Support' },
-    { icon: <FaStar />, number: '4.8', label: 'Rating' }
-  ], [international1.length, international2.length]);
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#0B1E33',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            margin: '0 auto 20px',
-            border: '3px solid rgba(255,255,255,0.3)',
-            borderTopColor: '#00C3A5',
-            borderRadius: '50%'
-          }}></div>
-          <p style={{ color: 'white' }}>Loading destinations...</p>
+  // ── Shared modal form fields ─────────────────────────────────
+  const ModalFormFields = () => (
+    <>
+      {[['title','Title *','text'],['description','Description','textarea'],['location','Location','text']].map(([name, label, type]) => (
+        <div key={name} style={{ marginBottom: 18 }}>
+          <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>{label}</label>
+          {type === 'textarea'
+            ? <textarea name={name} value={formData[name]} onChange={handleInputChange} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.9rem', outline: 'none', minHeight: 80, resize: 'vertical', boxSizing: 'border-box' }} />
+            : <input type={type} name={name} value={formData[name]} onChange={handleInputChange} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
+          }
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F8FAFC',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
-      {/* Header */}
-      <div style={{
-        background: '#0B1E33',
-        padding: '40px 0',
-        borderBottom: '3px solid #00C3A5'
-      }}>
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 20px'
-        }}>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: '600',
-            color: 'white',
-            marginBottom: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <FaPlane style={{ color: '#00C3A5' }} />
-            Discover the World
-          </h1>
-          <p style={{ color: '#94A3B8', fontSize: '1rem' }}>
-            Embark on unforgettable journeys to the most beautiful destinations across the globe
-          </p>
-          
-          {/* Stats */}
-          <div style={{
-            display: 'flex',
-            gap: '30px',
-            marginTop: '25px',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FaGlobe style={{ color: '#00C3A5' }} />
-              <span style={{ color: 'white' }}>{international1.length + international2.length} Destinations</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FaUsers style={{ color: '#00C3A5' }} />
-              <span style={{ color: 'white' }}>15k+ Travelers</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FaStar style={{ color: '#00C3A5' }} />
-              <span style={{ color: 'white' }}>4.8 Rating</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div style={{
-        maxWidth: '1400px',
-        margin: '-20px auto 30px',
-        padding: '0 20px',
-        position: 'relative',
-        zIndex: 10
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '8px',
-          padding: '12px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-          border: '1px solid #E2E8F0'
-        }}>
-          <FaSearch style={{ color: '#94A3B8', marginRight: '12px' }} />
-          <input
-            type="text"
-            placeholder="Search destinations, countries, or experiences..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              flex: 1,
-              border: 'none',
-              outline: 'none',
-              fontSize: '0.95rem',
-              background: 'transparent'
-            }}
-          />
-          {searchTerm && (
-            <span style={{ color: '#64748B', fontSize: '0.9rem' }}>
-              {filteredDestinations.length} results
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Admin Bar */}
-      {isAdmin && (
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto 30px',
-          padding: '0 20px'
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '15px 20px',
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '15px'
-          }}>
-            <h3 style={{ margin: 0, color: '#0B1E33', fontSize: '1rem' }}>Admin Dashboard</h3>
-            <button
-              onClick={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                border: 'none',
-                background: '#00C3A5',
-                color: 'white',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <FaPlus size={12} /> Add Destination
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto 40px',
-        padding: '0 20px',
-        display: 'grid',
-        gridTemplateColumns: windowWidth < 768 ? '1fr' : 'repeat(4, 1fr)',
-        gap: '20px'
-      }}>
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            style={{
-              background: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              border: '1px solid #E2E8F0',
-              textAlign: 'center'
-            }}
-          >
-            <div style={{ fontSize: '2rem', color: '#00C3A5', marginBottom: '10px' }}>
-              {stat.icon}
-            </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#0B1E33' }}>
-              {stat.number}
-            </div>
-            <div style={{ fontSize: '0.9rem', color: '#64748B' }}>
-              {stat.label}
-            </div>
+      ))}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
+        {[['price','Price ($)','number'],['duration','Duration','text']].map(([name, label, type]) => (
+          <div key={name}>
+            <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>{label}</label>
+            <input type={type} name={name} value={formData[name]} onChange={handleInputChange} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
           </div>
         ))}
       </div>
-
-      {/* Featured Destinations */}
-      {!searchTerm && featuredDestinations.length > 0 && (
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto 50px',
-          padding: '0 20px'
-        }}>
-          <h2 style={{
-            fontSize: '1.5rem',
-            fontWeight: '600',
-            color: '#0B1E33',
-            marginBottom: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <FaAward style={{ color: '#00C3A5' }} />
-            Featured Destinations
-          </h2>
-          <p style={{ color: '#64748B', marginBottom: '30px' }}>
-            Hand-picked locations for your next adventure
-          </p>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: windowWidth < 768 ? '1fr' : 'repeat(3, 1fr)',
-            gap: '30px'
-          }}>
-            {featuredDestinations.map((dest, index) => (
-              <div
-                key={dest._id || index}
-                style={{
-                  background: 'white',
-                  borderRadius: '8px',
-                  border: '1px solid #E2E8F0',
-                  overflow: 'hidden',
-                  cursor: 'pointer'
-                }}
-                onClick={() => openCountryModal(dest)}
-              >
-                <div style={{ height: '200px', background: '#F1F5F9', position: 'relative' }}>
-                  <img
-                    src={getImageUrl(dest.images)}
-                    alt={dest.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/placeholder.jpg';
-                    }}
-                  />
-                  <span style={{
-                    position: 'absolute',
-                    top: '15px',
-                    right: '15px',
-                    background: '#00C3A5',
-                    color: 'white',
-                    padding: '4px 10px',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    fontWeight: '500'
-                  }}>
-                    Featured
-                  </span>
-                </div>
-                <div style={{ padding: '20px' }}>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '600', color: '#0B1E33', marginBottom: '8px' }}>
-                    {dest.title}
-                  </h3>
-                  <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', color: '#64748B' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <FaClock size={12} /> {dest.duration || 'Flexible'}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <FaStar size={12} style={{ color: '#FBBF24' }} /> {dest.rating || '4.8'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+      <div style={{ marginBottom: 18 }}>
+        <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>Rating (1-5)</label>
+        <input type="number" name="rating" value={formData.rating} onChange={handleInputChange} min="1" max="5" step="0.1" style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
+      </div>
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>Image</label>
+        <input type="file" accept="image/*" onChange={handleFileSelect} style={{ width: '100%', padding: 10, borderRadius: 12, border: '1.5px dashed #E5E7EB', fontFamily: 'Outfit', boxSizing: 'border-box' }} />
+        {(formData.preview || formData.images) && (
+          <img src={formData.preview || getImageUrl(formData.images)} alt="Preview" style={{ width: '100%', maxHeight: 150, objectFit: 'cover', borderRadius: 12, marginTop: 10 }} />
+        )}
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div style={{ height: 4, background: '#E5E7EB', borderRadius: 2, marginTop: 10, overflow: 'hidden' }}>
+            <div style={{ width: `${uploadProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--saffron), var(--saffron-dark))', transition: 'width 0.3s' }} />
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    </>
+  );
 
-      {/* Tabs */}
-      {!searchTerm && (
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto 30px',
-          padding: '0 20px',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '10px',
-          flexWrap: 'wrap'
-        }}>
-          {['all', 'popular', 'hidden', 'upcoming'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: '8px 20px',
-                borderRadius: '30px',
-                border: activeTab === tab ? '2px solid #00C3A5' : '1px solid #E2E8F0',
-                background: activeTab === tab ? '#F0FDF9' : 'white',
-                color: activeTab === tab ? '#00C3A5' : '#64748B',
-                fontSize: '0.9rem',
-                fontWeight: activeTab === tab ? '600' : '400',
-                cursor: 'pointer',
-                textTransform: 'capitalize'
-              }}
-            >
-              {tab === 'all' ? 'All Destinations' : 
-               tab === 'popular' ? 'Most Popular' :
-               tab === 'hidden' ? 'Hidden Gems' : 'Upcoming Tours'}
-            </button>
+  // ── Loading skeleton ─────────────────────────────────────────
+  if (loading) return (
+    <section id="international" style={{ background: 'white', paddingBottom: 80 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '60px 24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 24 }}>
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} style={{ borderRadius: 20, overflow: 'hidden', background: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+              <div className="skeleton" style={{ height: 200 }} />
+              <div style={{ padding: 16 }}>
+                <div className="skeleton" style={{ height: 20, marginBottom: 10 }} />
+                <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 16 }} />
+                <div className="skeleton" style={{ height: 36, borderRadius: 50 }} />
+              </div>
+            </div>
           ))}
         </div>
-      )}
+      </div>
+    </section>
+  );
 
-      {/* Main Content */}
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto 40px',
-        padding: '0 20px'
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          border: '1px solid #E2E8F0',
-          padding: '25px',
-          position: 'relative'
-        }}>
-          {/* Navigation Arrows */}
-          {totalCards > cardsToShow && (
-            <>
+  return (
+    <section id="international" style={{ background: 'white', paddingBottom: 80 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '80px 24px 0' }}>
+
+        {/* ── Section Header ───────────────────────────────────── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <div className="section-eyebrow" style={{ marginBottom: 10 }}>International Tours</div>
+            <h2 className="section-title">
+              Explore the <em style={{ color: 'var(--saffron)' }}>World</em><br />Beyond Borders
+            </h2>
+          </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Search */}
+            <div style={{ position: 'relative' }}>
+              <FaSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.85rem' }} />
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search countries..."
+                style={{ padding: '10px 16px 10px 38px', borderRadius: 50, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.85rem', outline: 'none', width: 220 }}
+              />
+              {searchTerm && (
+                <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontFamily: 'Outfit', fontSize: '0.75rem', color: '#9CA3AF' }}>
+                  {filteredDestinations.length} results
+                </span>
+              )}
+            </div>
+            {/* Admin add button */}
+            {isAdmin && (
               <button
-                onClick={handlePrev}
-                disabled={startIndex === 0}
-                style={{
-                  position: 'absolute',
-                  left: '-15px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  border: '1px solid #E2E8F0',
-                  background: startIndex === 0 ? '#F1F5F9' : 'white',
-                  color: startIndex === 0 ? '#CBD5E1' : '#64748B',
-                  cursor: startIndex === 0 ? 'not-allowed' : 'pointer',
-                  zIndex: 10,
-                  display: windowWidth < 768 ? 'none' : 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                onClick={() => { resetForm(); setShowAddModal(true); }}
+                className="btn-primary"
+                style={{ padding: '10px 20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <FaChevronLeft size={16} />
+                <FaPlus size={11} /> Add Destination
               </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Featured Destinations ────────────────────────────── */}
+        {!searchTerm && featuredDestinations.length > 0 && (
+          <div style={{ marginBottom: 60 }}>
+            <div style={{ fontFamily: 'Outfit', fontSize: '0.8rem', fontWeight: 600, color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FaAward style={{ color: 'var(--saffron)' }} /> Featured Destinations
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 768 ? '1fr' : 'repeat(3,1fr)', gap: 24 }}>
+              {featuredDestinations.map((dest, i) => (
+                <div key={dest._id || i} className="dest-card" onClick={() => !isAdmin && openCountryModal(dest)} style={{ position: 'relative' }}>
+                  <div className="dest-card-img" style={{ height: 220, background: '#F3F4F6' }}>
+                    <img
+                      src={getImageUrl(dest.images)}
+                      alt={dest.title}
+                      loading="lazy"
+                      decoding="async"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)' }} />
+                    <span style={{ position: 'absolute', top: 14, right: 14, background: 'var(--saffron)', color: 'white', fontFamily: 'Outfit', fontSize: '0.7rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, letterSpacing: 1, textTransform: 'uppercase' }}>Featured</span>
+
+                    {isAdmin && (
+                      <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 6 }}>
+                        <button onClick={e => { e.stopPropagation(); openEditModal(dest, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(dest._id, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
+                      </div>
+                    )}
+
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 16px' }}>
+                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>{dest.title}</div>
+                      <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: 'Outfit', marginTop: 3 }}>
+                        <span><FaClock style={{ marginRight: 3 }} />{dest.duration || 'Flexible'}</span>
+                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />{dest.rating || '4.8'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab Pills ────────────────────────────────────────── */}
+        {!searchTerm && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 32, overflowX: 'auto', paddingBottom: 4 }}>
+            {[
+              { id: 'all', label: 'All Destinations' },
+              { id: 'popular', label: 'Most Popular' },
+              { id: 'hidden', label: 'Hidden Gems' },
+              { id: 'upcoming', label: 'Upcoming Tours' },
+            ].map(t => (
               <button
-                onClick={handleNext}
-                disabled={startIndex + cardsToShow >= totalCards}
-                style={{
-                  position: 'absolute',
-                  right: '-15px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  border: '1px solid #E2E8F0',
-                  background: startIndex + cardsToShow >= totalCards ? '#F1F5F9' : 'white',
-                  color: startIndex + cardsToShow >= totalCards ? '#CBD5E1' : '#64748B',
-                  cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer',
-                  zIndex: 10,
-                  display: windowWidth < 768 ? 'none' : 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                key={t.id}
+                className={`filter-pill ${activeTab === t.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(t.id)}
               >
-                <FaChevronRight size={16} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Cards Container ──────────────────────────────────── */}
+        <div style={{ background: '#F9FAFB', borderRadius: 24, padding: 28, position: 'relative' }}>
+
+          {/* Nav arrows (desktop) */}
+          {totalCards > cardsToShow && windowWidth >= 768 && (
+            <>
+              <button onClick={handlePrev} disabled={startIndex === 0} style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FaChevronLeft size={13} />
+              </button>
+              <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ position: 'absolute', right: -18, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FaChevronRight size={13} />
               </button>
             </>
           )}
 
-          {/* First Row */}
+          {/* Count + inline nav */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <div style={{ fontFamily: 'Outfit', fontSize: '0.85rem', color: '#6B7280' }}>
+              <strong style={{ color: 'var(--ink)' }}>{totalCards}</strong> destinations worldwide
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={handlePrev} disabled={startIndex === 0} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FaChevronLeft size={13} />
+              </button>
+              <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FaChevronRight size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Row 1 — getallInternational */}
           {visibleCards1.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: cardsToShow === 1 ? '1fr' : cardsToShow === 2 ? 'repeat(2,1fr)' : 'repeat(3,1fr)',
-              gap: '20px',
-              marginBottom: '20px'
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cardsToShow},1fr)`, gap: 20, marginBottom: 20 }}>
               {visibleCards1.map((item, index) => (
-                <div
-                  key={`row1-${item._id || index}`}
-                  style={{
-                    background: 'white',
-                    borderRadius: '8px',
-                    border: '1px solid #E2E8F0',
-                    overflow: 'hidden',
-                    cursor: isAdmin ? 'default' : 'pointer'
-                  }}
-                  onClick={() => !isAdmin && openCountryModal(item)}
-                >
-                  {/* Admin Controls */}
-                  {isAdmin && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      display: 'flex',
-                      gap: '5px',
-                      zIndex: 10
-                    }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(item, 'row1');
-                        }}
-                        style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          background: '#F59E0B',
-                          color: 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <FaEdit size={12} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(item._id, 'row1');
-                        }}
-                        style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          background: '#EF4444',
-                          color: 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <FaTrash size={12} />
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={{ height: '160px', background: '#F1F5F9' }}>
+                <div key={`r1-${item._id || index}`} className="dest-card" onClick={() => !isAdmin && openCountryModal(item)} style={{ position: 'relative' }}>
+                  <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
                     <img
                       src={getImageUrl(item.images)}
                       alt={item.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/placeholder.jpg';
-                      }}
+                      loading="lazy"
+                      decoding="async"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
                     />
-                  </div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
 
-                  <div style={{ padding: '15px' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#0B1E33', marginBottom: '8px' }}>
-                      {item.title}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.85rem', color: '#64748B', marginBottom: '10px' }}>
-                      <FaMapMarkerAlt size={10} /> {item.location || 'Multiple locations'}
-                    </div>
-                    {item.price && (
-                      <div style={{ fontSize: '1rem', fontWeight: '600', color: '#00C3A5' }}>
-                        ${item.price}
+                    {isAdmin && (
+                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
+                        <button onClick={e => { e.stopPropagation(); openEditModal(item, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(item._id, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
                       </div>
                     )}
+
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
+                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
+                      <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
+                        {item.location && <span><FaMapMarkerAlt style={{ marginRight: 3 }} />{item.location}</span>}
+                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />{item.rating || '4.8'}</span>
+                        {item.duration && <span><FaClock style={{ marginRight: 3 }} />{item.duration}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '16px 18px 18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
+                        <span><FaUsers style={{ marginRight: 3 }} />2-12</span>
+                        <span><FaHotel style={{ marginRight: 3 }} />4★</span>
+                      </div>
+                      {item.price && (
+                        <div>
+                          <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹{item.price}</span>
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => !isAdmin && openCountryModal(item)} className="btn-primary" style={{ width: '100%', padding: '10px', fontSize: '0.85rem', borderRadius: 12 }}>
+                      Book Your Adventure →
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Second Row */}
+          {/* Row 2 — getallInternational2 */}
           {visibleCards2.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: cardsToShow === 1 ? '1fr' : cardsToShow === 2 ? 'repeat(2,1fr)' : 'repeat(3,1fr)',
-              gap: '20px'
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cardsToShow},1fr)`, gap: 20 }}>
               {visibleCards2.map((item, index) => (
-                <div
-                  key={`row2-${item._id || index}`}
-                  style={{
-                    background: 'white',
-                    borderRadius: '8px',
-                    border: '1px solid #E2E8F0',
-                    overflow: 'hidden',
-                    cursor: isAdmin ? 'default' : 'pointer'
-                  }}
-                  onClick={() => !isAdmin && openCountryModal(item)}
-                >
-                  {/* Admin Controls */}
-                  {isAdmin && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      display: 'flex',
-                      gap: '5px',
-                      zIndex: 10
-                    }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(item, 'row2');
-                        }}
-                        style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          background: '#F59E0B',
-                          color: 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <FaEdit size={12} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(item._id, 'row2');
-                        }}
-                        style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          background: '#EF4444',
-                          color: 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <FaTrash size={12} />
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={{ height: '160px', background: '#F1F5F9' }}>
+                <div key={`r2-${item._id || index}`} className="dest-card" onClick={() => !isAdmin && openCountryModal(item)} style={{ position: 'relative' }}>
+                  <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
                     <img
                       src={getImageUrl(item.images)}
                       alt={item.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/placeholder.jpg';
-                      }}
+                      loading="lazy"
+                      decoding="async"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
                     />
-                  </div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
 
-                  <div style={{ padding: '15px' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#0B1E33', marginBottom: '8px' }}>
-                      {item.title}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.85rem', color: '#64748B', marginBottom: '10px' }}>
-                      <FaMapMarkerAlt size={10} /> {item.location || 'Multiple locations'}
-                    </div>
-                    {item.price && (
-                      <div style={{ fontSize: '1rem', fontWeight: '600', color: '#00C3A5' }}>
-                        ${item.price}
+                    {isAdmin && (
+                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
+                        <button onClick={e => { e.stopPropagation(); openEditModal(item, 'row2'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(item._id, 'row2'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
                       </div>
                     )}
+
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
+                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
+                      <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
+                        {item.location && <span><FaMapMarkerAlt style={{ marginRight: 3 }} />{item.location}</span>}
+                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />{item.rating || '4.7'}</span>
+                        {item.duration && <span><FaClock style={{ marginRight: 3 }} />{item.duration}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: '16px 18px 18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
+                        <span><FaUsers style={{ marginRight: 3 }} />2-12</span>
+                        <span><FaHotel style={{ marginRight: 3 }} />5★</span>
+                      </div>
+                      {item.price && (
+                        <div>
+                          <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹{item.price}</span>
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => !isAdmin && openCountryModal(item)} className="btn-primary" style={{ width: '100%', padding: '10px', fontSize: '0.85rem', borderRadius: 12 }}>
+                      Book Your Adventure →
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Progress Bar */}
+          {/* Progress bar */}
           {totalCards > 0 && (
-            <div style={{ marginTop: '25px' }}>
-              <div style={{
-                height: '4px',
-                background: '#E2E8F0',
-                borderRadius: '2px',
-                overflow: 'hidden',
-                marginBottom: '8px'
-              }}>
-                <div style={{
-                  width: `${progressPercent}%`,
-                  height: '100%',
-                  background: '#00C3A5'
-                }} />
+            <div style={{ marginTop: 24 }}>
+              <div style={{ height: 4, background: '#E5E7EB', borderRadius: 2, overflow: 'hidden', marginBottom: 8 }}>
+                <div style={{ width: `${Math.min(progressPercent, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--saffron), var(--saffron-dark))', transition: 'width 0.4s ease' }} />
               </div>
-              <p style={{
-                textAlign: 'center',
-                fontSize: '0.85rem',
-                color: '#64748B'
-              }}>
-                Showing {startIndex + 1}-{Math.min(startIndex + cardsToShow, totalCards)} of {totalCards} destinations
+              <p style={{ textAlign: 'center', fontFamily: 'Outfit', fontSize: '0.8rem', color: '#9CA3AF' }}>
+                {startIndex + 1}–{Math.min(startIndex + cardsToShow, totalCards)} of {totalCards} destinations
               </p>
             </div>
           )}
 
-          {/* Mobile Navigation */}
+          {/* Mobile nav */}
           {windowWidth < 768 && (
-            <div style={{
-              display: 'flex',
-              gap: '10px',
-              marginTop: '20px'
-            }}>
-              <button
-                onClick={handlePrev}
-                disabled={startIndex === 0}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: '1px solid #E2E8F0',
-                  background: startIndex === 0 ? '#F1F5F9' : 'white',
-                  color: startIndex === 0 ? '#CBD5E1' : '#64748B',
-                  cursor: startIndex === 0 ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-              >
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={handlePrev} disabled={startIndex === 0} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <FaChevronLeft size={12} /> Previous
               </button>
-              <button
-                onClick={handleNext}
-                disabled={startIndex + cardsToShow >= totalCards}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: '6px',
-                  border: '1px solid #E2E8F0',
-                  background: startIndex + cardsToShow >= totalCards ? '#F1F5F9' : 'white',
-                  color: startIndex + cardsToShow >= totalCards ? '#CBD5E1' : '#64748B',
-                  cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-              >
+              <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 Next <FaChevronRight size={12} />
               </button>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Newsletter */}
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto 50px',
-        padding: '0 20px'
-      }}>
-        <div style={{
-          background: '#0B1E33',
-          borderRadius: '12px',
-          padding: windowWidth < 768 ? '40px 20px' : '60px 40px',
-          textAlign: 'center'
-        }}>
-          <h2 style={{
-            fontSize: windowWidth < 768 ? '1.5rem' : '2rem',
-            fontWeight: '600',
-            color: 'white',
-            marginBottom: '15px'
-          }}>
-            Get Travel Inspiration
-          </h2>
-          <p style={{
-            color: '#94A3B8',
-            marginBottom: '25px',
-            fontSize: '1rem'
-          }}>
-            Subscribe to our newsletter and get exclusive deals and travel tips
-          </p>
-          <div style={{
-            display: 'flex',
-            gap: '10px',
-            maxWidth: '500px',
-            margin: '0 auto',
-            flexDirection: windowWidth < 768 ? 'column' : 'row'
-          }}>
-            <input
-              type="email"
-              placeholder="Your email address"
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                borderRadius: '6px',
-                border: 'none',
-                fontSize: '0.95rem'
-              }}
-            />
-            <button style={{
-              padding: '12px 30px',
-              borderRadius: '6px',
-              border: 'none',
-              background: '#00C3A5',
-              color: 'white',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}>
-              Subscribe
-            </button>
+        {/* ── Newsletter ───────────────────────────────────────── */}
+        <div style={{ marginTop: 60, background: 'linear-gradient(135deg, var(--forest), var(--forest-light))', borderRadius: 24, padding: windowWidth < 768 ? '40px 24px' : '56px 60px', display: 'flex', flexDirection: windowWidth < 768 ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+          <div>
+            <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', color: 'var(--saffron-light)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Stay Inspired</div>
+            <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 700, color: 'white', marginBottom: 8 }}>Get Exclusive Deals</h3>
+            <p style={{ fontFamily: 'Outfit', fontSize: '0.9rem', color: 'rgba(255,255,255,0.65)' }}>Join 10,000+ travellers getting weekly travel inspiration & offers</p>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexShrink: 0, flexDirection: windowWidth < 768 ? 'column' : 'row', width: windowWidth < 768 ? '100%' : 'auto' }}>
+            <input type="email" placeholder="Your email address" style={{ padding: '13px 20px', borderRadius: 12, border: 'none', fontFamily: 'Outfit', fontSize: '0.9rem', width: windowWidth < 768 ? '100%' : 260, outline: 'none' }} />
+            <button className="btn-primary" style={{ padding: '13px 28px', fontSize: '0.9rem', borderRadius: 12, flexShrink: 0 }}>Subscribe</button>
           </div>
         </div>
       </div>
 
-      {/* Add Modal */}
+      {/* ── Add Modal ─────────────────────────────────────────── */}
       {showAddModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }} onClick={() => setShowAddModal(false)}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            maxWidth: '600px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative'
-          }} onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowAddModal(false)}
-              style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                border: '1px solid #E2E8F0',
-                background: 'white',
-                cursor: 'pointer',
-                fontSize: '18px',
-                zIndex: 10
-              }}
-            >
-              ×
-            </button>
-            
-            <div style={{ padding: '30px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#0B1E33', marginBottom: '20px' }}>
-                Add New Destination
-              </h2>
-              
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem'
-                  }}
-                  placeholder="Enter destination title"
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem',
-                    minHeight: '80px'
-                  }}
-                  placeholder="Enter destination description"
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Location
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem'
-                  }}
-                  placeholder="Enter location"
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                    Price ($)
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '6px',
-                      border: '1px solid #E2E8F0',
-                      fontSize: '0.95rem'
-                    }}
-                    placeholder="Price"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '6px',
-                      border: '1px solid #E2E8F0',
-                      fontSize: '0.95rem'
-                    }}
-                    placeholder="e.g., 7 days"
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Rating (1-5)
-                </label>
-                <input
-                  type="number"
-                  name="rating"
-                  value={formData.rating}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="5"
-                  step="0.1"
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Image
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px dashed #E2E8F0',
-                    background: '#F8FAFC'
-                  }}
-                />
-                {formData.preview && (
-                  <img
-                    src={formData.preview}
-                    alt="Preview"
-                    style={{
-                      width: '100%',
-                      maxHeight: '150px',
-                      objectFit: 'cover',
-                      borderRadius: '6px',
-                      marginTop: '10px'
-                    }}
-                  />
-                )}
-                {uploadProgress > 0 && uploadProgress < 100 && (
-                  <div style={{
-                    width: '100%',
-                    height: '4px',
-                    background: '#E2E8F0',
-                    borderRadius: '2px',
-                    marginTop: '10px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${uploadProgress}%`,
-                      height: '100%',
-                      background: '#00C3A5'
-                    }} />
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    resetForm();
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    background: 'white',
-                    color: '#64748B',
-                    fontSize: '0.95rem',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleAdd('row1')}
-                  disabled={!formData.title}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: !formData.title ? '#CBD5E1' : '#00C3A5',
-                    color: 'white',
-                    fontSize: '0.95rem',
-                    fontWeight: '500',
-                    cursor: !formData.title ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  Add Destination
-                </button>
-              </div>
+        <div className="modal-backdrop" onClick={() => { setShowAddModal(false); resetForm(); }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.8rem', fontWeight: 700, color: 'var(--ink)' }}>Add Destination</h2>
+              <button onClick={() => { setShowAddModal(false); resetForm(); }} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#6B7280' }}>×</button>
+            </div>
+            <ModalFormFields />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => { setShowAddModal(false); resetForm(); }} style={{ flex: 1, padding: 13, borderRadius: 12, border: '1.5px solid #E5E7EB', background: 'white', fontFamily: 'Outfit', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', color: '#374151' }}>Cancel</button>
+              <button onClick={() => handleAdd('row1')} disabled={!formData.title} className="btn-primary" style={{ flex: 1, padding: 13, fontSize: '0.9rem', borderRadius: 12, opacity: !formData.title ? 0.5 : 1 }}>Add Destination</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* ── Edit Modal ────────────────────────────────────────── */}
       {showEditModal && editingItem && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }} onClick={() => setShowEditModal(false)}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            maxWidth: '600px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative'
-          }} onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowEditModal(false)}
-              style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                border: '1px solid #E2E8F0',
-                background: 'white',
-                cursor: 'pointer',
-                fontSize: '18px',
-                zIndex: 10
-              }}
-            >
-              ×
-            </button>
-            
-            <div style={{ padding: '30px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#0B1E33', marginBottom: '20px' }}>
-                Edit Destination
-              </h2>
-              
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem',
-                    minHeight: '80px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Location
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                    Price ($)
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '6px',
-                      border: '1px solid #E2E8F0',
-                      fontSize: '0.95rem'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '6px',
-                      border: '1px solid #E2E8F0',
-                      fontSize: '0.95rem'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Rating (1-5)
-                </label>
-                <input
-                  type="number"
-                  name="rating"
-                  value={formData.rating}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="5"
-                  step="0.1"
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    fontSize: '0.95rem'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', color: '#0B1E33' }}>
-                  Image
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px dashed #E2E8F0',
-                    background: '#F8FAFC'
-                  }}
-                />
-                {(formData.preview || formData.images) && (
-                  <img
-                    src={formData.preview || getImageUrl(formData.images)}
-                    alt="Preview"
-                    style={{
-                      width: '100%',
-                      maxHeight: '150px',
-                      objectFit: 'cover',
-                      borderRadius: '6px',
-                      marginTop: '10px'
-                    }}
-                  />
-                )}
-                {uploadProgress > 0 && uploadProgress < 100 && (
-                  <div style={{
-                    width: '100%',
-                    height: '4px',
-                    background: '#E2E8F0',
-                    borderRadius: '2px',
-                    marginTop: '10px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${uploadProgress}%`,
-                      height: '100%',
-                      background: '#00C3A5'
-                    }} />
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingItem(null);
-                    resetForm();
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0',
-                    background: 'white',
-                    color: '#64748B',
-                    fontSize: '0.95rem',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdate}
-                  disabled={!formData.title}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: !formData.title ? '#CBD5E1' : '#00C3A5',
-                    color: 'white',
-                    fontSize: '0.95rem',
-                    fontWeight: '500',
-                    cursor: !formData.title ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  Update Destination
-                </button>
-              </div>
+        <div className="modal-backdrop" onClick={() => { setShowEditModal(false); setEditingItem(null); resetForm(); }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.8rem', fontWeight: 700, color: 'var(--ink)' }}>Edit Destination</h2>
+              <button onClick={() => { setShowEditModal(false); setEditingItem(null); resetForm(); }} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#6B7280' }}>×</button>
+            </div>
+            <ModalFormFields />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => { setShowEditModal(false); setEditingItem(null); resetForm(); }} style={{ flex: 1, padding: 13, borderRadius: 12, border: '1.5px solid #E5E7EB', background: 'white', fontFamily: 'Outfit', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', color: '#374151' }}>Cancel</button>
+              <button onClick={handleUpdate} disabled={!formData.title} className="btn-primary" style={{ flex: 1, padding: 13, fontSize: '0.9rem', borderRadius: 12, opacity: !formData.title ? 0.5 : 1 }}>Save Changes</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* ── Country Detail Modal ─────────────────────────────── */}
       {selectedCountry && !isAdmin && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }} onClick={closeCountryModal}>
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            maxWidth: '800px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative'
-          }} onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={closeCountryModal}
-              style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                border: '1px solid #E2E8F0',
-                background: 'white',
-                cursor: 'pointer',
-                fontSize: '18px',
-                zIndex: 10
-              }}
-            >
-              ×
-            </button>
-            <img
-              src={getImageUrl(selectedCountry.images)}
-              alt={selectedCountry.title}
-              style={{
-                width: '100%',
-                height: '300px',
-                objectFit: 'cover',
-                backgroundColor: '#F1F5F9'
-              }}
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/placeholder.jpg';
-              }}
-            />
-            <div style={{ padding: '30px' }}>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: '600', color: '#0B1E33', marginBottom: '15px' }}>
-                {selectedCountry.title}
-              </h2>
-              <p style={{ color: '#64748B', lineHeight: '1.6', marginBottom: '20px' }}>
-                {selectedCountry.description || `Experience the beauty and culture of ${selectedCountry.title}. 
-                From stunning landscapes to rich cultural heritage, this destination offers 
-                unforgettable experiences for every traveler.`}
-              </p>
-              
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '15px',
-                marginBottom: '25px'
-              }}>
-                {selectedCountry.price && (
-                  <div style={{
-                    padding: '15px',
-                    background: '#F8FAFC',
-                    borderRadius: '8px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '0.9rem', color: '#64748B', marginBottom: '5px' }}>Price</div>
-                    <div style={{ fontSize: '1.3rem', fontWeight: '600', color: '#00C3A5' }}>
-                      ${selectedCountry.price}
-                    </div>
-                  </div>
-                )}
-                {selectedCountry.duration && (
-                  <div style={{
-                    padding: '15px',
-                    background: '#F8FAFC',
-                    borderRadius: '8px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '0.9rem', color: '#64748B', marginBottom: '5px' }}>Duration</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '500', color: '#0B1E33' }}>
-                      {selectedCountry.duration}
-                    </div>
-                  </div>
-                )}
+        <div className="modal-backdrop" onClick={closeCountryModal}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ padding: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <img
+                src={getImageUrl(selectedCountry.images)}
+                alt={selectedCountry.title}
+                loading="lazy"
+                style={{ width: '100%', height: 280, objectFit: 'cover', borderRadius: '24px 24px 0 0', background: '#F3F4F6' }}
+                onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)', borderRadius: '24px 24px 0 0' }} />
+              <button onClick={closeCountryModal} style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>×</button>
+              <div style={{ position: 'absolute', bottom: 20, left: 24 }}>
+                <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 700, color: 'white' }}>{selectedCountry.title}</h2>
               </div>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '15px',
-                marginBottom: '30px'
-              }}>
-                {['Flights', 'Hotels', 'Activities'].map((item, index) => (
-                  <div key={index} style={{
-                    padding: '15px',
-                    background: '#F8FAFC',
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    fontSize: '0.9rem',
-                    color: '#64748B'
-                  }}>
-                    {item === 'Flights' && <FaPlane style={{ marginBottom: '5px', color: '#00C3A5' }} />}
-                    {item === 'Hotels' && <FaHotel style={{ marginBottom: '5px', color: '#00C3A5' }} />}
-                    {item === 'Activities' && <FaUmbrellaBeach style={{ marginBottom: '5px', color: '#00C3A5' }} />}
-                    <div>{item}</div>
+            </div>
+            <div style={{ padding: 32 }}>
+              <p style={{ fontFamily: 'Outfit', fontSize: '0.9rem', color: '#6B7280', lineHeight: 1.7, marginBottom: 24 }}>
+                {selectedCountry.description || `Experience the beauty and culture of ${selectedCountry.title}. From stunning landscapes to rich cultural heritage, this destination offers unforgettable experiences for every traveler.`}
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+                {[
+                  { icon: <FaPlane />, label: 'Price', val: selectedCountry.price ? `₹${selectedCountry.price}` : 'On Request' },
+                  { icon: <FaClock />, label: 'Duration', val: selectedCountry.duration || 'Flexible' },
+                  { icon: <FaStar />, label: 'Rating', val: selectedCountry.rating || '4.8' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: '#F9FAFB', borderRadius: 14, padding: 16, textAlign: 'center' }}>
+                    <div style={{ color: 'var(--saffron)', marginBottom: 6, fontSize: '1.1rem' }}>{s.icon}</div>
+                    <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', color: '#9CA3AF', marginBottom: 4 }}>{s.label}</div>
+                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)' }}>{s.val}</div>
                   </div>
                 ))}
               </div>
-
-              <button style={{
-                width: '100%',
-                padding: '15px',
-                background: '#00C3A5',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}>
-                Book Your Adventure
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                {[
+                  { icon: <FaPlane />, label: 'Flights' },
+                  { icon: <FaHotel />, label: 'Hotels' },
+                  { icon: <FaUmbrellaBeach />, label: 'Activities' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: '#F9FAFB', borderRadius: 12, padding: '14px 10px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--saffron)', marginBottom: 6 }}>{s.icon}</div>
+                    <div style={{ fontFamily: 'Outfit', fontSize: '0.8rem', color: '#6B7280' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-primary" style={{ width: '100%', padding: 15, fontSize: '1rem', borderRadius: 14 }}>
+                Book Your Adventure →
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

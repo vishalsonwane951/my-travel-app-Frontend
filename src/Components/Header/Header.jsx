@@ -12,7 +12,8 @@ const BOOKING_EVENTS = [
   { name: "Ananya K.", location: "Kerala", pkg: "Honeymoon Special", time: "8 min ago" },
   { name: "Vikram T.", location: "Rajasthan", pkg: "Heritage Tour", time: "11 min ago" },
   { name: "Sneha P.", location: "Dubai", pkg: "Luxury Escape", time: "14 min ago" },
-  { name: "Arjun R.", location: "Thailand", pkg: "Adventure Pack", time: "17 min ago" },
+  { name: "Arjun R.", location: "Thailand", pkg
+    : "Adventure Pack", time: "17 min ago" },
   { name: "Meera D.", location: "Shimla", pkg: "Weekend Getaway", time: "20 min ago" },
   { name: "Karan B.", location: "Varanasi", pkg: "Pilgrimage Tour", time: "23 min ago" },
 ];

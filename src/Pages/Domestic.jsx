@@ -1,16 +1,12 @@
-import React, { useEffect, useState, useContext, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useContext, useCallback, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../Context/AuthContext';
 import api from '../utils/api';
-import axios from 'axios';
 import {
-  FaMapMarkerAlt,
-  FaClock,
   FaUsers,
   FaStar,
   FaArrowRight,
   FaSearch,
-  FaAward,
   FaGlobe,
   FaUmbrellaBeach,
   FaMountain,
@@ -19,236 +15,208 @@ import {
   FaChevronRight,
   FaChevronLeft,
   FaHotel,
-  FaMapMarkedAlt,
   FaTrash,
   FaUpload,
-  FaPlay
+  FaMapMarkerAlt,
+  FaClock,
 } from 'react-icons/fa';
 
-const BASE = 'https://my-travel-app-backend-6.onrender.com';
+const MODULE_CACHE = { animation: null, states: null, fetchedAt: 0 };
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const Domestic = () => {
-  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const isAdmin = user?.isAdmin;
 
-  const [animation, setAnimation] = useState([]);
-  const [states1, setStates1] = useState([]);
-  const [states2, setStates2] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [startIndex, setStartIndex] = useState(0);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [viewMode, setViewMode] = useState('grid');
-  const [searchTerm, setSearchTerm] = useState('');
+  const isCacheFresh = () =>
+    Date.now() - MODULE_CACHE.fetchedAt < CACHE_TTL_MS &&
+    MODULE_CACHE.animation !== null &&
+    MODULE_CACHE.states    !== null;
 
-  const loaderRef = useRef();
+  const [animation, setAnimation] = useState(MODULE_CACHE.animation || []);
+  const [states1,   setStates1]   = useState(MODULE_CACHE.states    || []);
+  const [loading,   setLoading]   = useState(!isCacheFresh());
 
-  // Handle window resize
+  const [currentIndex,      setCurrentIndex]      = useState(0);
+  const [windowWidth,       setWindowWidth]        = useState(window.innerWidth);
+  const [selectedCategory,  setSelectedCategory]   = useState('all');
+  const [viewMode,          setViewMode]           = useState('grid');
+  const [searchTerm,        setSearchTerm]         = useState('');
+
+  const imageCache = useRef(new Map());
+  const abortRef   = useRef(null);
+
+  const getImageUrl = useCallback((imagePath) => {
+    let path = imagePath;
+    if (Array.isArray(path)) path = path[0];
+    if (path && typeof path === 'object') path = path.secure_url ?? path.url ?? null;
+    if (!path || typeof path !== 'string') return '/placeholder.jpg';
+    if (imageCache.current.has(path)) return imageCache.current.get(path);
+    const url = path.startsWith('http')
+      ? path.replace('/upload/', '/upload/f_auto,q_auto:eco,w_400,c_fill,g_auto/')
+      : '/placeholder.jpg';
+    imageCache.current.set(path, url);
+    return url;
+  }, []);
+
+  const getSidebarImageUrl = useCallback((imagePath) => {
+    let path = imagePath;
+    if (Array.isArray(path)) path = path[0];
+    if (path && typeof path === 'object') path = path.secure_url ?? path.url ?? null;
+    if (!path || typeof path !== 'string') return '/placeholder.jpg';
+    const key = `sb_${path}`;
+    if (imageCache.current.has(key)) return imageCache.current.get(key);
+    const url = path.startsWith('http')
+      ? path.replace('/upload/', '/upload/f_auto,q_auto,w_600,c_fill/')
+      : '/placeholder.jpg';
+    imageCache.current.set(key, url);
+    return url;
+  }, []);
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const getCardsToShow = () => {
-    if (windowWidth < 640) return 1;
-    if (windowWidth < 1024) return 2;
-    return 3;
-  };
-  const cardsToShow = getCardsToShow();
-
-  // Fetch data
   useEffect(() => {
+    if (isCacheFresh()) return;
+    if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
+    abortRef.current = controller;
+
+    const isCanceled = (err) =>
+      err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED';
+
     async function fetchPackages() {
       try {
-        const [res1, res2, res3] = await Promise.all([
-          api.get('/maharashtra-domestic/getallAnimation', { signal: controller.signal }),
-          api.get('/maharashtra-domestic/getstates', { signal: controller.signal }),
-          api.get('/maharashtra-domestic/getstates2', { signal: controller.signal }),
+        const [res1, res2] = await Promise.all([
+          api.get('/maharashtra-domestic/getallAnimation', { signal: controller.signal, timeout: 10_000 }),
+          api.get('/maharashtra-domestic/getstates',       { signal: controller.signal, timeout: 10_000 }),
         ]);
-        if (!controller.signal.aborted) {
-          setAnimation(res1.data || []);
-          setStates1(Array.isArray(res2.data) ? res2.data : res2.data?.data || []);
-          setStates2(res3.data || []);
-        }
+        if (controller.signal.aborted) return;
+        const animData  = res1.data || [];
+        const stateData = Array.isArray(res2.data) ? res2.data : (res2.data?.data ?? []);
+        MODULE_CACHE.animation = animData;
+        MODULE_CACHE.states    = stateData;
+        MODULE_CACHE.fetchedAt = Date.now();
+        setAnimation(animData);
+        setStates1(stateData);
       } catch (err) {
-        if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
-          console.error('Error fetching Data:', err);
-        }
+        if (!isCanceled(err)) console.error('Error fetching Domestic data:', err);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
     }
     fetchPackages();
     return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    if (!hasMore || loadingMore) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          setPage(prev => prev + 1);
-        }
-      },
-      { threshold: 0.1, rootMargin: '200px' }
-    );
-    const currentLoader = loaderRef.current;
-    if (currentLoader) observer.observe(currentLoader);
-    return () => { if (currentLoader) observer.unobserve(currentLoader); };
-  }, [hasMore, loadingMore]);
-
-  // Load more data
-  useEffect(() => {
-    if (page === 1) return;
-    const loadMore = async () => {
-      setLoadingMore(true);
-      try {
-        const [moreStates1, moreStates2] = await Promise.all([
-          api.get(`/maharashtra-domestic/getstates?page=${page}&limit=6`),
-          api.get(`/maharashtra-domestic/getstates2?page=${page}&limit=6`),
-        ]);
-        const newStates1 = Array.isArray(moreStates1.data) ? moreStates1.data : moreStates1.data?.data || [];
-        const newStates2 = moreStates2.data || [];
-        setStates1(prev => [...prev, ...newStates1]);
-        setStates2(prev => [...prev, ...newStates2]);
-        setHasMore(newStates1.length > 0 || newStates2.length > 0);
-      } catch (err) {
-        console.error('Error loading more data:', err);
-      } finally {
-        setLoadingMore(false);
-      }
-    };
-    loadMore();
-  }, [page]);
-
-  const handlePrev = () => setStartIndex(prev => Math.max(prev - cardsToShow, 0));
-  const handleNext = () => {
-    const totalCards = Math.max(states1.length, states2.length);
-    setStartIndex(prev => Math.min(prev + cardsToShow, totalCards - cardsToShow));
-  };
-
   const handleDelete = useCallback(async (id) => {
-    if (!window.confirm('Are you sure you want to delete this image?')) return;
+    if (!window.confirm('Are you sure you want to delete this destination?')) return;
     try {
-      const res = await axios.delete(`${BASE}/api/delete-image/${id}`);
+      const res = await api.delete(`/maharashtra-domestic/deletestate/${id}`);
       if (res.data.success) {
-        setStates1(prev => prev.filter(item => item._id !== id));
-        setStates2(prev => prev.filter(item => item._id !== id));
+        setStates1(prev => {
+          const next = prev.filter(item => item._id !== id);
+          MODULE_CACHE.states = next;
+          return next;
+        });
       }
-    } catch (err) {
-      console.error('Error deleting:', err);
-    }
+    } catch (err) { console.error('Error deleting:', err); }
   }, []);
 
   const handleUpdate = useCallback(async (id, file) => {
     if (!file) return;
     try {
-      const formdata = new FormData();
-      formdata.append('image', file);
-      const res = await api.post(`upload-image/${id}`, formdata, {
+      const fd = new FormData();
+      fd.append('images', file);
+      const res = await api.put(`/maharashtra-domestic/updatestate/${id}`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       if (res.data.success) {
-        setStates1(prev => prev.map(item => item._id === id ? { ...item, image: res.data.data.image } : item));
-        setStates2(prev => prev.map(item => item._id === id ? { ...item, image: res.data.data.image } : item));
+        setStates1(prev => {
+          const next = prev.map(item =>
+            item._id === id ? { ...item, images: res.data.data.images } : item
+          );
+          MODULE_CACHE.states = next;
+          return next;
+        });
       }
-    } catch (err) {
-      console.error('Error updating:', err);
-    }
+    } catch (err) { console.error('Error updating:', err); }
   }, []);
 
-  const filteredStates1 = states1.filter(item => item.title?.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredStates2 = states2.filter(item => item.title?.toLowerCase().includes(searchTerm.toLowerCase()));
-  const visibleCards1 = filteredStates1.slice(startIndex, startIndex + cardsToShow);
-  const visibleCards2 = filteredStates2.slice(startIndex, startIndex + cardsToShow);
-  const totalCards = Math.max(filteredStates1.length, filteredStates2.length);
-
-  const categories = [
-    { id: 'all', label: 'All India', icon: <FaGlobe />, count: totalCards },
-    { id: 'north', label: 'North', icon: <FaMountain />, count: 12 },
-    { id: 'south', label: 'South', icon: <FaUmbrellaBeach />, count: 15 },
-    { id: 'east', label: 'East', icon: <FaTree />, count: 8 },
-    { id: 'west', label: 'West', icon: <FaWater />, count: 10 },
-  ];
-
-  // ── Loading skeleton ─────────────────────────────────────────
-  if (loading) return (
-    <section id="domestic" style={{ background: 'var(--cream)', paddingBottom: 80 }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '60px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 24 }}>
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} style={{ borderRadius: 20, overflow: 'hidden', background: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
-              <div className="skeleton" style={{ height: 200 }} />
-              <div style={{ padding: 16 }}>
-                <div className="skeleton" style={{ height: 20, marginBottom: 10 }} />
-                <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 16 }} />
-                <div className="skeleton" style={{ height: 36, borderRadius: 50 }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+  const filteredStates = useMemo(() =>
+    states1.filter(item =>
+      item.title?.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [states1, searchTerm]
   );
 
-  return (
-    <section id="domestic" style={{ background: 'var(--cream)', paddingBottom: 80 }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '80px 24px 0' }}>
+  const totalCards = filteredStates.length;
 
-        {/* ── Section Header ───────────────────────────────────── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
+  const categories = [
+    { id: 'all',   label: 'All India', icon: <FaGlobe />,         count: totalCards },
+    { id: 'north', label: 'North',     icon: <FaMountain />,      count: 12 },
+    { id: 'south', label: 'South',     icon: <FaUmbrellaBeach />, count: 15 },
+    { id: 'east',  label: 'East',      icon: <FaTree />,          count: 8  },
+    { id: 'west',  label: 'West',      icon: <FaWater />,         count: 10 },
+  ];
+
+  return (
+    <section id="domestic" className="bg-[var(--cream)] pb-20">
+      <div className="max-w-[1400px] mx-auto px-6 pt-20">
+
+        {/* Section Header */}
+        <div className="flex justify-between items-end mb-12 flex-wrap gap-5">
           <div>
-            <div className="section-eyebrow" style={{ marginBottom: 10 }}>Domestic Packages</div>
+            <div className="section-eyebrow mb-2.5">Domestic Packages</div>
             <h2 className="section-title">
-              Discover <em style={{ color: 'var(--saffron)' }}>India's</em><br />Finest Destinations
+              Discover <em className="text-[var(--saffron)]">India's</em><br />Finest Destinations
             </h2>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Search */}
-            <div style={{ position: 'relative' }}>
-              <FaSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.85rem' }} />
+          <div className="flex gap-3 items-center flex-wrap">
+            <div className="relative">
+              <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[0.85rem]" />
               <input
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Search destinations..."
-                style={{ padding: '10px 16px 10px 38px', borderRadius: 50, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.85rem', outline: 'none', width: 220 }}
+                className="py-2.5 pr-4 pl-9 rounded-full border border-gray-200 font-[Outfit] text-[0.85rem] outline-none w-[220px] focus:border-[var(--saffron)] transition-colors"
               />
             </div>
-            {/* View toggle */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                onClick={() => setViewMode('grid')}
-                style={{ width: 38, height: 38, borderRadius: 10, border: `1.5px solid ${viewMode === 'grid' ? 'var(--saffron)' : '#E5E7EB'}`, background: viewMode === 'grid' ? '#FFF5EE' : 'white', color: viewMode === 'grid' ? 'var(--saffron)' : '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                style={{ width: 38, height: 38, borderRadius: 10, border: `1.5px solid ${viewMode === 'list' ? 'var(--saffron)' : '#E5E7EB'}`, background: viewMode === 'list' ? '#FFF5EE' : 'white', color: viewMode === 'list' ? 'var(--saffron)' : '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-                  <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-              </button>
+            <div className="flex gap-1.5">
+              {['grid', 'list'].map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`w-[38px] h-[38px] rounded-[10px] border flex items-center justify-center cursor-pointer transition-colors ${
+                    viewMode === mode
+                      ? 'border-[var(--saffron)] bg-orange-50 text-[var(--saffron)]'
+                      : 'border-gray-200 bg-white text-gray-500'
+                  }`}
+                >
+                  {mode === 'grid' ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                      <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+                      <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* ── Filter Pills ─────────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 40, overflowX: 'auto', paddingBottom: 4 }}>
+        {/* Filter Pills */}
+        <div className="flex gap-2.5 mb-10 overflow-x-auto pb-1">
           {categories.map(c => (
             <button
               key={c.id}
@@ -256,228 +224,408 @@ const Domestic = () => {
               onClick={() => setSelectedCategory(c.id)}
             >
               {c.icon}
-              <span style={{ marginLeft: 6 }}>{c.label}</span>
-              <span style={{
-                marginLeft: 6,
-                background: selectedCategory === c.id ? 'rgba(255,255,255,0.3)' : '#E5E7EB',
-                color: selectedCategory === c.id ? 'white' : '#6B7280',
-                padding: '1px 7px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 700,
-              }}>{c.count}</span>
+              <span className="ml-1.5">{c.label}</span>
+              <span className={`ml-1.5 px-1.5 py-px rounded-xl text-[0.72rem] font-bold ${
+                selectedCategory === c.id ? 'bg-white/30 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
+                {c.count}
+              </span>
             </button>
           ))}
         </div>
 
-        {/* ── Main Layout: Sidebar + Cards ─────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: windowWidth >= 1100 ? '300px 1fr' : '1fr', gap: 28 }}>
+        {/* Main Layout */}
+        <div className={`grid gap-7 ${windowWidth >= 1100 ? 'grid-cols-[300px_1fr]' : 'grid-cols-1'}`}>
 
-          {/* Sidebar — featured carousel (desktop only) */}
-          {windowWidth >= 1100 && animation.length > 0 && (
-            <div style={{ position: 'sticky', top: 90, height: 'fit-content' }}>
-              <div style={{ background: 'var(--forest)', borderRadius: 24, overflow: 'hidden', color: 'white' }}>
-                <div style={{ position: 'relative', height: 220 }}>
-                  <img
-                    src={animation[currentIndex]?.images}
-                    alt="Featured"
-                    loading="lazy"
-                    decoding="async"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={e => e.target.src = '/placeholder.jpg'}
-                  />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(26,60,52,0.9) 0%, transparent 50%)' }} />
-                  <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
-                    <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700 }}>
-                      {animation[currentIndex]?.title || 'Discover India'}
-                    </div>
-                  </div>
-                  <button onClick={() => setCurrentIndex(p => (p - 1 + animation.length) % animation.length)} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-                  <button onClick={() => setCurrentIndex(p => (p + 1) % animation.length)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+          {/* Sidebar */}
+          {windowWidth >= 1100 && (
+            <div className="sticky top-[90px] h-fit">
+              <div className="bg-[var(--forest)] rounded-3xl overflow-hidden text-white">
+                <div className="relative h-[220px]">
+                  {animation.length > 0 ? (
+                    <>
+                      <img
+                        src={getSidebarImageUrl(animation[currentIndex]?.images)}
+                        alt="Featured destination"
+                        loading="eager"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                        onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(26,60,52,0.9)] to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="font-[Cormorant_Garamond,serif] text-[1.3rem] font-bold">
+                          {animation[currentIndex]?.title || 'Discover India'}
+                        </div>
+                      </div>
+                      <button
+                        aria-label="Previous"
+                        onClick={() => setCurrentIndex(p => (p - 1 + animation.length) % animation.length)}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/15 border-none text-white cursor-pointer flex items-center justify-center"
+                      >‹</button>
+                      <button
+                        aria-label="Next"
+                        onClick={() => setCurrentIndex(p => (p + 1) % animation.length)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/15 border-none text-white cursor-pointer flex items-center justify-center"
+                      >›</button>
+                    </>
+                  ) : (
+                    <div className="w-full h-full bg-white/10 animate-pulse" />
+                  )}
                 </div>
-                <div style={{ padding: '20px 20px 24px' }}>
-                  <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', opacity: 0.6, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>Quick Stats</div>
+
+                <div className="px-5 pt-5 pb-6">
+                  <div className="font-[Outfit] text-[0.75rem] opacity-60 tracking-widest uppercase mb-3">Quick Stats</div>
                   {[
-                    { label: 'Destinations', val: `${totalCards}+` },
-                    { label: 'Packages', val: '156' },
-                    { label: 'Support', val: '24/7' },
+                    { label: 'Destinations', val: totalCards > 0 ? `${totalCards}+` : '—' },
+                    { label: 'Packages',     val: '156' },
+                    { label: 'Support',      val: '24/7' },
                   ].map((s, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-                      <span style={{ fontFamily: 'Outfit', fontSize: '0.85rem', opacity: 0.7 }}>{s.label}</span>
-                      <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 700, color: 'var(--saffron-light)' }}>{s.val}</span>
+                    <div key={i} className={`flex justify-between items-center py-2.5 ${i < 2 ? 'border-b border-white/10' : ''}`}>
+                      <span className="font-[Outfit] text-[0.85rem] opacity-70">{s.label}</span>
+                      <span className="font-[Cormorant_Garamond,serif] text-[1.2rem] font-bold text-[var(--saffron-light)]">{s.val}</span>
                     </div>
                   ))}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
-                    {animation.map((_, i) => (
-                      <button key={i} onClick={() => setCurrentIndex(i)} style={{ width: i === currentIndex ? 24 : 8, height: 8, borderRadius: 4, border: 'none', background: i === currentIndex ? 'var(--saffron)' : 'rgba(255,255,255,0.25)', cursor: 'pointer', transition: 'all 0.3s', padding: 0 }} />
-                    ))}
-                  </div>
+                  {animation.length > 0 && (
+                    <div className="flex gap-1.5 mt-4">
+                      {animation.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentIndex(i)}
+                          className={`h-2 rounded border-none cursor-pointer transition-all p-0 ${
+                            i === currentIndex ? 'w-6 bg-[var(--saffron)]' : 'w-2 bg-white/25'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Right — card grid */}
+          {/* Cards area */}
           <div>
-            {/* Count + nav arrows */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontFamily: 'Outfit', fontSize: '0.85rem', color: '#6B7280' }}>
-                Showing <strong style={{ color: 'var(--ink)' }}>{totalCards}</strong> destinations
+            {loading ? (
+              <SkeletonCarousel />
+            ) : filteredStates.length === 0 ? (
+              <div className="text-center py-12 font-[Outfit] text-gray-400">
+                {searchTerm
+                  ? `No destinations found for "${searchTerm}"`
+                  : 'No destinations available yet.'}
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={handlePrev} disabled={startIndex === 0} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FaChevronLeft size={13} />
-                </button>
-                <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FaChevronRight size={13} />
-                </button>
-              </div>
-            </div>
-
-            {/* Row 1 — getstates */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cardsToShow},1fr)`, gap: 20, marginBottom: 20 }}>
-              {visibleCards1.map((item, index) => (
-                <div key={item._id || index} className="dest-card" style={{ position: 'relative' }}>
-                  <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
-                    <img
-                      src={item.images ? `${BASE}${item.images}` : '/placeholder.jpg'}
-                      alt={item.title}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
-
-                    {isAdmin && (
-                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
-                        <input id={`file-${item._id}`} type="file" style={{ display: 'none' }} onChange={e => handleUpdate(item._id, e.target.files[0])} />
-                        <button onClick={() => document.getElementById(`file-${item._id}`).click()} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FaUpload size={11} />
-                        </button>
-                        <button onClick={() => handleDelete(item._id)} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FaTrash size={11} />
-                        </button>
-                      </div>
-                    )}
-
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
-                        <span><FaMapMarkerAlt style={{ marginRight: 3 }} />India</span>
-                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />4.8</span>
-                        <span><FaClock style={{ marginRight: 3 }} />3-7 Days</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ padding: '16px 18px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
-                        <span><FaUsers style={{ marginRight: 3 }} />2-12</span>
-                        <span><FaHotel style={{ marginRight: 3 }} />4★</span>
-                      </div>
-                      <div>
-                        <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹4,999</span>
-                        <span style={{ fontFamily: 'Outfit', fontSize: '0.8rem', marginLeft: 6, textDecoration: 'line-through', color: '#9CA3AF' }}>₹6,999</span>
-                      </div>
-                    </div>
-                    <Link to="/Maharashtra" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', fontSize: '0.85rem', borderRadius: 12, textDecoration: 'none' }}>
-                      View Package <FaArrowRight size={11} />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Row 2 — getstates2 */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cardsToShow},1fr)`, gap: 20 }}>
-              {visibleCards2.map((item, index) => (
-                <div key={item._id || index} className="dest-card" style={{ position: 'relative' }}>
-                  <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
-                    <img
-                      src={item.image ? `${BASE}${item.image}` : '/placeholder.jpg'}
-                      alt={item.title}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
-
-                    {isAdmin && (
-                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
-                        <input id={`file2-${item._id}`} type="file" style={{ display: 'none' }} onChange={e => handleUpdate(item._id, e.target.files[0])} />
-                        <button onClick={() => document.getElementById(`file2-${item._id}`).click()} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FaUpload size={11} />
-                        </button>
-                        <button onClick={() => handleDelete(item._id)} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FaTrash size={11} />
-                        </button>
-                      </div>
-                    )}
-
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
-                        <span><FaMapMarkerAlt style={{ marginRight: 3 }} />India</span>
-                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />4.7</span>
-                        <span><FaClock style={{ marginRight: 3 }} />4-8 Days</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ padding: '16px 18px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
-                        <span><FaUsers style={{ marginRight: 3 }} />2-15</span>
-                        <span><FaHotel style={{ marginRight: 3 }} />5★</span>
-                      </div>
-                      <div>
-                        <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹5,999</span>
-                        <span style={{ fontFamily: 'Outfit', fontSize: '0.8rem', marginLeft: 6, textDecoration: 'line-through', color: '#9CA3AF' }}>₹7,999</span>
-                      </div>
-                    </div>
-                    <Link to="/Maharashtra" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', fontSize: '0.85rem', borderRadius: 12, textDecoration: 'none' }}>
-                      View Package <FaArrowRight size={11} />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Progress bar */}
-            {totalCards > 0 && (
-              <div style={{ marginTop: 28 }}>
-                <div style={{ height: 4, background: '#E5E7EB', borderRadius: 2, overflow: 'hidden', marginBottom: 8 }}>
-                  <div style={{ width: `${Math.min(((startIndex + cardsToShow) / totalCards) * 100, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--saffron), var(--saffron-dark))', transition: 'width 0.4s ease' }} />
-                </div>
-                <p style={{ textAlign: 'center', fontFamily: 'Outfit', fontSize: '0.8rem', color: '#9CA3AF' }}>
-                  {startIndex + 1}–{Math.min(startIndex + cardsToShow, totalCards)} of {totalCards} destinations
-                </p>
-              </div>
-            )}
-
-            {/* Mobile nav */}
-            {windowWidth < 768 && (
-              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                <button onClick={handlePrev} disabled={startIndex === 0} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  <FaChevronLeft size={12} /> Previous
-                </button>
-                <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  Next <FaChevronRight size={12} />
-                </button>
-              </div>
+            ) : (
+              <DomesticCarousel
+                items={filteredStates}
+                isAdmin={isAdmin}
+                getImageUrl={getImageUrl}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+              />
             )}
           </div>
         </div>
       </div>
-
-      {/* Infinite scroll loader */}
-      {hasMore && (
-        <div ref={loaderRef} style={{ textAlign: 'center', padding: '30px 0' }}>
-          {loadingMore && (
-            <div style={{ display: 'inline-block', width: 32, height: 32, border: '3px solid #E5E7EB', borderTopColor: 'var(--saffron)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          )}
-        </div>
-      )}
     </section>
   );
 };
+
+// ── Skeleton ─────────────────────────────────────────────────
+const SkeletonCarousel = () => (
+  <div className="relative">
+    <div className="flex justify-between items-center mb-5">
+      <div className="skeleton h-4 w-36 rounded" />
+      <div className="flex gap-2">
+        <div className="skeleton w-9 h-9 rounded-[10px]" />
+        <div className="skeleton w-9 h-9 rounded-[10px]" />
+      </div>
+    </div>
+    <div className="flex gap-4 overflow-hidden">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="shrink-0 rounded-2xl overflow-hidden bg-white shadow-md" style={{ width: 'calc(25% - 12px)' }}>
+          <div className="skeleton h-[200px]" />
+          <div className="p-4 space-y-2.5">
+            <div className="skeleton h-3 w-16 rounded" />
+            <div className="skeleton h-5 w-32 rounded" />
+            <div className="skeleton h-3 w-24 rounded" />
+            <div className="skeleton h-10 rounded-xl mt-3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Carousel — shows exactly 4 cards, scroll reveals more ────
+const DomesticCarousel = React.memo(({ items, isAdmin, getImageUrl, onDelete, onUpdate }) => {
+  const scrollRef    = useRef(null);
+  const containerRef = useRef(null);
+
+  const [canScrollLeft,  setCanScrollLeft]  = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [progress,       setProgress]       = useState(0);
+  const [cardWidth,      setCardWidth]      = useState(260);
+
+  // Always exactly 4 visible cards with 16px gap
+  const VISIBLE = 4;
+  const GAP     = 16;
+
+  const measureCard = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const totalGaps = (VISIBLE - 1) * GAP;
+    setCardWidth(Math.floor((el.clientWidth - totalGaps) / VISIBLE));
+  }, []);
+
+  useEffect(() => {
+    measureCard();
+    const ro = new ResizeObserver(measureCard);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [measureCard]);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+    setProgress(scrollWidth > clientWidth ? scrollLeft / (scrollWidth - clientWidth) : 0);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    return () => el.removeEventListener('scroll', updateScrollState);
+  }, [items, updateScrollState]);
+
+  // Scroll by exactly one card width + gap
+  const scroll = useCallback((dir) => {
+    scrollRef.current?.scrollBy({ left: dir * (cardWidth + GAP), behavior: 'smooth' });
+  }, [cardWidth]);
+
+  return (
+    <div className="relative">
+      {/* Header row */}
+      <div className="flex justify-between items-center mb-5">
+        <div className="font-[Outfit] text-[0.85rem] text-gray-500">
+          Showing <strong className="text-[var(--ink)]">{items.length}</strong> destinations
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Dot pagination */}
+          <div className="flex gap-1 items-center">
+            {Array.from({ length: Math.ceil(items.length / VISIBLE) }).map((_, i) => {
+              const active = Math.round(progress * (Math.ceil(items.length / VISIBLE) - 1)) === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    const el = scrollRef.current;
+                    if (el) el.scrollTo({ left: i * VISIBLE * (cardWidth + GAP), behavior: 'smooth' });
+                  }}
+                  className={`rounded-full border-none cursor-pointer transition-all p-0 ${
+                    active ? 'w-5 h-2 bg-[var(--saffron)]' : 'w-2 h-2 bg-gray-300'
+                  }`}
+                />
+              );
+            })}
+          </div>
+          {/* Arrow buttons */}
+          <div className="flex gap-2">
+            {[
+              { dir: -1, enabled: canScrollLeft,  Icon: FaChevronLeft  },
+              { dir:  1, enabled: canScrollRight, Icon: FaChevronRight },
+            ].map(({ dir, enabled, Icon }) => (
+              <button
+                key={dir}
+                onClick={() => scroll(dir)}
+                disabled={!enabled}
+                className={`w-9 h-9 rounded-[10px] border flex items-center justify-center transition-all ${
+                  enabled
+                    ? 'bg-white border-gray-200 text-[var(--ink)] cursor-pointer hover:border-[var(--saffron)] hover:text-[var(--saffron)]'
+                    : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                }`}
+              >
+                <Icon size={13} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll container — edge fades */}
+      <div ref={containerRef} className="relative overflow-hidden">
+        {canScrollLeft  && <div className="absolute left-0  top-0 bottom-0 w-10 bg-gradient-to-r from-[var(--cream)] to-transparent z-10 pointer-events-none" />}
+        {canScrollRight && <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[var(--cream)] to-transparent z-10 pointer-events-none" />}
+
+        <style>{`.dc-track::-webkit-scrollbar{display:none}`}</style>
+
+        <div
+          ref={scrollRef}
+          className="dc-track flex overflow-x-auto"
+          style={{
+            gap: GAP,
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
+          {items.map((item, i) => (
+            <div
+              key={`dc-${item._id || i}`}
+              className="shrink-0"
+              style={{ width: cardWidth, minWidth: cardWidth, scrollSnapAlign: 'start' }}
+            >
+              <DomesticCard
+                item={item}
+                isAdmin={isAdmin}
+                getImageUrl={getImageUrl}
+                onDelete={onDelete}
+                onUpdate={onUpdate}
+                priority={i < 4}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-4 h-[3px] bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[var(--saffron)] to-[var(--saffron-dark)] transition-[width] duration-200 ease-out"
+          style={{ width: `${Math.max(progress * 100, items.length > VISIBLE ? 3 : 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+});
+
+// ── Redesigned card ──────────────────────────────────────────
+const DomesticCard = React.memo(({ item, isAdmin, getImageUrl, onDelete, onUpdate, priority }) => (
+  <div className="group relative rounded-2xl overflow-hidden bg-white shadow-[0_2px_16px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
+
+    {/* ── Image block ── */}
+    <div className="relative h-[200px] bg-gray-100 overflow-hidden flex-shrink-0">
+      <img
+        src={getImageUrl(item.images)}
+        alt={item.title}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding={priority ? 'sync' : 'async'}
+        fetchpriority={priority ? 'high' : 'low'}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
+        style={{ transform: 'scale(1)', transition: 'transform 700ms ease' }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
+      />
+
+      {/* Gradient overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent h-20" />
+
+      {/* Rating badge — top left */}
+      <div className="absolute top-3 left-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-sm">
+        <FaStar className="text-amber-400" size={11} />
+        <span className="font-[Outfit] text-[0.78rem] font-bold text-gray-800">
+          {item.rating || '4.8'}
+        </span>
+      </div>
+
+      {/* Admin controls — top right */}
+      {isAdmin && (
+        <div className="absolute top-3 right-3 flex gap-1.5 z-10">
+          <input
+            id={`dc-file-${item._id}`}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => onUpdate(item._id, e.target.files[0])}
+          />
+          <button
+            onClick={e => { e.stopPropagation(); document.getElementById(`dc-file-${item._id}`).click(); }}
+            className="w-7 h-7 rounded-lg bg-amber-400/90 backdrop-blur-sm border-none text-white cursor-pointer flex items-center justify-center shadow-md hover:bg-amber-400 transition-colors"
+          >
+            <FaUpload size={11} />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(item._id); }}
+            className="w-7 h-7 rounded-lg bg-red-500/90 backdrop-blur-sm border-none text-white cursor-pointer flex items-center justify-center shadow-md hover:bg-red-500 transition-colors"
+          >
+            <FaTrash size={11} />
+          </button>
+        </div>
+      )}
+
+      {/* Destination name — bottom of image */}
+      <div className="absolute bottom-0 left-0 right-0 px-3.5 pb-3.5 pt-8">
+        <h3
+          className="font-[Cormorant_Garamond,serif] text-[1.35rem] font-bold text-white leading-tight"
+          style={{ textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
+        >
+          {item.title}
+        </h3>
+        {item.state && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <FaMapMarkerAlt size={10} className="text-orange-300" />
+            <span className="font-[Outfit] text-[0.72rem] text-white/80">{item.state}</span>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* ── Card body ── */}
+    <div className="px-3.5 pt-3 pb-3.5 flex flex-col flex-1">
+
+      {/* Meta row */}
+      <div className="flex items-center justify-between mb-3 text-[0.75rem] text-gray-500 font-[Outfit]">
+        <span className="flex items-center gap-1.5">
+          <FaUsers size={11} className="text-gray-400" />
+          <span>2–12 pax</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <FaHotel size={11} className="text-gray-400" />
+          <span>4★ Hotels</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <FaClock size={11} className="text-gray-400" />
+          <span>{item.duration || '3–5 days'}</span>
+        </span>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-gray-100 mb-3" />
+
+      {/* Tags row */}
+      <div className="flex gap-1.5 mb-3 flex-wrap">
+        {(item.tags || ['Culture', 'Nature']).slice(0, 2).map((tag, i) => (
+          <span
+            key={i}
+            className="inline-block px-2 py-0.5 rounded-md text-[0.68rem] font-semibold font-[Outfit] bg-orange-50 text-orange-600 border border-orange-100"
+          >
+            {tag}
+          </span>
+        ))}
+        <span className="inline-block px-2 py-0.5 rounded-md text-[0.68rem] font-semibold font-[Outfit] bg-emerald-50 text-emerald-700 border border-emerald-100">
+          Best Value
+        </span>
+      </div>
+
+      {/* Spacer pushes CTA to bottom */}
+      <div className="flex-1" />
+
+      {/* CTA button */}
+      <Link
+        to="/Maharashtra"
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl no-underline font-[Outfit] text-[0.85rem] font-semibold text-white transition-all duration-200 hover:brightness-110 active:scale-[0.98] mt-1"
+        style={{ background: 'linear-gradient(100deg, #f07020 0%, #c94e00 100%)' }}
+      >
+        Book Now <FaArrowRight size={11} />
+      </Link>
+    </div>
+  </div>
+));
 
 export default Domestic;

@@ -29,6 +29,8 @@ import ItineraryPage from "./Pages/ItineraryPage.jsx";
 import Login from "./Pages/Login.jsx";
 import { PackageProvider } from "./Context/PackageContext.jsx";
 import BlogsPage from "./Components/blogs.jsx";
+import Profile, { BookingsTab, EnquiriesTab, OverviewTab, SavedTab, SettingsTab } from "./Components/ProfileDropdown/Profile.jsx";
+import ProfilePopup from "./Components/Profile/Profile.jsx";
 
 /* Lazy Pages */
 const Start = lazy(() => import("./Pages/Start"));
@@ -100,6 +102,12 @@ const App = () => {
             {/* State Pages */}
             <Route path="/maharashtra" element={<Maharashtra />} />
             <Route path="/blogs" element={<BlogsPage />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/overview" element={<OverviewTab />} />
+            <Route path="/bookings" element={<BookingsTab />} />
+            <Route path="/enquiries" element={<EnquiriesTab />} />
+            <Route path="/saved" element={<SavedTab />} />
+            <Route path="/settings" element={<SettingsTab />} />
 
             {/* 404 */}
             <Route path="*" element={<PageNotFound />} />

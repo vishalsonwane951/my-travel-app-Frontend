@@ -2,58 +2,29 @@ import React, { useEffect, useState, useContext, useCallback, useMemo, useRef } 
 import { AuthContext } from '../Context/AuthContext';
 import api from '../utils/api';
 import {
-  FaGlobe,
   FaMapMarkerAlt,
   FaClock,
   FaUsers,
   FaStar,
-  FaArrowRight,
   FaSearch,
   FaAward,
   FaUmbrellaBeach,
-  FaMountain,
-  FaTree,
-  FaWater,
   FaChevronRight,
   FaChevronLeft,
   FaHotel,
-  FaMapMarkedAlt,
   FaTrash,
-  FaUpload,
   FaEdit,
   FaPlus,
   FaPlane,
-  FaShip,
-  FaCar,
-  FaTrain,
-  FaBus,
-  FaBicycle,
-  FaWalking,
-  FaHiking,
-  FaSkiing,
-  FaSwimmer,
-  FaDumbbell,
-  FaSpa,
-  FaWineGlassAlt,
-  FaCocktail,
-  FaUtensils,
-  FaPizzaSlice,
-  FaIceCream,
-  FaCoffee,
-  FaBeer
 } from 'react-icons/fa';
-
-const BASE = 'https://my-travel-app-backend-6.onrender.com';
 
 const International = () => {
   const { user } = useContext(AuthContext);
   const isAdmin = user?.isAdmin;
 
-  const [international1, setInternational1] = useState([]);
-  const [international2, setInternational2] = useState([]);
+  const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [startIndex, setStartIndex] = useState(0);
-  const [cardsToShow, setCardsToShow] = useState(3);
+  const [error, setError] = useState(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -62,79 +33,107 @@ const International = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [editRow, setEditRow] = useState(null);
   const [formData, setFormData] = useState({
     title: '', images: '', description: '', location: '', price: '', duration: '', rating: '4.5'
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredDestinations, setFilteredDestinations] = useState([]);
+  const [retryCount, setRetryCount] = useState(0);
 
   const imageCache = useRef(new Map());
-  const initialFetchDone = useRef(false);
+  const abortRef = useRef(null);
 
+  // Cloudinary images are always full https:// URLs — just validate and return
   const getImageUrl = useCallback((imagePath) => {
     if (!imagePath) return '/placeholder.jpg';
     if (imageCache.current.has(imagePath)) return imageCache.current.get(imagePath);
-    const url = imagePath.startsWith('http') ? imagePath : `${BASE}/${imagePath.replace(/^\/+/, '')}`;
+    // Optional: auto-upgrade to WebP and set quality for better performance
+    const url = imagePath.startsWith('http')
+      ? imagePath.replace('/upload/', '/upload/f_auto,q_auto,w_600/')
+      : '/placeholder.jpg';
     imageCache.current.set(imagePath, url);
     return url;
   }, []);
 
+  // ── Resize handler ───────────────────────────────────────────
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setWindowWidth(width);
-      setCardsToShow(width < 640 ? 1 : width < 1024 ? 2 : 3);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ── Fetch ────────────────────────────────────────────────────
   useEffect(() => {
+    if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
+    abortRef.current = controller;
+
+    const isCanceled = (err) =>
+      err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED';
+
+    // Try multiple casing variants — stops at first success
+    const candidates = [
+      '/International/getallInternational'
+    ];
+
     async function fetchPackages() {
-      if (initialFetchDone.current) return;
+      setError(null);
       try {
-        const [res1, res2] = await Promise.all([
-          api.get('/International-tours/getallInternational', { signal: controller.signal }),
-          api.get('/International-tours/getallInternational2', { signal: controller.signal }),
-        ]);
-        setInternational1(res1.data || []);
-        setInternational2(res2.data || []);
-        initialFetchDone.current = true;
+        let res = null;
+        for (const endpoint of candidates) {
+          if (controller.signal.aborted) return;
+          try {
+            res = await api.get(endpoint, { signal: controller.signal });
+            console.log(`✅ Working endpoint: ${endpoint}`);
+            break;
+          } catch (err) {
+            if (isCanceled(err)) return;
+            if (err.response?.status === 404) {
+              console.warn(`⚠️ 404 at "${endpoint}", trying next...`);
+              continue;
+            }
+            throw err;
+          }
+        }
+        if (!res) throw new Error(
+          `All endpoint variants returned 404.\nTried:\n${candidates.map(c => `  • ${c}`).join('\n')}`
+        );
+        if (!controller.signal.aborted) {
+          // Handle both: array directly (res.data = [...]) or nested (res.data.data = [...])
+          const data = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+          setDestinations(data);
+        }
       } catch (err) {
-        if (err.name !== 'AbortError') console.error('Error fetching Data:', err);
+        if (isCanceled(err)) return;
+        console.error('Error fetching international tours:', err);
+        setError(err.message || 'Failed to load destinations. Please try again.');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
+
     fetchPackages();
     return () => controller.abort();
-  }, []);
+  }, [retryCount]);
 
-  useEffect(() => {
-    const all = [...international1, ...international2];
-    setFilteredDestinations(
-      all.filter(d =>
-        d.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [searchTerm, international1, international2]);
+  // ── Derived data ─────────────────────────────────────────────
+  const filteredDestinations = useMemo(() =>
+    destinations.filter(d =>
+      d.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [searchTerm, destinations]
+  );
 
-  const handlePrev = useCallback(() => {
-    if (startIndex > 0) setStartIndex(prev => Math.max(0, prev - cardsToShow));
-  }, [startIndex, cardsToShow]);
+  const featuredDestinations = useMemo(() => destinations.slice(0, 3), [destinations]);
 
-  const handleNext = useCallback(() => {
-    const total = Math.max(international1.length, international2.length);
-    if (startIndex + cardsToShow < total) setStartIndex(prev => prev + cardsToShow);
-  }, [startIndex, cardsToShow, international1.length, international2.length]);
-
+  // ── Modal helpers ────────────────────────────────────────────
   const openCountryModal = useCallback((country) => setSelectedCountry(country), []);
   const closeCountryModal = useCallback(() => setSelectedCountry(null), []);
 
@@ -159,19 +158,22 @@ const International = () => {
     setUploadProgress(0);
   }, []);
 
-  const handleAdd = useCallback(async (row) => {
+  // ── CRUD ─────────────────────────────────────────────────────
+  const handleAdd = useCallback(async () => {
     try {
       const fd = new FormData();
-      Object.entries({ title: formData.title, description: formData.description || '', location: formData.location || '', price: formData.price || '', duration: formData.duration || '', rating: formData.rating || '4.5' }).forEach(([k, v]) => fd.append(k, v));
+      Object.entries({
+        title: formData.title, description: formData.description || '',
+        location: formData.location || '', price: formData.price || '',
+        duration: formData.duration || '', rating: formData.rating || '4.5'
+      }).forEach(([k, v]) => fd.append(k, v));
       if (selectedFile) fd.append('image', selectedFile);
-      const endpoint = row === 'row1' ? '/International-tours/addInternational' : '/International-tours/addInternational2';
-      const res = await api.post(endpoint, fd, {
+      const res = await api.post('/International-tours/addInternational', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / e.total)),
       });
       if (res.data.success) {
-        if (row === 'row1') setInternational1(prev => [...prev, res.data.data]);
-        else setInternational2(prev => [...prev, res.data.data]);
+        setDestinations(prev => [...prev, res.data.data]);
         setShowAddModal(false);
         resetForm();
       }
@@ -182,48 +184,42 @@ const International = () => {
     if (!editingItem) return;
     try {
       const fd = new FormData();
-      Object.entries({ title: formData.title, description: formData.description, location: formData.location, price: formData.price, duration: formData.duration, rating: formData.rating }).forEach(([k, v]) => fd.append(k, v));
+      Object.entries({
+        title: formData.title, description: formData.description,
+        location: formData.location, price: formData.price,
+        duration: formData.duration, rating: formData.rating
+      }).forEach(([k, v]) => fd.append(k, v));
       if (selectedFile) fd.append('image', selectedFile);
-      const endpoint = editRow === 'row1'
-        ? `/International-tours/updateInternational/${editingItem._id}`
-        : `/International-tours/updateInternational2/${editingItem._id}`;
-      const res = await api.put(endpoint, fd, {
+      const res = await api.put(`/International-tours/updateInternational/${editingItem._id}`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => setUploadProgress(Math.round((e.loaded * 100) / e.total)),
       });
       if (res.data.success) {
-        if (editRow === 'row1') setInternational1(prev => prev.map(i => i._id === editingItem._id ? res.data.data : i));
-        else setInternational2(prev => prev.map(i => i._id === editingItem._id ? res.data.data : i));
+        setDestinations(prev => prev.map(i => i._id === editingItem._id ? res.data.data : i));
         setShowEditModal(false); setEditingItem(null); resetForm();
       }
     } catch (err) { console.error('Error updating:', err); }
-  }, [editingItem, editRow, formData, selectedFile, resetForm]);
+  }, [editingItem, formData, selectedFile, resetForm]);
 
-  const handleDelete = useCallback(async (id, row) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this destination?')) return;
     try {
-      const endpoint = row === 'row1' ? `/International-tours/deleteInternational/${id}` : `/International-tours/deleteInternational2/${id}`;
-      const res = await api.delete(endpoint);
-      if (res.data.success) {
-        if (row === 'row1') setInternational1(prev => prev.filter(i => i._id !== id));
-        else setInternational2(prev => prev.filter(i => i._id !== id));
-      }
+      const res = await api.delete(`/International-tours/deleteInternational/${id}`);
+      if (res.data.success) setDestinations(prev => prev.filter(i => i._id !== id));
     } catch (err) { console.error('Error deleting:', err); }
   }, []);
 
-  const openEditModal = useCallback((item, row) => {
-    setEditingItem(item); setEditRow(row);
-    setFormData({ title: item.title || '', images: item.images || '', description: item.description || '', location: item.location || '', price: item.price || '', duration: item.duration || '', rating: item.rating || '4.5' });
+  const openEditModal = useCallback((item) => {
+    setEditingItem(item);
+    setFormData({
+      title: item.title || '', images: item.images || '', description: item.description || '',
+      location: item.location || '', price: item.price || '',
+      duration: item.duration || '', rating: item.rating || '4.5'
+    });
     setSelectedFile(null); setShowEditModal(true);
   }, []);
 
-  const totalCards = useMemo(() => Math.max(international1.length, international2.length), [international1.length, international2.length]);
-  const progressPercent = useMemo(() => totalCards > 0 ? ((startIndex + cardsToShow) / totalCards) * 100 : 0, [totalCards, startIndex, cardsToShow]);
-  const visibleCards1 = useMemo(() => international1.slice(startIndex, startIndex + cardsToShow), [international1, startIndex, cardsToShow]);
-  const visibleCards2 = useMemo(() => international2.slice(startIndex, startIndex + cardsToShow), [international2, startIndex, cardsToShow]);
-  const featuredDestinations = useMemo(() => [...international1, ...international2].slice(0, 3), [international1, international2]);
-
-  // ── Shared modal form fields ─────────────────────────────────
+  // ── Modal form fields ────────────────────────────────────────
   const ModalFormFields = () => (
     <>
       {[['title','Title *','text'],['description','Description','textarea'],['location','Location','text']].map(([name, label, type]) => (
@@ -236,7 +232,7 @@ const International = () => {
         </div>
       ))}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
-        {[['price','Price ($)','number'],['duration','Duration','text']].map(([name, label, type]) => (
+        {[['price','Price (₹)','number'],['duration','Duration','text']].map(([name, label, type]) => (
           <div key={name}>
             <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>{label}</label>
             <input type={type} name={name} value={formData[name]} onChange={handleInputChange} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
@@ -244,7 +240,7 @@ const International = () => {
         ))}
       </div>
       <div style={{ marginBottom: 18 }}>
-        <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>Rating (1-5)</label>
+        <label style={{ display: 'block', fontFamily: 'Outfit', fontSize: '0.82rem', fontWeight: 600, color: '#374151', marginBottom: 6 }}>Rating (1–5)</label>
         <input type="number" name="rating" value={formData.rating} onChange={handleInputChange} min="1" max="5" step="0.1" style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
       </div>
       <div style={{ marginBottom: 24 }}>
@@ -282,6 +278,24 @@ const International = () => {
     </section>
   );
 
+  // ── Error state ──────────────────────────────────────────────
+  if (error) return (
+    <section id="international" style={{ background: 'white', paddingBottom: 80 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: 16 }}>🌐</div>
+        <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.8rem', color: 'var(--ink)', marginBottom: 12 }}>Couldn't Load Destinations</h3>
+        <p style={{ fontFamily: 'Outfit', fontSize: '0.9rem', color: '#6B7280', maxWidth: 480, margin: '0 auto 24px' }}>{error}</p>
+        <button
+          onClick={() => { setLoading(true); setError(null); setRetryCount(c => c + 1); }}
+          className="btn-primary"
+          style={{ padding: '12px 28px', fontSize: '0.9rem', borderRadius: 12 }}
+        >
+          Try Again
+        </button>
+      </div>
+    </section>
+  );
+
   return (
     <section id="international" style={{ background: 'white', paddingBottom: 80 }}>
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '80px 24px 0' }}>
@@ -295,12 +309,11 @@ const International = () => {
             </h2>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Search */}
             <div style={{ position: 'relative' }}>
               <FaSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', fontSize: '0.85rem' }} />
               <input
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => { setSearchTerm(e.target.value); setStartIndex(0); }}
                 placeholder="Search countries..."
                 style={{ padding: '10px 16px 10px 38px', borderRadius: 50, border: '1.5px solid #E5E7EB', fontFamily: 'Outfit', fontSize: '0.85rem', outline: 'none', width: 220 }}
               />
@@ -310,20 +323,32 @@ const International = () => {
                 </span>
               )}
             </div>
-            {/* Admin add button */}
             {isAdmin && (
-              <button
-                onClick={() => { resetForm(); setShowAddModal(true); }}
-                className="btn-primary"
-                style={{ padding: '10px 20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
+              <button onClick={() => { resetForm(); setShowAddModal(true); }} className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <FaPlus size={11} /> Add Destination
               </button>
             )}
           </div>
         </div>
 
-        {/* ── Featured Destinations ────────────────────────────── */}
+        {/* ── Search results ───────────────────────────────────── */}
+        {searchTerm && (
+          <div style={{ marginBottom: 48 }}>
+            {filteredDestinations.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', fontFamily: 'Outfit', color: '#9CA3AF' }}>
+                No destinations found for "{searchTerm}"
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+                {filteredDestinations.map((item, i) => (
+                  <DestCard key={`s-${item._id || i}`} item={item} isAdmin={isAdmin} getImageUrl={getImageUrl} onOpen={openCountryModal} onEdit={openEditModal} onDelete={handleDelete} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Featured ─────────────────────────────────────────── */}
         {!searchTerm && featuredDestinations.length > 0 && (
           <div style={{ marginBottom: 60 }}>
             <div style={{ fontFamily: 'Outfit', fontSize: '0.8rem', fontWeight: 600, color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -333,24 +358,15 @@ const International = () => {
               {featuredDestinations.map((dest, i) => (
                 <div key={dest._id || i} className="dest-card" onClick={() => !isAdmin && openCountryModal(dest)} style={{ position: 'relative' }}>
                   <div className="dest-card-img" style={{ height: 220, background: '#F3F4F6' }}>
-                    <img
-                      src={getImageUrl(dest.images)}
-                      alt={dest.title}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
-                    />
+                    <img src={getImageUrl(dest.images)} alt={dest.title} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)' }} />
                     <span style={{ position: 'absolute', top: 14, right: 14, background: 'var(--saffron)', color: 'white', fontFamily: 'Outfit', fontSize: '0.7rem', fontWeight: 700, padding: '4px 10px', borderRadius: 6, letterSpacing: 1, textTransform: 'uppercase' }}>Featured</span>
-
                     {isAdmin && (
                       <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 6 }}>
-                        <button onClick={e => { e.stopPropagation(); openEditModal(dest, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
-                        <button onClick={e => { e.stopPropagation(); handleDelete(dest._id, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); openEditModal(dest); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleDelete(dest._id); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
                       </div>
                     )}
-
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 16px' }}>
                       <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>{dest.title}</div>
                       <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', fontFamily: 'Outfit', marginTop: 3 }}>
@@ -374,177 +390,24 @@ const International = () => {
               { id: 'hidden', label: 'Hidden Gems' },
               { id: 'upcoming', label: 'Upcoming Tours' },
             ].map(t => (
-              <button
-                key={t.id}
-                className={`filter-pill ${activeTab === t.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(t.id)}
-              >
+              <button key={t.id} className={`filter-pill ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
                 {t.label}
               </button>
             ))}
           </div>
         )}
 
-        {/* ── Cards Container ──────────────────────────────────── */}
-        <div style={{ background: '#F9FAFB', borderRadius: 24, padding: 28, position: 'relative' }}>
-
-          {/* Nav arrows (desktop) */}
-          {totalCards > cardsToShow && windowWidth >= 768 && (
-            <>
-              <button onClick={handlePrev} disabled={startIndex === 0} style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FaChevronLeft size={13} />
-              </button>
-              <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ position: 'absolute', right: -18, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FaChevronRight size={13} />
-              </button>
-            </>
-          )}
-
-          {/* Count + inline nav */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <div style={{ fontFamily: 'Outfit', fontSize: '0.85rem', color: '#6B7280' }}>
-              <strong style={{ color: 'var(--ink)' }}>{totalCards}</strong> destinations worldwide
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={handlePrev} disabled={startIndex === 0} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FaChevronLeft size={13} />
-              </button>
-              <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FaChevronRight size={13} />
-              </button>
-            </div>
-          </div>
-
-          {/* Row 1 — getallInternational */}
-          {visibleCards1.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cardsToShow},1fr)`, gap: 20, marginBottom: 20 }}>
-              {visibleCards1.map((item, index) => (
-                <div key={`r1-${item._id || index}`} className="dest-card" onClick={() => !isAdmin && openCountryModal(item)} style={{ position: 'relative' }}>
-                  <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
-                    <img
-                      src={getImageUrl(item.images)}
-                      alt={item.title}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
-
-                    {isAdmin && (
-                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
-                        <button onClick={e => { e.stopPropagation(); openEditModal(item, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
-                        <button onClick={e => { e.stopPropagation(); handleDelete(item._id, 'row1'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
-                      </div>
-                    )}
-
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
-                        {item.location && <span><FaMapMarkerAlt style={{ marginRight: 3 }} />{item.location}</span>}
-                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />{item.rating || '4.8'}</span>
-                        {item.duration && <span><FaClock style={{ marginRight: 3 }} />{item.duration}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ padding: '16px 18px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
-                        <span><FaUsers style={{ marginRight: 3 }} />2-12</span>
-                        <span><FaHotel style={{ marginRight: 3 }} />4★</span>
-                      </div>
-                      {item.price && (
-                        <div>
-                          <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹{item.price}</span>
-                        </div>
-                      )}
-                    </div>
-                    <button onClick={() => !isAdmin && openCountryModal(item)} className="btn-primary" style={{ width: '100%', padding: '10px', fontSize: '0.85rem', borderRadius: 12 }}>
-                      Book Your Adventure →
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Row 2 — getallInternational2 */}
-          {visibleCards2.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cardsToShow},1fr)`, gap: 20 }}>
-              {visibleCards2.map((item, index) => (
-                <div key={`r2-${item._id || index}`} className="dest-card" onClick={() => !isAdmin && openCountryModal(item)} style={{ position: 'relative' }}>
-                  <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
-                    <img
-                      src={getImageUrl(item.images)}
-                      alt={item.title}
-                      loading="lazy"
-                      decoding="async"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
-
-                    {isAdmin && (
-                      <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
-                        <button onClick={e => { e.stopPropagation(); openEditModal(item, 'row2'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
-                        <button onClick={e => { e.stopPropagation(); handleDelete(item._id, 'row2'); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
-                      </div>
-                    )}
-
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
-                      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
-                        {item.location && <span><FaMapMarkerAlt style={{ marginRight: 3 }} />{item.location}</span>}
-                        <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />{item.rating || '4.7'}</span>
-                        {item.duration && <span><FaClock style={{ marginRight: 3 }} />{item.duration}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ padding: '16px 18px 18px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
-                        <span><FaUsers style={{ marginRight: 3 }} />2-12</span>
-                        <span><FaHotel style={{ marginRight: 3 }} />5★</span>
-                      </div>
-                      {item.price && (
-                        <div>
-                          <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹{item.price}</span>
-                        </div>
-                      )}
-                    </div>
-                    <button onClick={() => !isAdmin && openCountryModal(item)} className="btn-primary" style={{ width: '100%', padding: '10px', fontSize: '0.85rem', borderRadius: 12 }}>
-                      Book Your Adventure →
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Progress bar */}
-          {totalCards > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ height: 4, background: '#E5E7EB', borderRadius: 2, overflow: 'hidden', marginBottom: 8 }}>
-                <div style={{ width: `${Math.min(progressPercent, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--saffron), var(--saffron-dark))', transition: 'width 0.4s ease' }} />
-              </div>
-              <p style={{ textAlign: 'center', fontFamily: 'Outfit', fontSize: '0.8rem', color: '#9CA3AF' }}>
-                {startIndex + 1}–{Math.min(startIndex + cardsToShow, totalCards)} of {totalCards} destinations
-              </p>
-            </div>
-          )}
-
-          {/* Mobile nav */}
-          {windowWidth < 768 && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button onClick={handlePrev} disabled={startIndex === 0} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #E5E7EB', background: startIndex === 0 ? '#F9FAFB' : 'white', color: startIndex === 0 ? '#D1D5DB' : 'var(--ink)', cursor: startIndex === 0 ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <FaChevronLeft size={12} /> Previous
-              </button>
-              <button onClick={handleNext} disabled={startIndex + cardsToShow >= totalCards} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #E5E7EB', background: startIndex + cardsToShow >= totalCards ? '#F9FAFB' : 'white', color: startIndex + cardsToShow >= totalCards ? '#D1D5DB' : 'var(--ink)', cursor: startIndex + cardsToShow >= totalCards ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                Next <FaChevronRight size={12} />
-              </button>
-            </div>
-          )}
-        </div>
+        {/* ── Horizontal Scroll Carousel ───────────────────────── */}
+        {!searchTerm && (
+          <ScrollCarousel
+            destinations={destinations}
+            isAdmin={isAdmin}
+            getImageUrl={getImageUrl}
+            onOpen={openCountryModal}
+            onEdit={openEditModal}
+            onDelete={handleDelete}
+          />
+        )}
 
         {/* ── Newsletter ───────────────────────────────────────── */}
         <div style={{ marginTop: 60, background: 'linear-gradient(135deg, var(--forest), var(--forest-light))', borderRadius: 24, padding: windowWidth < 768 ? '40px 24px' : '56px 60px', display: 'flex', flexDirection: windowWidth < 768 ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
@@ -571,7 +434,7 @@ const International = () => {
             <ModalFormFields />
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={() => { setShowAddModal(false); resetForm(); }} style={{ flex: 1, padding: 13, borderRadius: 12, border: '1.5px solid #E5E7EB', background: 'white', fontFamily: 'Outfit', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', color: '#374151' }}>Cancel</button>
-              <button onClick={() => handleAdd('row1')} disabled={!formData.title} className="btn-primary" style={{ flex: 1, padding: 13, fontSize: '0.9rem', borderRadius: 12, opacity: !formData.title ? 0.5 : 1 }}>Add Destination</button>
+              <button onClick={handleAdd} disabled={!formData.title} className="btn-primary" style={{ flex: 1, padding: 13, fontSize: '0.9rem', borderRadius: 12, opacity: !formData.title ? 0.5 : 1 }}>Add Destination</button>
             </div>
           </div>
         </div>
@@ -599,13 +462,7 @@ const International = () => {
         <div className="modal-backdrop" onClick={closeCountryModal}>
           <div className="modal-box" onClick={e => e.stopPropagation()} style={{ padding: 0 }}>
             <div style={{ position: 'relative' }}>
-              <img
-                src={getImageUrl(selectedCountry.images)}
-                alt={selectedCountry.title}
-                loading="lazy"
-                style={{ width: '100%', height: 280, objectFit: 'cover', borderRadius: '24px 24px 0 0', background: '#F3F4F6' }}
-                onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
-              />
+              <img src={getImageUrl(selectedCountry.images)} alt={selectedCountry.title} loading="lazy" style={{ width: '100%', height: 280, objectFit: 'cover', borderRadius: '24px 24px 0 0', background: '#F3F4F6' }} onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)', borderRadius: '24px 24px 0 0' }} />
               <button onClick={closeCountryModal} style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>×</button>
               <div style={{ position: 'absolute', bottom: 20, left: 24 }}>
@@ -651,5 +508,142 @@ const International = () => {
     </section>
   );
 };
+
+// ── Smooth horizontal scroll carousel ───────────────────────
+const ScrollCarousel = React.memo(({ destinations, isAdmin, getImageUrl, onOpen, onEdit, onDelete }) => {
+  const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [progress, setProgress] = useState(0);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+    setProgress(scrollWidth > clientWidth ? scrollLeft / (scrollWidth - clientWidth) : 0);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => { el.removeEventListener('scroll', updateScrollState); ro.disconnect(); };
+  }, [destinations, updateScrollState]);
+
+  const scroll = useCallback((dir) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardW = el.querySelector('.sc-card')?.offsetWidth || 300;
+    el.scrollBy({ left: dir * (cardW + 20), behavior: 'smooth' });
+  }, []);
+
+  if (!destinations.length) return (
+    <div style={{ textAlign: 'center', padding: '48px 0', fontFamily: 'Outfit', color: '#9CA3AF' }}>
+      No destinations available yet.
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ fontFamily: 'Outfit', fontSize: '0.85rem', color: '#6B7280' }}>
+          <strong style={{ color: 'var(--ink)' }}>{destinations.length}</strong> destinations worldwide
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => scroll(-1)} disabled={!canScrollLeft} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: canScrollLeft ? 'white' : '#F9FAFB', color: canScrollLeft ? 'var(--ink)' : '#D1D5DB', cursor: canScrollLeft ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+            <FaChevronLeft size={13} />
+          </button>
+          <button onClick={() => scroll(1)} disabled={!canScrollRight} style={{ width: 36, height: 36, borderRadius: 10, border: '1.5px solid #E5E7EB', background: canScrollRight ? 'white' : '#F9FAFB', color: canScrollRight ? 'var(--ink)' : '#D1D5DB', cursor: canScrollRight ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+            <FaChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Fade edges */}
+      <div style={{ position: 'relative', borderRadius: 20, background: '#F9FAFB', padding: '20px 0' }}>
+        {canScrollLeft && (
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 60, background: 'linear-gradient(to right, #F9FAFB, transparent)', zIndex: 2, borderRadius: '20px 0 0 20px', pointerEvents: 'none' }} />
+        )}
+        {canScrollRight && (
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 60, background: 'linear-gradient(to left, #F9FAFB, transparent)', zIndex: 2, borderRadius: '0 20px 20px 0', pointerEvents: 'none' }} />
+        )}
+
+        {/* Scroll track */}
+        <style>{`
+          .sc-track::-webkit-scrollbar { display: none; }
+        `}</style>
+        <div
+          ref={scrollRef}
+          className="sc-track"
+          style={{
+            display: 'flex',
+            gap: 20,
+            overflowX: 'auto',
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingBottom: 8,
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
+          {destinations.map((item, i) => (
+            <div key={`sc-${item._id || i}`} className="sc-card" style={{ flex: '0 0 calc(25% - 15px)', minWidth: 240, scrollSnapAlign: 'start' }}>
+              <DestCard item={item} isAdmin={isAdmin} getImageUrl={getImageUrl} onOpen={onOpen} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ marginTop: 14, height: 3, background: '#E5E7EB', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg, var(--saffron), var(--saffron-dark))', borderRadius: 2, transition: 'width 0.15s ease' }} />
+      </div>
+    </div>
+  );
+});
+
+// ── Reusable destination card ────────────────────────────────
+const DestCard = React.memo(({ item, isAdmin, getImageUrl, onOpen, onEdit, onDelete }) => (
+  <div className="dest-card" onClick={() => !isAdmin && onOpen(item)} style={{ position: 'relative' }}>
+    <div className="dest-card-img" style={{ height: 200, background: '#F3F4F6' }}>
+      <img src={getImageUrl(item.images)} alt={item.title} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }} />
+      {isAdmin && (
+        <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
+          <button onClick={e => { e.stopPropagation(); onEdit(item); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#F59E0B', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaEdit size={11} /></button>
+          <button onClick={e => { e.stopPropagation(); onDelete(item._id); }} style={{ width: 30, height: 30, borderRadius: 8, background: '#EF4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FaTrash size={11} /></button>
+        </div>
+      )}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 16px' }}>
+        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.15rem', fontWeight: 700, color: 'white', marginBottom: 2 }}>{item.title}</div>
+        <div style={{ display: 'flex', gap: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.75)', fontFamily: 'Outfit' }}>
+          {item.location && <span><FaMapMarkerAlt style={{ marginRight: 3 }} />{item.location}</span>}
+          <span><FaStar style={{ marginRight: 3, color: '#F59E0B' }} />{item.rating || '4.8'}</span>
+          {item.duration && <span><FaClock style={{ marginRight: 3 }} />{item.duration}</span>}
+        </div>
+      </div>
+    </div>
+    <div style={{ padding: '16px 18px 18px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 10, fontSize: '0.77rem', color: '#6B7280', fontFamily: 'Outfit' }}>
+          <span><FaUsers style={{ marginRight: 3 }} />2-12</span>
+          <span><FaHotel style={{ marginRight: 3 }} />4★</span>
+        </div>
+        {item.price && <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--saffron)' }}>₹{item.price}</span>}
+      </div>
+      <button onClick={e => { e.stopPropagation(); !isAdmin && onOpen(item); }} className="btn-primary" style={{ width: '100%', padding: '10px', fontSize: '0.85rem', borderRadius: 12 }}>
+        Book Your Adventure →
+      </button>
+    </div>
+  </div>
+));
 
 export default React.memo(International);

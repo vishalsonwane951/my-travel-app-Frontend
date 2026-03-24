@@ -1,664 +1,251 @@
-// import React, { useState, useContext, useEffect, useRef } from "react";
-// import { AuthContext } from "../../Context/AuthContext";
-// import axios from "../../utils/api";
-// import MyBookings from "../BookingForm/MyBookings";
-// import MyFavourite from "./MyFavourite";
-// import MyEnquiry from "./MyEnquiry";
-
-// const ProfileDropdown = () => {
-//   const { user, logout, updateUser } = useContext(AuthContext);
-//   const [showProfile, setShowProfile] = useState(false); // show/hide profile dropdown
-//   const [uploading, setUploading] = useState(false);
-//   const [showBookings, setShowBookings] = useState(false);
-//   const [showEnquiry, setShowEnquiry] = useState(false);
-//   const [showFavourites, setShowFavourites] = useState(false);
-
-//   const profileRef = useRef(null);
-
-//   // Toggle profile dropdown on profile click
-//   const handleProfileClick = () => setShowProfile(prev => !prev);
-
-//   // Close profile dropdown if clicked outside
-//   useEffect(() => {
-//     const handleClickOutside = (event) => {
-//       if (profileRef.current && !profileRef.current.contains(event.target)) {
-//         setShowProfile(false);
-//       }
-//     };
-//     document.addEventListener("click", handleClickOutside);
-//     return () => document.removeEventListener("click", handleClickOutside);
-//   }, []);
-
-//   const handleFileChange = async (e) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     const formData = new FormData();
-//     formData.append("avatar", file);
-
-//     setUploading(true);
-//     try {
-//       const res = await axios.post("/users/upload-avatar", formData, {
-//         headers: { "Content-Type": "multipart/form-data" },
-//       });
-//       updateUser({ avatar: res.data.avatar });
-//     } catch (err) {
-//       console.error("Upload failed:", err);
-//     } finally {
-//       setUploading(false);
-//     }
-//   };
-
-//   const handleBookings = () => {
-//     setShowBookings(true);
-//   };
-
-//   return (
-//     <>
-//       {/* Profile Icon */}
-//       <div ref={profileRef} style={{ position: "relative" }}>
-//         <img
-//           src={user.avatar || "/default-avatar.png"}
-//           alt="Profile"
-//           onClick={handleProfileClick}
-//           style={{
-//             width: "40px",
-//             height: "40px",
-//             borderRadius: "50%",
-//             cursor: "pointer",
-//             objectFit: "cover",
-//             border: "2px solid #fff",
-//           }}
-//         />
-
-//         {/* Profile Dropdown - only shows after clicking */}
-//         {showProfile && (
-//           <div
-//             style={{
-//               position: "absolute",
-//               top: "50px",
-//               right: "0",
-//               backgroundColor: "#fff",
-//               border: "1px solid #ccc",
-//               borderRadius: "8px",
-//               width: "180px",
-//               boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-//               padding: "10px",
-//               zIndex: 1000,
-//             }}
-//           >
-//             <div style={{ textAlign: "center", marginBottom: "10px" }}>
-//               <img
-//                 src={user.avatar || "/default-avatar.png"}
-//                 alt="Profile"
-//                 style={{ width: "60px", height: "60px", borderRadius: "50%", objectFit: "cover" }}
-//               />
-//               <div>
-//                 <label
-//                   htmlFor="avatar-upload"
-//                   style={{ cursor: "pointer", color: "#007bff", fontSize: "0.85rem" }}
-//                 >
-//                   {uploading ? "Uploading..." : "Change Avatar"}
-//                 </label>
-//                 <input
-//                   id="avatar-upload"
-//                   type="file"
-//                   accept="image/*"
-//                   style={{ display: "none" }}
-//                   onChange={handleFileChange}
-//                 />
-//               </div>
-//             </div>
-
-//             <hr />
-//             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-//               <li>
-//                 <button className="dropdown-item" onClick={() => setShowEnquiry(true)}>
-//                   Your Enquiries
-//                 </button>
-//               </li>
-//               <li>
-//                 <button className="dropdown-item" onClick={() => setShowBookings(true)}>
-//                   Your Bookings
-//                 </button>
-//               </li>
-//               <li>
-//                 <button className="dropdown-item" onClick={() => setShowFavourites(true)}>
-//                   My Favourite
-//                 </button>
-//               </li>
-//               <li>
-//                 <button className="dropdown-item text-danger" onClick={logout}>
-//                   Logout
-//                 </button>
-//               </li>
-//             </ul>
-//           </div>
-//         )}
-//       </div>
-
-//       {/* Bookings Popup */}
-//       {showBookings && (
-//         <div style={popupOverlayStyle}>
-//           <div style={popupContentStyle}>
-//             <button style={closeBtnStyle} onClick={() => setShowBookings(false)}>
-//               ✖
-//             </button>
-//             <MyBookings onClose={() => setShowBookings(false)} />
-//           </div>
-//         </div>
-//       )}
-
-//        {showEnquiry && (
-//         <div style={popupOverlayStyle}>
-//           <div style={popupContentStyle}>
-//             <button style={closeBtnStyle} onClick={() => setShowEnquiry(false)}>
-//               ✖
-//             </button>
-//             <MyEnquiry onClose={() => setShowEnquiry(false)} />
-//           </div>
-//         </div>
-//       )}
-
-//        {showFavourites && (
-//         <div style={popupOverlayStyle}>
-//           <div style={popupContentStyle}>
-//             <button style={closeBtnStyle} onClick={() => setShowFavourites(false)}>
-//               ✖
-//             </button>
-//             <MyFavourite onClose={() => setShowFavourites(false)} />
-//           </div>
-//         </div>
-//       )}
-//     </>
-//   );
-// };
-
-// // Popup styles
-// const popupOverlayStyle = {
-//   position: "fixed",
-//   top: 0,
-//   left: 0,
-//   width: "0",
-//   height: "0",
-//   backgroundColor: "rgba(0,0,0,0.5)",
-//   display: "flex",
-//   justifyContent: "center",
-//   alignItems: "center",
-//   zIndex: 2000,
-// };
-
-// const popupContentStyle = {
-//   backgroundColor: "#fff",
-//   padding: "20px",
-//   borderRadius: "8px",
-//   width: "80%",
-//   maxWidth: "500px",
-//   position: "relative",
-// };
-
-// const closeBtnStyle = {
-//   position: "absolute",
-//   top: "10px",
-//   right: "10px",
-//   background: "transparent",
-//   border: "none",
-//   fontSize: "1.2rem",
-//   cursor: "pointer",
-// };
-
-// export default ProfileDropdown;
-
-
-import React, { useState, useContext, useEffect, useRef } from "react";
-import { AuthContext } from "../../Context/AuthContext";
-import axios from "../../utils/api";
-import MyBookings from "../BookingForm/MyBookings";
-import MyFavourite from "./MyFavourite";
-import MyEnquiry from "./MyEnquiry";
-const API_URL = import.meta.env.VITE_API_URL;
-
+import React, { useState, useContext, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../Context/AuthContext.jsx";
 
 const ProfileDropdown = () => {
-  const { user, logout, updateUser, token } = useContext(AuthContext);
-  const [showProfile, setShowProfile] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [showBookings, setShowBookings] = useState(false);
-  const [showEnquiry, setShowEnquiry] = useState(false);
-  const [showFavourites, setShowFavourites] = useState(false);
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  const profileRef = useRef(null);
-
-  // Toggle profile dropdown on profile click
-  const handleProfileClick = () => setShowProfile(prev => !prev);
-
-  // Close profile dropdown if clicked outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setShowProfile(false);
-      }
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Close profile dropdown when opening modals
-  useEffect(() => {
-    if (showBookings || showEnquiry || showFavourites) {
-      setShowProfile(false);
-    }
-  }, [showBookings, showEnquiry, showFavourites]);
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("avatar", file);
-
-    setUploading(true);
-
-    try {
-      const res = await axios.post(`${API_URL}/api/users/me/avatar`,formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-            withCredentials: true
-
-          },
-        }
-      );
-
-      updateUser({ avatarUrl: `/api/users/${user._id}/avatar?t=${Date.now()}` });
-    } catch (err) {
-      console.error("Upload failed:", err);
-    } finally {
-      setUploading(false);
-    }
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate("/");
   };
 
-  const handleMenuItemClick = (action) => {
-    setShowProfile(false); // Close dropdown first
-    setTimeout(() => action(), 100); // Small delay to ensure smooth UX
-  };
+  const initials = user?.name
+    ? user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() || "U";
+
+  const displayName = user?.name || user?.email?.split("@")[0] || "Traveller";
+  const displayEmail = user?.email || "";
+
+  const menuItems = [
+    { icon: "👤", label: "My Profile",       path: "/profile" },
+    { icon: "🗺️", label: "My Bookings",      path: "/bookings" },
+    { icon: "❤️", label: "Saved Packages",   path: "/saved" },
+    { icon: "📋", label: "Booking History",  path: "/bookings" },
+    { icon: "⚙️", label: "Account Settings", path: "/settings" },
+    { icon: "🎁", label: "Refer & Earn",     path: "/refer" },
+    { icon: "🆘", label: "Support",          path: "/support" },
+  ];
 
   return (
     <>
-      {/* Profile Icon */}
-      <div ref={profileRef} style={{ position: "relative" }}>
-        <div
-          onClick={handleProfileClick}
-          style={{
-            width: "44px",
-            height: "44px",
-            borderRadius: "50%",
-            cursor: "pointer",
-            border: "2px solid #070000ff",
-            boxShadow: "0 2px 8px rgba(255, 46, 46, 0.1)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            background: "",
-            backgroundColor: "#10d2d5ff",
-            transition: "transform 0.2s ease",
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-          onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          {user?.avatarUrl ? (
-            <img
-              src={`${user.avatarUrl}?t=${Date.now()}`} // cache-busting
-              alt={`${user.name || "User"}'s profile`}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              onError={(e) => {
-                e.target.src = "/default-avatar.png"; // fallback image
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                height: "100%",
-                fontSize: "18px",
-                fontWeight: "600",
-                color: "#6c757d",
-                backgroundColor: "#e9ecef",
-              }}
-            >
-              {user?.name?.charAt(0)?.toUpperCase() || "U"}
-            </div>
-          )}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&display=swap');
 
-          {uploading && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: "-20px",
-                fontSize: "12px",
-                color: "#6c757d",
-              }}
-            >
-              Uploading...
-            </div>
-          )}
-        </div>
-      
-
-
-
-      {/* Profile Dropdown */}
-      {showProfile && (
-        <div
-          style={{
-            position: "absolute",
-            top: "55px",
-            right: "0",
-            backgroundColor: "#fff",
-            border: "1px solid #e9ecef",
-            borderRadius: "12px",
-            width: "220px",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-            padding: "0",
-            zIndex: 1000,
-            overflow: "hidden",
-            animation: "fadeInDown 0.2s ease-out",
-          }}
-        >
-          {/* User Info Section */}
-          <div style={{
-            padding: "20px",
-            borderBottom: "1px solid #f8f9fa",
-            textAlign: "center"
-          }}>
-            <div style={{
-              position: "relative",
-              display: "inline-block",
-              marginBottom: "10px"
-            }}>
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  overflow: "hidden",
-                  border: "3px solid #e9ecef",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "#f8f9fa",
-                  margin: "0 auto",
-                }}
-              >
-                {user?.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={`${user.name || 'User'}'s profile`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  <div style={{
-                    fontSize: "24px",
-                    fontWeight: "600",
-                    color: "#6c757d",
-                  }}>
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                )}
-              </div>
-
-              <label
-                htmlFor="avatar-upload"
-                style={{
-                  position: "absolute",
-                  bottom: "-5px",
-                  right: "-5px",
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "50%",
-                  backgroundColor: "#007bff",
-                  color: "white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  border: "2px solid white",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = "#0056b3"}
-                onMouseOut={(e) => e.target.style.backgroundColor = "#007bff"}
-                title="Change avatar"
-              >
-                {uploading ? "..." : "📷"}
-              </label>
-
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-                disabled={uploading}
-              />
-            </div>
-
-            <div style={{
-              fontWeight: "600",
-              fontSize: "14px",
-              color: "#2c3e50",
-              marginBottom: "4px"
-            }}>
-              {user?.name || "User"}
-            </div>
-
-            {user?.email && (
-              <div style={{
-                fontSize: "12px",
-                color: "#6c757d",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}>
-                {user.email}
-              </div>
-            )}
-          </div>
-
-          {/* Menu Items */}
-          <div style={{ padding: "8px 0" }}>
-            <button
-              className="dropdown-item"
-              onClick={() => handleMenuItemClick(() => setShowEnquiry(true))}
-              style={menuItemStyle}
-              onMouseOver={(e) => e.target.style.backgroundColor = "#f8f9fa"}
-              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-            >
-              <span style={{ marginRight: "12px" }}>📋</span>
-              Your Enquiries
-            </button>
-
-            <button
-              className="dropdown-item"
-              onClick={() => handleMenuItemClick(() => setShowBookings(true))}
-              style={menuItemStyle}
-              onMouseOver={(e) => e.target.style.backgroundColor = "#f8f9fa"}
-              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-            >
-              <span style={{ marginRight: "12px" }}>📅</span>
-              Your Bookings
-            </button>
-
-            <button
-              className="dropdown-item"
-              onClick={() => handleMenuItemClick(() => setShowFavourites(true))}
-              style={menuItemStyle}
-              onMouseOver={(e) => e.target.style.backgroundColor = "#f8f9fa"}
-              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-            >
-              <span style={{ marginRight: "12px" }}>❤️</span>
-              My Favourites
-            </button>
-
-            <hr style={{
-              margin: "8px 12px",
-              border: "none",
-              borderTop: "1px solid #e9ecef"
-            }} />
-
-            <button
-              className="dropdown-item"
-              onClick={() => handleMenuItemClick(logout)}
-              style={{
-                ...menuItemStyle,
-                color: "#dc3545"
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = "#fff5f5";
-                e.target.style.color = "#c82333";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = "transparent";
-                e.target.style.color = "#dc3545";
-              }}
-            >
-              <span style={{ marginRight: "12px" }}>🚪</span>
-              Logout
-            </button>
-          </div>
-        </div>
-      )}
-      
-      </div>
-  
-
-      {/* Modals */ }
-  {
-    showBookings && (
-      <div style={popupOverlayStyle}>
-        <div style={popupContentStyle}>
-          <button
-            style={closeBtnStyle}
-            onClick={() => setShowBookings(false)}
-            aria-label="Close bookings"
-          >
-            ✕
-          </button>
-          <MyBookings onClose={() => setShowBookings(false)} />
-        </div>
-      </div>
-    )
-  }
-
-  {
-    showEnquiry && (
-      <div style={popupOverlayStyle}>
-        <div style={popupContentStyle}>
-          <button
-            style={closeBtnStyle}
-            onClick={() => setShowEnquiry(false)}
-            aria-label="Close enquiries"
-          >
-            ✕
-          </button>
-          <MyEnquiry onClose={() => setShowEnquiry(false)} />
-        </div>
-      </div>
-    )
-  }
-
-  {
-    showFavourites && (
-      <div style={popupOverlayStyle}>
-        <div style={popupContentStyle}>
-          <button
-            style={closeBtnStyle}
-            onClick={() => setShowFavourites(false)}
-            aria-label="Close favourites"
-          >
-            ✕
-          </button>
-          <MyFavourite onClose={() => setShowFavourites(false)} />
-        </div>
-      </div>
-    )
-  }
-
-  {/* CSS Animation */ }
-  <style >{`
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        .pdd-root {
+          position: relative;
+          font-family: 'Sora', sans-serif;
         }
+
+        /* ── Avatar trigger ── */
+        .pdd-trigger {
+          display: flex; align-items: center; gap: 8px;
+          background: none; border: none; cursor: pointer; padding: 4px 6px 4px 4px;
+          border-radius: 50px; transition: background 0.2s ease;
+        }
+        .pdd-trigger:hover { background: rgba(61,82,160,0.08); }
+
+        .pdd-avatar {
+          width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+          background: linear-gradient(135deg, #3D52A0 0%, #6475C7 100%);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.78rem; font-weight: 600; color: white; letter-spacing: 0.04em;
+          box-shadow: 0 2px 8px rgba(61,82,160,0.3);
+          overflow: hidden; position: relative;
+        }
+        .pdd-avatar img {
+          width: 100%; height: 100%; object-fit: cover;
+          position: absolute; inset: 0;
+        }
+
+        .pdd-trigger-name {
+          font-size: 0.84rem; font-weight: 500; color: inherit;
+          max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .pdd-trigger-chevron {
+          font-size: 0.6rem; opacity: 0.5; margin-left: 2px;
+          transition: transform 0.25s ease;
+          display: inline-block; color: inherit;
+        }
+        .pdd-trigger-chevron.open { transform: rotate(180deg); opacity: 0.9; }
+
+        /* ── Dropdown panel ── */
+        .pdd-panel {
+          position: absolute; top: calc(100% + 12px); right: 0; width: 270px;
+          background: white; border-radius: 16px;
+          box-shadow: 0 24px 56px rgba(15,23,42,0.14), 0 4px 16px rgba(15,23,42,0.06);
+          border: 1px solid rgba(15,23,42,0.08);
+          opacity: 0; visibility: hidden; transform: translateY(8px) scale(0.97);
+          transform-origin: top right;
+          transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+          z-index: 2000; overflow: hidden;
+        }
+        .pdd-panel.open {
+          opacity: 1; visibility: visible; transform: translateY(0) scale(1);
+        }
+
+        /* Panel header */
+        .pdd-head {
+          padding: 16px 18px 14px;
+          background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+          display: flex; align-items: center; gap: 12px;
+          border-bottom: 1px solid rgba(201,168,76,0.15);
+        }
+        .pdd-head-avatar {
+          width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+          background: linear-gradient(135deg, #3D52A0, #6475C7);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.9rem; font-weight: 600; color: white;
+          border: 2px solid rgba(201,168,76,0.4);
+          overflow: hidden; position: relative;
+        }
+        .pdd-head-avatar img {
+          width: 100%; height: 100%; object-fit: cover;
+          position: absolute; inset: 0;
+        }
+        .pdd-head-info { flex: 1; min-width: 0; }
+        .pdd-head-name {
+          font-size: 0.9rem; font-weight: 600; color: white;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pdd-head-email {
+          font-size: 0.72rem; color: rgba(255,255,255,0.5);
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
+        }
+        .pdd-head-badge {
+          display: flex; align-items: center; gap: 4px; margin-top: 4px;
+          background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
+          border-radius: 20px; padding: 2px 8px; width: fit-content;
+        }
+        .pdd-head-badge span { font-size: 0.64rem; color: #C9A84C; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+
+        /* Menu items */
+        .pdd-body { padding: 8px; }
+        .pdd-item {
+          display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+          border-radius: 10px; color: #1e293b; text-decoration: none;
+          font-size: 0.855rem; font-weight: 500;
+          transition: background 0.18s, color 0.18s, transform 0.18s;
+          cursor: pointer; background: none; border: none;
+          width: 100%; text-align: left; font-family: 'Sora', sans-serif;
+        }
+        .pdd-item:hover { background: #f1f5ff; color: #3D52A0; transform: translateX(2px); }
+        .pdd-item-icon {
+          width: 32px; height: 32px; border-radius: 9px; background: #f8fafc;
+          display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+          flex-shrink: 0; transition: transform 0.18s;
+        }
+        .pdd-item:hover .pdd-item-icon { transform: scale(1.1); }
+        .pdd-item-label { flex: 1; }
+        .pdd-item-arrow { font-size: 0.65rem; opacity: 0; color: #3D52A0; transition: opacity 0.18s; }
+        .pdd-item:hover .pdd-item-arrow { opacity: 1; }
+
+        .pdd-divider { height: 1px; background: #f1f5f9; margin: 6px 8px; }
+
+        /* Logout */
+        .pdd-logout {
+          display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+          border-radius: 10px; color: #ef4444;
+          font-size: 0.855rem; font-weight: 500;
+          transition: background 0.18s;
+          cursor: pointer; background: none; border: none;
+          width: 100%; text-align: left; font-family: 'Sora', sans-serif;
+        }
+        .pdd-logout:hover { background: #fff1f1; }
+        .pdd-logout-icon {
+          width: 32px; height: 32px; border-radius: 9px; background: #fff1f1;
+          display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;
+        }
+
+        /* Footer strip */
+        .pdd-foot {
+          padding: 10px 18px; border-top: 1px solid #f1f5f9;
+          background: #fafbff;
+          display: flex; align-items: center; justify-content: center; gap: 16px;
+        }
+        .pdd-foot a { font-size: 0.72rem; color: #94a3b8; text-decoration: none; transition: color 0.18s; }
+        .pdd-foot a:hover { color: #3D52A0; }
       `}</style>
+
+      <div className="pdd-root" ref={ref}>
+        {/* Trigger button */}
+        <button className="pdd-trigger" onClick={() => setOpen(v => !v)}>
+          <div className="pdd-avatar">
+            {user?.photoURL
+              ? <img src={user.photoURL} alt={displayName} />
+              : initials
+            }
+          </div>
+          <span className="pdd-trigger-name">{displayName.split(" ")[0]}</span>
+          <span className={`pdd-trigger-chevron ${open ? "open" : ""}`}>▼</span>
+        </button>
+
+        {/* Dropdown panel */}
+        <div className={`pdd-panel ${open ? "open" : ""}`}>
+
+          {/* Header */}
+          <div className="pdd-head">
+            <div className="pdd-head-avatar">
+              {user?.photoURL
+                ? <img src={user.photoURL} alt={displayName} />
+                : initials
+              }
+            </div>
+            <div className="pdd-head-info">
+              <div className="pdd-head-name">{displayName}</div>
+              <div className="pdd-head-email">{displayEmail}</div>
+              <div className="pdd-head-badge">
+                <span>✦</span>
+                <span>Explorer Member</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu */}
+          <div className="pdd-body">
+            {menuItems.map((item, i) => (
+              <Link
+                key={i}
+                to={item.path}
+                className="pdd-item"
+                onClick={() => setOpen(false)}
+              >
+                <span className="pdd-item-icon">{item.icon}</span>
+                <span className="pdd-item-label">{item.label}</span>
+                <span className="pdd-item-arrow">›</span>
+              </Link>
+            ))}
+
+            <div className="pdd-divider" />
+
+            <button className="pdd-logout" onClick={handleLogout}>
+              <span className="pdd-logout-icon">🚪</span>
+              Sign Out
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div className="pdd-foot">
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/help">Help</a>
+          </div>
+        </div>
+      </div>
     </>
   );
 };
 
-// Styles
-const menuItemStyle = {
-  width: "100%",
-  padding: "12px 16px",
-  border: "none",
-  background: "transparent",
-  textAlign: "left",
-  cursor: "pointer",
-  fontSize: "14px",
-  color: "#495057",
-  display: "flex",
-  alignItems: "center",
-  transition: "all 0.2s ease",
-  fontFamily: "inherit",
-};
-
-const popupOverlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: '100vh',
-  onfocus: '100vw',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent black
-  zIndex: 1000, // ensure it's above other content
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'flex-start', // align to top
-  overflowY: 'auto', // enable scrolling if content is long
-};
-
-const popupContentStyle = {
-  width: '100%', // full width
-  minHeight: '100vh', // full viewport height
-  backgroundColor: '#fff', // white background
-  padding: '20px',
-  boxSizing: 'border-box', // include padding in width calculation
-  position: 'relative', // for absolute positioning of close button
-};
-
-const closeBtnStyle = {
-  position: 'absolute',
-  top: '15px',
-  right: '15px',
-  background: 'transparent',
-  border: 'none',
-  fontSize: '24px',
-  cursor: 'pointer',
-  padding: '5px',
-};
 export default ProfileDropdown;

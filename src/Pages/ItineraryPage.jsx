@@ -16,9 +16,16 @@ import {
 } from "react-icons/fa";
 import { AuthContext } from "../Context/AuthContext";
 import TripPlannerModal from "../Components/TripPlannerModal";
-import api from '../utils/api.js'
+import api from '../utils/api.js';
 
-// ── NEW: AI Trip Planner ──────────────────────────────────────────────────────
+// ── Cloudinary URL optimizer ──────────────────────────────────
+// Adds f_auto,q_auto,w_900 only for Cloudinary URLs; passes all others through unchanged
+const getCloudinaryUrl = (url, width = 900) => {
+  if (!url || !url.startsWith('http')) return url;
+  if (!url.includes('cloudinary.com')) return url;
+  return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
+};
+
 // ── Per-type colour themes ────────────────────────────────────────────────────
 const THEMES = {
   "custom-tour": { grad: "linear-gradient(135deg,#FF6B6B,#FF8E53)", primary: "#FF6B6B", light: "#FFF0F0", icon: "🎨" },
@@ -237,8 +244,7 @@ export default function ItineraryPage() {
     const load = async () => {
       setLoading(true); setError(null);
       try {
-        const res = await api.get(`/packages/${encodeURIComponent(type)}/${encodeURIComponent(location)}`
-        );
+        const res = await api.get(`/packages/${encodeURIComponent(type)}/${encodeURIComponent(location)}`);
         const raw = Array.isArray(res.data) ? res.data[0] : res.data;
         setPkg(normalisePackage(raw));
       } catch {
@@ -293,9 +299,11 @@ export default function ItineraryPage() {
   const inclusions = pkg?.inclusions || [];
   const exclusions = pkg?.exclusions || [];
 
-  const images = pkg?.gallery?.length
+  // Extract image URLs and run through Cloudinary optimizer
+  const images = (pkg?.gallery?.length
     ? pkg.gallery.map((item) => (typeof item === "string" ? item : item.img)).filter(Boolean)
-    : [];
+    : []
+  ).map((url) => getCloudinaryUrl(url));
 
   const openEnquiry = useCallback(() => {
     if (!user) {
@@ -649,9 +657,14 @@ export default function ItineraryPage() {
         {images.length > 1 && (
           <div className="itp-thumbs">
             {images.slice(0, 4).map((img, i) => (
-              <img key={i} src={img} alt="" className={`itp-thumb ${i === activeImg ? "active" : ""}`}
+              <img
+                key={i}
+                src={getCloudinaryUrl(img, 120)}
+                alt=""
+                className={`itp-thumb ${i === activeImg ? "active" : ""}`}
                 onClick={() => setActiveImg(i)}
-                onError={(e) => { e.target.style.display = "none"; }} />
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
             ))}
           </div>
         )}
@@ -802,9 +815,14 @@ export default function ItineraryPage() {
             images.length > 0 ? (
               <div className="itp-gallery">
                 {images.map((img, i) => (
-                  <img key={i} src={img} alt={`${locationTitle} ${i + 1}`} className="itp-gal-img"
+                  <img
+                    key={i}
+                    src={getCloudinaryUrl(img, 800)}
+                    alt={`${locationTitle} ${i + 1}`}
+                    className="itp-gal-img"
                     onClick={() => setActiveImg(i)}
-                    onError={(e) => { e.target.style.display = "none"; }} />
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
                 ))}
               </div>
             ) : (
@@ -887,7 +905,6 @@ export default function ItineraryPage() {
                 <FaBalanceScale size={13} /> Compare Durations &amp; Packages
               </button>
 
-              {/* ── AI TRIP PLANNER ── inserted below compare button ── */}
               <TripPlannerModal
                 prefillDestination={locationTitle}
                 prefillTripType={typeTitle}

@@ -91,8 +91,8 @@ const Domestic = () => {
     async function fetchPackages() {
       try {
         const [res1, res2] = await Promise.all([
-          api.get('/maharashtra-domestic/getallAnimation', { signal: controller.signal, timeout: 10_000 }),
-          api.get('/maharashtra-domestic/getstates',       { signal: controller.signal, timeout: 10_000 }),
+          api.get('/maharashtra-domestic/getallAnimation'),
+          api.get('/maharashtra-domestic/getstates'),
         ]);
         if (controller.signal.aborted) return;
         const animData  = res1.data || [];

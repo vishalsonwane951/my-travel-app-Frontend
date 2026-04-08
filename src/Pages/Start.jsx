@@ -425,7 +425,7 @@ const HeroSection = React.memo(({ onBookNow, onSearch }) => {
             className="hero-img"
             loading={i === 0 ? 'eager' : 'lazy'}
             fetchpriority={i === 0 ? 'high' : 'low'}
-            onError={e => e.target.src = '/placeholder.jpg'}
+            // onError={e => e.target.src = '/placeholder.jpg'}
           />
           <div className="hero-overlay" />
         </div>

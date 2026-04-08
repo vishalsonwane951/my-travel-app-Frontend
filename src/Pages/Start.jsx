@@ -576,7 +576,7 @@ const TourCard = React.memo(({ card, onFavourite, isFav, onBookNow, onRate, rati
         loading="lazy"
         decoding="async"
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={e => e.target.src = '/placeholder.jpg'}
+        // onError={e => e.target.src = '/placeholder.jpg'}
       />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)' }} />
       <button onClick={() => onFavourite(card._id)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }}>

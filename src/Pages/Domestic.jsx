@@ -519,7 +519,7 @@ const DomesticCard = React.memo(({ item, isAdmin, getImageUrl, onDelete, onUpdat
         style={{ transform: 'scale(1)', transition: 'transform 700ms ease' }}
         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-        onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
+        // onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }}
       />
 
       {/* Gradient overlays */}

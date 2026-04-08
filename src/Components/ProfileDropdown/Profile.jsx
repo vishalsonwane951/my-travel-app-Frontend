@@ -386,13 +386,17 @@ export const EnquiriesTab = ({ user, token }) => {
         (async () => {
             try {
                 const tk = token || localStorage.getItem("token");
+                console.log('token',tk)
                 const url = user?.isAdmin ? "/bookings" : `/bookings/user/${user._id}`;
                 const { data } = await api.get(url, { headers: { Authorization: `Bearer ${tk}` } });
+                console.log('token',tk)
                 if (data.success) setEnquiries(data.bookings || []);
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
         })();
     }, [user, token]);
+
+    
 
     const handleChange = (e) => {
         const { name, value } = e.target;

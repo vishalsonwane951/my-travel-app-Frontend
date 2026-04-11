@@ -30,13 +30,13 @@ const ProfileDropdown = () => {
   const displayEmail = user?.email || "";
 
   const menuItems = [
-    { icon: "👤", label: "My Profile",       path: "/profile" },
-    { icon: "🗺️", label: "My Bookings",      path: "/bookings" },
-    { icon: "❤️", label: "Saved Packages",   path: "/saved" },
-    { icon: "📋", label: "Booking History",  path: "/bookings" },
+    { icon: "👤", label: "My Profile", path: "/profile" },
+    { icon: "🗺️", label: "My Bookings", path: "/bookings" },
+    { icon: "❤️", label: "Saved Packages", path: "/saved" },
+    { icon: "📋", label: "My Enquiries", path: "/enquiries" },
     { icon: "⚙️", label: "Account Settings", path: "/settings" },
-    { icon: "🎁", label: "Refer & Earn",     path: "/refer" },
-    { icon: "🆘", label: "Support",          path: "/support" },
+    { icon: "🎁", label: "Refer & Earn", path: "/refer" },
+    { icon: "🆘", label: "Support", path: "/support" },
   ];
 
   return (
@@ -51,6 +51,7 @@ const ProfileDropdown = () => {
 
         /* ── Avatar trigger ── */
         .pdd-trigger {
+        cursor: pointer;
           display: flex; align-items: center; gap: 8px;
           background: none; border: none; cursor: pointer; padding: 4px 6px 4px 4px;
           border-radius: 50px; transition: background 0.2s ease;
@@ -58,6 +59,7 @@ const ProfileDropdown = () => {
         .pdd-trigger:hover { background: rgba(61,82,160,0.08); }
 
         .pdd-avatar {
+        cusror: pointer;
           width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
           background: linear-gradient(135deg, #3D52A0 0%, #6475C7 100%);
           display: flex; align-items: center; justify-content: center;

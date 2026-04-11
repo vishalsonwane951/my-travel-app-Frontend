@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useContext, useEffect, useCallback, useMemo, useRef } from "react";
 import LoginRegister from "../../Pages/LoginRegister.jsx";
-    import { AuthContext } from "../../Context/AuthContext.jsx";
+import { AuthContext } from "../../Context/AuthContext.jsx";
 import ProfileDropdown from "../ProfileDropdown/ProfileDropdown.jsx";
 import UserProfilePopup from "../Profile/Profile.jsx";
 
@@ -12,8 +12,10 @@ const BOOKING_EVENTS = [
   { name: "Ananya K.", location: "Kerala", pkg: "Honeymoon Special", time: "8 min ago" },
   { name: "Vikram T.", location: "Rajasthan", pkg: "Heritage Tour", time: "11 min ago" },
   { name: "Sneha P.", location: "Dubai", pkg: "Luxury Escape", time: "14 min ago" },
-  { name: "Arjun R.", location: "Thailand", pkg
-    : "Adventure Pack", time: "17 min ago" },
+  {
+    name: "Arjun R.", location: "Thailand", pkg
+      : "Adventure Pack", time: "17 min ago"
+  },
   { name: "Meera D.", location: "Shimla", pkg: "Weekend Getaway", time: "20 min ago" },
   { name: "Karan B.", location: "Varanasi", pkg: "Pilgrimage Tour", time: "23 min ago" },
 ];
@@ -153,20 +155,20 @@ const Header = () => {
   ], []);
 
   const tourTypes = useMemo(() => [
-    { name: "Custom Tours",    path: "/tourcard/custom-tour",     icon: "🎨", color: "#FF6B6B", badge: null },
-    { name: "Adventure Tours", path: "/tourcard/adventure-tour",  icon: "🏔️", color: "#4ECDC4", badge: "Popular" },
-    { name: "Family Tours",    path: "/tourcard/family-tour",     icon: "👨‍👩‍👧‍👦", color: "#FFB347", badge: null },
-    { name: "Group Tours",     path: "/tourcard/group-tour",      icon: "🚌", color: "#A37BFF", badge: "Best Value" },
-    { name: "City Tours",      path: "/tourcard/city-tour",       icon: "🌆", color: "#FF9F1C", badge: null },
-    { name: "Honeymoon Tours", path: "/tourcard/honeymoon-tour",  icon: "💑", color: "#FF6EB4", badge: "New" },
-    { name: "Weekend Getaways",path: "/tourcard/weekend-getaway", icon: "🌅", color: "#5BC0EB", badge: "New" },
-    { name: "Luxury Tours",    path: "/tourcard/luxury-tour",     icon: "💎", color: "#C9A84C", badge: "Premium" },
-    { name: "Pilgrimage Tours",path: "/tourcard/pilgrimage-tour", icon: "🕌", color: "#7BAE7F", badge: "New" },
+    { name: "Custom Tours", path: "/tourcard/custom-tour", icon: "🎨", color: "#FF6B6B", badge: null },
+    { name: "Adventure Tours", path: "/tourcard/adventure-tour", icon: "🏔️", color: "#4ECDC4", badge: "Popular" },
+    { name: "Family Tours", path: "/tourcard/family-tour", icon: "👨‍👩‍👧‍👦", color: "#FFB347", badge: null },
+    { name: "Group Tours", path: "/tourcard/group-tour", icon: "🚌", color: "#A37BFF", badge: "Best Value" },
+    { name: "City Tours", path: "/tourcard/city-tour", icon: "🌆", color: "#FF9F1C", badge: null },
+    { name: "Honeymoon Tours", path: "/tourcard/honeymoon-tour", icon: "💑", color: "#FF6EB4", badge: "New" },
+    { name: "Weekend Getaways", path: "/tourcard/weekend-getaway", icon: "🌅", color: "#5BC0EB", badge: "New" },
+    { name: "Luxury Tours", path: "/tourcard/luxury-tour", icon: "💎", color: "#C9A84C", badge: "Premium" },
+    { name: "Pilgrimage Tours", path: "/tourcard/pilgrimage-tour", icon: "🕌", color: "#7BAE7F", badge: "New" },
   ], []);
 
   const currentTicker = BOOKING_EVENTS[tickerIndex];
   const isHeroPage = ["/", "/services"].includes(location.pathname);
-  const textColor = scrolled ? "#1a1a2e" : (isHeroPage ? "#ffffff" : "#1a1a2e");
+  const textColor = scrolled ? "#1a1a2e" : (isHeroPage ? "#1a1a2e" : "#1a1a2e");
 
   return (
     <>
@@ -252,7 +254,7 @@ const Header = () => {
           box-shadow: var(--shadow-soft);
           border-bottom: 1px solid rgba(200,200,230,0.25);
         }
-        .dvd-header.transparent { background: transparent; }
+        .dvd-header.transparent { background: transparent;  }
 
         .dvd-inner {
           max-width: 1440px; margin: 0 auto; padding: 0 2rem;
@@ -571,7 +573,7 @@ const Header = () => {
 
       {/* ── Main Header ──────────────────────────────────────────────────────── */}
       <header
-        className={`dvd-header ${announcementBar ? "with-bar" : ""} ${scrolled ? "scrolled" : "transparent"}`}
+        className={`dvd-header ${announcementBar ? "with-bar" : ""} ${scrolled ? "scrolled" : "scrolled"}`}
         style={{ top: announcementBar ? 40 : 0 }}
       >
         <div className="dvd-inner ">
@@ -604,9 +606,8 @@ const Header = () => {
                       <span className="item-icon" style={{ background: `${t.color}18` }}>{t.icon}</span>
                       <span>{t.name}</span>
                       {t.badge && (
-                        <span className={`dvd-item-badge badge-${
-                          t.badge === "New" ? "new" : t.badge === "Popular" ? "popular" : t.badge === "Best Value" ? "value" : "premium"
-                        }`}>{t.badge}</span>
+                        <span className={`dvd-item-badge badge-${t.badge === "New" ? "new" : t.badge === "Popular" ? "popular" : t.badge === "Best Value" ? "value" : "premium"
+                          }`}>{t.badge}</span>
                       )}
                     </Link>
                   ))}
@@ -630,7 +631,7 @@ const Header = () => {
                     <span className="item-icon">{d.icon}</span>{d.name}
                   </Link>
                 ))}
-                <div className="dvd-menu-footer"><span></span><Link to="/domestic">All Domestic →</Link></div>
+                <div className="dvd-menu-footer"><span></span><Link to="/" state={{ scrollToDomestic: true }}>All Domestic →</Link></div>
               </div>
             </div>
 
@@ -646,7 +647,7 @@ const Header = () => {
                     <span className="item-icon">{d.icon}</span>{d.name}
                   </Link>
                 ))}
-                <div className="dvd-menu-footer"><span></span><Link to="/international">All International →</Link></div>
+                <div className="dvd-menu-footer"><span></span><Link to="/" state={{ scrollToInternational: true }}>All International →</Link></div>
               </div>
             </div>
 
@@ -684,7 +685,7 @@ const Header = () => {
             </div>
 
             {!user ? (
-              <button onClick={() => setShowAuth(true)} className={`dvd-signin-btn ${scrolled ? "dark" : "light"}`}>
+              <button onClick={() => setShowAuth(true)} className={`dvd-signin-btn ${scrolled ? "dark" : "dark"}`}>
                 Sign In
               </button>
             ) : (
@@ -752,7 +753,7 @@ const Header = () => {
 
         <div className="dvd-mobile-body">
           <Link to="/" className="dvd-mobile-nav-item" onClick={() => setMenuOpen(false)}><span>🏠 Home</span></Link>
-          <button onClick={() => scrollToSection("about-us", "scrollToAbout")} className="dvd-mobile-nav-item"><span>👥 About</span></button>
+          <button onClick={() => scrollToSection("about-us", "scrollToAbout")} className="dvd-nav-link">About</button>
           <Link to="/services" className="dvd-mobile-nav-item" onClick={() => setMenuOpen(false)}><span>🛎️ Services</span></Link>
 
           <div>
@@ -766,9 +767,8 @@ const Header = () => {
                   <span className="item-icon" style={{ background: `${t.color}18` }}>{t.icon}</span>
                   {t.name}
                   {t.badge && (
-                    <span className={`dvd-item-badge badge-${
-                      t.badge === "New" ? "new" : t.badge === "Popular" ? "popular" : t.badge === "Best Value" ? "value" : "premium"
-                    }`} style={{ marginLeft: "auto" }}>{t.badge}</span>
+                    <span className={`dvd-item-badge badge-${t.badge === "New" ? "new" : t.badge === "Popular" ? "popular" : t.badge === "Best Value" ? "value" : "premium"
+                      }`} style={{ marginLeft: "auto" }}>{t.badge}</span>
                   )}
                 </Link>
               ))}

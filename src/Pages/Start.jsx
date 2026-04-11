@@ -336,7 +336,7 @@ const SkeletonCard = () => (
 const SectionSkeleton = () => (
   <div style={{ maxWidth: 1400, margin: '0 auto', padding: '60px 24px' }}>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 24 }}>
-      {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
+      {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
     </div>
   </div>
 );
@@ -588,7 +588,7 @@ const TourCard = React.memo(({ card, onFavourite, isFav, onBookNow, onRate, rati
       <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>{card.title}</div>
       <div style={{ fontFamily: 'Outfit', fontSize: '0.78rem', color: '#9CA3AF', marginBottom: 12 }}>{card.category || 'Popular Destination'}</div>
       <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
-        {[1,2,3,4,5].map(s => (
+        {[1, 2, 3, 4, 5].map(s => (
           <button key={s} onClick={() => onRate(card._id, s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '1.1rem', color: s <= (rating || 0) ? '#F59E0B' : '#E5E7EB' }}>★</button>
         ))}
       </div>
@@ -620,7 +620,7 @@ const WishlistDrawer = React.memo(({ open, onClose, wishlist, items }) => {
             </div>
           ) : savedItems.map((item, i) => (
             <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: '1px solid #F9FAFB' }}>
-              <img src={getImageUrl(item.images || item.image || item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width: 70, height: 70, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} onError={e => { e.target.onerror = null; e.target.src = '/placeholder.jpg'; }} />
+              <img src={getImageUrl(item.images || item.image || item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width: 70, height: 70, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
                 <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', color: '#9CA3AF', marginBottom: 8 }}>India • 4.8 ★</div>
@@ -677,7 +677,7 @@ const AboutSection = React.memo(({ onBookNow }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 24 }}>
           <div className="glass-card" style={{ padding: 32 }}>
             <div style={{ display: 'flex', gap: 18, marginBottom: 24 }}>
-              <img src="/photo2.jpg" alt="Founder" loading="lazy" decoding="async" style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'cover', flexShrink: 0, border: '2px solid var(--saffron)' }} onError={e => e.target.src = '/placeholder.jpg'} />
+              <img src="/photo2.jpg" alt="Founder" loading="lazy" decoding="async" style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'cover', flexShrink: 0, border: '2px solid var(--saffron)' }} />
               <div>
                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>Mr. Sonwane</div>
                 <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', color: 'var(--saffron-light)', letterSpacing: 1, textTransform: 'uppercase', marginTop: 4 }}>Founder & CEO</div>
@@ -754,8 +754,10 @@ function Start() {
 
   // ─── FIX 3: Intersection observer for each section ──────────
   const domesticVisible = useIsVisible(domesticRef);
-  const intlVisible = useIsVisible(intlRef);
+  const intlVisible = useIsVisible(intlRef)
   const northVisible = useIsVisible(northRef);
+
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handler = () => setIsVisible(window.scrollY > 400);
@@ -764,10 +766,26 @@ function Start() {
   }, []);
 
   useEffect(() => {
-    if (location.state?.scrollToAbout && aboutRef.current) {
-      setTimeout(() => aboutRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-    }
-  }, [location]);
+  const state = location.state;
+  if (!state) return;
+
+  // Clear state immediately so it doesn't re-trigger
+  navigate(location.pathname, { replace: true, state: {} });
+
+  if (state.scrollToAbout) {
+    setTimeout(() => aboutRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+  }
+
+  if (state.scrollToDomestic) {
+    setTimeout(() => domesticRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+  }
+
+  if (state.scrollToInternational) {
+    setTimeout(() => intlRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+  }
+
+}, [location]);
+
 
   // ─── FIX 1: Single Promise.all for all critical data ────────
   useEffect(() => {
@@ -838,7 +856,7 @@ function Start() {
         </div>
       )}
 
-      <HeroSection onBookNow={handleBookNow} onSearch={() => {}} />
+      <HeroSection onBookNow={handleBookNow} onSearch={() => { }} />
       <StatsBar />
       <WidgetsRow />
 
@@ -856,7 +874,7 @@ function Start() {
           </div>
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 24 }}>
-              {[1,2,3].map(i => <SkeletonCard key={i} />)}
+              {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
             </div>
           ) : (
             <Carousel responsive={responsive} infinite autoPlay autoPlaySpeed={3800} keyBoardControl showDots containerClass="pb-10" itemClass="px-2" removeArrowOnDeviceType={['mobile']}>
@@ -885,7 +903,7 @@ function Start() {
         </Suspense>
       </div>
 
-      <div ref={intlRef} id="international">
+      <div ref={intlRef} id="international" style={{ minHeight: intlVisible ? 'auto' : '1px' }}>
         <Suspense fallback={<SectionSkeleton />}>
           {intlVisible && (
             <International
@@ -903,7 +921,7 @@ function Start() {
         </Suspense>
       </div>
 
-      <div ref={aboutRef}>
+      <div ref={aboutRef} id="about-us">
         <AboutSection onBookNow={handleBookNow} />
       </div>
 

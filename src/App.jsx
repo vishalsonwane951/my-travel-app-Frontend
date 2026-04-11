@@ -103,10 +103,10 @@ const App = () => {
             <Route path="/maharashtra" element={<Maharashtra />} />
             <Route path="/blogs" element={<BlogsPage />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/overview" element={<OverviewTab />} />
+            {/* <Route path="/overview" element={<OverviewTab />} /> */}
             <Route path="/bookings" element={<BookingsTab />} />
             <Route path="/enquiries" element={<EnquiriesTab />} />
-            <Route path="/saved" element={<SavedTab />} />
+          <Route path="/saved" element={<SavedTab />} />
             <Route path="/settings" element={<SettingsTab />} />
 
             {/* 404 */}

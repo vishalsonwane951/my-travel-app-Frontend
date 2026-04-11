@@ -362,6 +362,7 @@ export const BookingsTab = ({ user, token }) => {
    TAB: ENQUIRIES
 ══════════════════════════════════════════════════════════════════════ */
 export const EnquiriesTab = ({ user, token }) => {
+    
     const [enquiries, setEnquiries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
@@ -376,9 +377,9 @@ export const EnquiriesTab = ({ user, token }) => {
         message: "", startDate: "", duration: 1, adults: 1, children: 0, seniors: 0, budget: "",
         generatedBy: { fullName: user?.name || "", email: user?.email || "", phone: "" },
     });
-
     const showToast = (msg, type = "success") => {
         setToast({ msg, type });
+        
         setTimeout(() => setToast(null), 4000);
     };
 
@@ -954,8 +955,8 @@ export const useStats = (user, token) => {
         const tk = token || localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${tk}` };
         Promise.allSettled([
-            api.get(user.isAdmin ? "/bookings/confirmed" : "/bookings/confirmed-user", { headers }),
-            api.get(user.isAdmin ? "/bookings" : `/bookings/user/${user._id}`, { headers }),
+            // api.get(user.isAdmin ? "/bookings/confirmed" : "/bookings/confirmed-user", { headers }),
+            // api.get(user.isAdmin ? "/bookings" : `/bookings/user/${user._id}`, { headers }),
             api.get(`/favourites/${user._id}`, { headers }),
         ]).then(([b, e, f]) => {
             setStats({

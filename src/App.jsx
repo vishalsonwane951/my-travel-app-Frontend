@@ -28,7 +28,6 @@ import ItineraryPage from "./Pages/ItineraryPage.jsx";
 
 import Login from "./Pages/Login.jsx";
 import { PackageProvider } from "./Context/PackageContext.jsx";
-import BlogsPage from "./Components/blogs.jsx";
 import Profile, { BookingsTab, EnquiriesTab, OverviewTab, SavedTab, SettingsTab } from "./Components/ProfileDropdown/Profile.jsx";
 import ProfilePopup from "./Components/Profile/Profile.jsx";
 
@@ -48,6 +47,7 @@ const App = () => {
   return (
     <>
       <Header />
+      
 
       <PackageProvider>
         <Suspense fallback={<div className="loading">Loading...</div>}>
@@ -101,7 +101,6 @@ const App = () => {
 
             {/* State Pages */}
             <Route path="/maharashtra" element={<Maharashtra />} />
-            <Route path="/blogs" element={<BlogsPage />} />
             <Route path="/profile" element={<Profile />} />
             {/* <Route path="/overview" element={<OverviewTab />} /> */}
             <Route path="/bookings" element={<BookingsTab />} />

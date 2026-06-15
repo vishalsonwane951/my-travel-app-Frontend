@@ -22,6 +22,7 @@ import {
 import TourPackageCard from '../Components/TourPackageCard.jsx';
 import TripPlannerModal from '../Components/TripPlannerModal.jsx';
 import ItineraryResult from '../Components/ItineraryResult.jsx';
+import NewsletterSubscribe from '../Components/Newslettersubscribe.jsx';
 
 // ─── FIX 1: Lazy-load heavy sections (code splitting) ─────────
 const Domestic = lazy(() => import('./Domestic.jsx'));
@@ -482,7 +483,7 @@ const StatsBar = React.memo(() => (
     <div style={{ maxWidth: 1400, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
       {[
         { val: '36+', label: 'Years Experience', icon: <FaTrophy /> },
-        { val: '15k+', label: 'Happy Travellers', icon: <FaUsers /> },
+        { val: '5k+', label: 'Happy Travellers', icon: <FaUsers /> },
         { val: '200+', label: 'Tour Packages', icon: <FaMapMarkedAlt /> },
         { val: '4.9★', label: 'Average Rating', icon: <FaStar /> },
       ].map((s, i) => (
@@ -663,6 +664,7 @@ const AboutSection = React.memo(({ onBookNow }) => {
   }, [testimonials.length]);
 
   return (
+    
     <section id="about" style={{ background: 'var(--ink)', padding: '96px 0', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
@@ -889,9 +891,10 @@ function Start() {
           )}
         </div>
       </section>
+      <NewsletterSubscribe/>
 
       {/* FIX 3: Sections mount only when scrolled near them */}
-      <div ref={domesticRef} id="domestic">
+      {/* <div ref={domesticRef} id="domestic">
         <Suspense fallback={<SectionSkeleton />}>
           {domesticVisible && (
             <Domestic
@@ -901,9 +904,9 @@ function Start() {
             />
           )}
         </Suspense>
-      </div>
+      </div> */}
 
-      <div ref={intlRef} id="international" style={{ minHeight: intlVisible ? 'auto' : '1px' }}>
+      {/* <div ref={intlRef} id="international" style={{ minHeight: intlVisible ? 'auto' : '1px' }}>
         <Suspense fallback={<SectionSkeleton />}>
           {intlVisible && (
             <International
@@ -913,7 +916,7 @@ function Start() {
             />
           )}
         </Suspense>
-      </div>
+      </div> */}
 
       <div ref={northRef} id="destinations">
         <Suspense fallback={<SectionSkeleton />}>

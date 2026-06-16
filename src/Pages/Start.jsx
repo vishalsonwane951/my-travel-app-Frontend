@@ -57,6 +57,45 @@ function useIsVisible(ref, rootMargin = '300px') {
   return visible;
 }
 
+// ─── New: Reveal-on-scroll hook + wrapper component ────────────
+// Adds a 'reveal-visible' class once the element enters the viewport,
+// triggering the CSS fade-up animation. Used to make sections/cards
+// appear one by one as the user scrolls down.
+function useRevealOnScroll(threshold = 0.15) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold, rootMargin: '0px 0px -60px 0px' }
+    );
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, visible];
+}
+
+const Reveal = ({ as = 'div', delay = 0, className = '', style = {}, children, ...rest }) => {
+  const [ref, visible] = useRevealOnScroll();
+  const Tag = as;
+  return (
+    <Tag
+      ref={ref}
+      className={`reveal ${visible ? 'reveal-visible' : ''} ${className}`}
+      style={{ ...style, transitionDelay: `${delay}ms` }}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
+};
+
 // ─── Global Styles ────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
@@ -297,6 +336,18 @@ const GlobalStyles = () => (
     .stagger-4 { animation-delay: 0.4s; opacity: 0; }
     .stagger-5 { animation-delay: 0.5s; opacity: 0; }
 
+    /* ─── New: Generic scroll-reveal animation ──────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity 0.7s cubic-bezier(.25,.8,.25,1), transform 0.7s cubic-bezier(.25,.8,.25,1);
+      will-change: opacity, transform;
+    }
+    .reveal-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     .skeleton {
       background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
       background-size: 200% 100%;
@@ -309,6 +360,137 @@ const GlobalStyles = () => (
     .star-gold { color: #F59E0B; }
     .react-multi-carousel-dot--active button { background: var(--saffron) !important; }
     .react-multi-carousel-dot button { background: #D1D5DB !important; border: none !important; width: 8px !important; height: 8px !important; }
+
+    /* ─── New: "Make Your Tour Memorable" intro section ─────── */
+    .intro-section {
+      max-width: 1400px; margin: 0 auto; padding: 90px 24px;
+      display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center;
+    }
+    .intro-img-wrap {
+      position: relative; border-radius: 24px; overflow: hidden;
+      box-shadow: 0 30px 80px rgba(15,25,35,0.18);
+    }
+    .intro-img-wrap img { width: 100%; height: 420px; object-fit: cover; display: block; }
+    .intro-stats {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; margin-top: 40px;
+    }
+    .intro-stat-num {
+      font-family: 'Cormorant Garamond', serif; font-size: 2.4rem; font-weight: 700;
+      color: var(--saffron);
+    }
+    .intro-stat-label {
+      font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: var(--muted); margin-top: 4px;
+    }
+
+    /* ─── New: Best Place Destination grid ──────────────────── */
+    .bpd-section { max-width: 1400px; margin: 0 auto; padding: 30px 24px 90px; }
+    .bpd-grid {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 24px;
+    }
+    .bpd-card {
+      position: relative; border-radius: 20px; overflow: hidden; height: 260px;
+      cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      transition: transform 0.4s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s;
+    }
+    .bpd-card:hover { transform: translateY(-8px); box-shadow: 0 20px 50px rgba(0,0,0,0.16); }
+    .bpd-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .bpd-card:hover img { transform: scale(1.08); }
+    .bpd-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(15,25,35,0.75) 0%, rgba(15,25,35,0.05) 55%, rgba(15,25,35,0.35) 100%);
+    }
+    .bpd-name {
+      position: absolute; top: 16px; left: 18px;
+      font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: white;
+    }
+    .bpd-tours {
+      position: absolute; bottom: 16px; right: 16px;
+      background: var(--saffron); color: white; font-family: 'Outfit', sans-serif;
+      font-size: 0.72rem; font-weight: 700; padding: 5px 12px; border-radius: 50px;
+    }
+
+    /* ─── New: Tour Destination grid (6 cards) ──────────────── */
+    .td-section { max-width: 1400px; margin: 0 auto; padding: 30px 24px 90px; }
+    .td-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 28px; }
+    .td-card-img-wrap { height: 230px; position: relative; }
+    .td-price-tag {
+      position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 50%);
+      background: var(--saffron); color: white; font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem; font-weight: 700; padding: 10px 24px; border-radius: 50px;
+      box-shadow: 0 4px 18px rgba(232,129,58,0.45); white-space: nowrap;
+      z-index: 2;
+    }
+    .td-meta-row {
+      display: flex; align-items: center; gap: 14px; font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem; color: var(--muted); margin-top: 10px; flex-wrap: wrap;
+    }
+    .td-meta-row span { display: flex; align-items: center; gap: 5px; }
+    .td-location-row {
+      display: flex; align-items: center; gap: 6px; font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem; color: #6B7280; margin-top: 6px;
+    }
+    .dest-card { padding-top: 4px; }
+    .dest-card .td-card-img-wrap { overflow: visible; }
+    .dest-card .td-card-img-wrap > img { border-radius: 20px 20px 0 0; }
+    .dest-card .dest-card-img { overflow: visible; }
+
+    /* ─── New: Tourist Feedback Section ─────────────────────── */
+    .feedback-section {
+      position: relative; padding: 100px 24px; overflow: hidden;
+      background-color: #F1F2F4;
+      background-image: url('https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=1920&auto=format&fit=crop');
+      background-size: cover; background-position: center bottom; background-repeat: no-repeat;
+    }
+    .feedback-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(241,242,244,0.86);
+    }
+    .feedback-inner { position: relative; max-width: 1400px; margin: 0 auto; z-index: 1; }
+    .feedback-scroll {
+      display: flex; gap: 28px; margin-top: 56px;
+      overflow-x: auto; scroll-behavior: smooth;
+      padding-bottom: 8px; scrollbar-width: none;
+    }
+    .feedback-scroll::-webkit-scrollbar { display: none; }
+    .feedback-card {
+      background: white; border-radius: 16px; padding: 32px;
+      box-shadow: 0 10px 40px rgba(15,25,35,0.06);
+      flex: 0 0 calc((100% - 56px) / 3); min-width: 280px;
+    }
+    .feedback-text {
+      font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: #6B7280;
+      line-height: 1.75; margin-bottom: 28px; min-height: 130px;
+    }
+    .feedback-person { display: flex; align-items: center; gap: 16px; }
+    .feedback-avatar {
+      width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+    }
+    .feedback-name {
+      font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: var(--ink);
+    }
+    .feedback-role {
+      font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: #B0B5BD; margin-top: 2px;
+    }
+    .feedback-dots { display: flex; justify-content: center; gap: 8px; margin-top: 48px; }
+    .feedback-dot {
+      width: 9px; height: 9px; border-radius: 50%; border: none; cursor: pointer; padding: 0;
+      background: #D1D5DB; transition: background 0.3s;
+    }
+    .feedback-dot.active { background: var(--saffron); }
+
+    @media(max-width:1024px) {
+      .intro-section { grid-template-columns: 1fr; gap: 40px; }
+      .bpd-grid { grid-template-columns: repeat(2,1fr); }
+      .td-grid { grid-template-columns: repeat(2,1fr); }
+      .feedback-card { flex: 0 0 calc((100% - 28px) / 2); }
+    }
+    @media(max-width:640px) {
+      .bpd-grid { grid-template-columns: 1fr 1fr; }
+      .td-grid { grid-template-columns: 1fr; }
+      .intro-stats { grid-template-columns: repeat(3,1fr); gap: 12px; }
+      .intro-stat-num { font-size: 1.6rem; }
+      .feedback-card { flex: 0 0 85%; }
+    }
 
     @media(max-width:768px) {
       .hide-mobile { display: none !important; }
@@ -401,10 +583,10 @@ const HeroSection = React.memo(({ onBookNow, onSearch }) => {
   const [searchTab, setSearchTab] = useState('destination');
 
   const slides = useMemo(() => [
-    { img: '/images/Malaysia.png', tag: 'International', title: 'Discover\nMalaysia', sub: 'Rainforests, Towers & Timeless Culture', cta: 'View Packages' },
-    { img: '/images/005.png', tag: 'North East', title: 'Enchanting\nAssam', sub: 'Tea Gardens, Wildlife & Brahmaputra Sunsets', cta: 'Explore Now' },
-    { img: '/images/006.png', tag: 'International', title: 'Golden\nDubai', sub: 'Desert Dunes, Skylines & Arabian Nights', cta: 'Book Trip' },
-    { img: '/images/007.png', tag: 'Scenic India', title: 'Sacred\nHimalayas', sub: 'Monasteries, Peaks & Spiritual Journeys', cta: 'Explore' },
+    { img: 'https://img.magnific.com/premium-photo/aerial-view-putra-mosque-with-putrajaya-city-centre-with-lake-sunset-putrajaya-malaysia_29505-1020.jpg?semt=ais_hybrid&w=740&q=80', tag: 'International', title: 'Discover\nMalaysia', sub: 'Rainforests, Towers & Timeless Culture', cta: 'View Packages' },
+    { img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQL3HTEZllU3Bj7_w_Ud7__3ey4KhpMdR4aog&s', tag: 'North East', title: 'Enchanting\nAssam', sub: 'Tea Gardens, Wildlife & Brahmaputra Sunsets', cta: 'Explore Now' },
+    { img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQUTwbPnL0BhEJTcyfY9qoVCuhPTEsl-VzT5YJruWvqP4KA2SvxfOUG-jNt&s=10', tag: 'International', title: 'Golden\nDubai', sub: 'Desert Dunes, Skylines & Arabian Nights', cta: 'Book Trip' },
+    { img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQsYnp5Q1REhLvebW-nWF5p1uph1w4znd2y5NSw6aUkL92ycifpM5pER4wB&s=10', tag: 'Scenic India', title: 'Sacred\nHimalayas', sub: 'Monasteries, Peaks & Spiritual Journeys', cta: 'Explore' },
   ], []);
 
   useEffect(() => {
@@ -566,10 +748,179 @@ const WidgetsRow = React.memo(() => {
   );
 });
 
-// ─── Tour Card ─────────────────────────────────────────────────
+// ─── New: "Make Your Tour Memorable" Intro Section ────────────
+const IntroSection = React.memo(({ onBookNow }) => (
+  <section className="intro-section">
+    <Reveal className="intro-img-wrap">
+      <img src="https://dynamic-media-cdn.tripadvisor.com/media/photo-o/31/e2/f4/30/caption.jpg?w=1200&h=1200&s=1" alt="Adventure tour" loading="lazy" decoding="async" />
+    </Reveal>
+    <Reveal delay={150}>
+      <div className="section-eyebrow" style={{ marginBottom: 12 }}>Why Choose Us</div>
+      <h2 className="section-title" style={{ marginBottom: 18 }}>
+        Make Your Tour <em style={{ color: 'var(--saffron)' }}>Memorable</em> and Safe With Us
+      </h2>
+      <p style={{ fontFamily: 'Outfit', fontSize: '0.95rem', color: '#6B7280', lineHeight: 1.8, maxWidth: 520 }}>
+        Far far away, behind the word mountains, far from the countries Vokalia and
+        Consonantia, there live the blind texts. Separated they live in Bookmarksgrove
+        right at the coast of the Semantics, a large language ocean.
+      </p>
+      <div className="intro-stats">
+        {[
+          { num: '300', label: 'Successful Tours' },
+          { num: '24,000', label: 'Happy Tourist' },
+          { num: '200', label: 'Place Explored' },
+        ].map((s, i) => (
+          <div key={i}>
+            <div className="intro-stat-num">{s.num}</div>
+            <div className="intro-stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <button onClick={onBookNow} className="btn-primary" style={{ marginTop: 40, padding: '14px 34px', fontSize: '0.9rem' }}>
+        Plan Your Trip <FaArrowRight style={{ marginLeft: 8, display: 'inline' }} />
+      </button>
+    </Reveal>
+  </section>
+));
+
+// ─── New: Best Place Destination Grid ─────────────────────────
+const BestPlaceSection = React.memo(() => {
+  const places = useMemo(() => [
+    { name: 'Singapore', img: 'https://media.istockphoto.com/id/1767504971/photo/gatineau-hills-ottawa-canada-autumn-landscape.jpg?s=612x612&w=0&k=20&c=43KxWbUigZwDVwjaoZNYM69HMU1cM3_ArJuVePIB5tw=', tours: '8 Tours' },
+    { name: 'Canada', img: 'https://media.istockphoto.com/id/471926619/photo/moraine-lake-at-sunrise-banff-national-park-canada.jpg?s=612x612&w=0&k=20&c=mujiCtVk5QA697SD3d8V8BGmd91-8HlxCNHkolEA0Bo=', tours: '2 Tours' },
+    { name: 'Thailand', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJPQob5A1Ha53coRBqaL4PviivzEIBrPnV2dtfVm5YgjL6RNwJQLMGrCE&s=10', tours: '5 Tours' },
+    { name: 'Australia', img: 'https://media.istockphoto.com/id/504539120/photo/sydney-waterfront-at-night.jpg?s=612x612&w=0&k=20&c=sGo2c5ZNOeU43KLGc5DV8Qlsnqa1VJxLu0YwuQf7mGs=', tours: '5 Tours' },
+  ], []);
+
+  return (
+    <section className="bpd-section" id="destinations">
+      <Reveal style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div className="section-eyebrow" style={{ marginBottom: 10 }}>Top Picks</div>
+        <h2 className="section-title">Best Place <em style={{ color: 'var(--saffron)' }}>Destination</em></h2>
+      </Reveal>
+      <div className="bpd-grid">
+        {places.map((p, i) => (
+          <Reveal key={i} delay={i * 100} className="bpd-card">
+            <img src={p.img} alt={p.name} loading="lazy" decoding="async" />
+            <div className="bpd-overlay" />
+            <div className="bpd-name">{p.name}</div>
+            <div className="bpd-tours">{p.tours}</div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+});
+
+// ─── New: Tourist Feedback Section ────────────────────────────
+const FeedbackSection = React.memo(() => {
+  const feedbacks = useMemo(() => ([
+    {
+      text: "Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.",
+      name: 'Roger Scott', role: 'Marketing Manager',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+    },
+    {
+      text: "Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.",
+      name: 'Roger Scott', role: 'Marketing Manager',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
+    },
+    {
+      text: "Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.",
+      name: 'Roger Scott', role: 'Marketing Manager',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+    },
+    {
+      text: "Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.",
+      name: 'Roger Scott', role: 'Marketing Manager',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
+    },
+    {
+      text: "Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.",
+      name: 'Roger Scott', role: 'Marketing Manager',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+    },
+    {
+      text: "Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.",
+      name: 'Roger Scott', role: 'Marketing Manager',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
+    },
+  ]), []);
+
+  const [activeDot, setActiveDot] = useState(0);
+  const scrollRef = useRef(null);
+
+  // ─── Auto-scroll the feedback row every 1.5s ────────────────
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const timer = setInterval(() => {
+      const cardWidth = el.firstChild ? el.firstChild.offsetWidth + 28 : 300; // card + gap
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      let next = el.scrollLeft + cardWidth;
+      if (next >= maxScroll - 5) {
+        next = 0;
+      }
+      el.scrollTo({ left: next, behavior: 'smooth' });
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [feedbacks.length]);
+
+  // ─── Keep dots in sync with scroll position ─────────────────
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = () => {
+      const cardWidth = el.firstChild ? el.firstChild.offsetWidth + 28 : 300;
+      const idx = Math.round(el.scrollLeft / cardWidth);
+      setActiveDot(Math.min(idx, feedbacks.length - 1));
+    };
+    el.addEventListener('scroll', handler, { passive: true });
+    return () => el.removeEventListener('scroll', handler);
+  }, [feedbacks.length]);
+
+  const scrollToCard = useCallback((i) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = el.firstChild ? el.firstChild.offsetWidth + 28 : 300;
+    el.scrollTo({ left: i * cardWidth, behavior: 'smooth' });
+  }, []);
+
+  return (
+    <section className="feedback-section">
+      <div className="feedback-inner">
+        <Reveal style={{ textAlign: 'center' }}>
+          <div className="section-eyebrow" style={{ marginBottom: 10 }}>What People Say</div>
+          <h2 className="section-title">Tourist <em style={{ color: 'var(--saffron)' }}>Feedback</em></h2>
+        </Reveal>
+        <div className="feedback-scroll" ref={scrollRef}>
+          {feedbacks.map((f, i) => (
+            <div key={i} className="feedback-card">
+              <p className="feedback-text">{f.text}</p>
+              <div className="feedback-person">
+                <img className="feedback-avatar" src={f.avatar} alt={f.name} loading="lazy" decoding="async" />
+                <div>
+                  <div className="feedback-name">{f.name}</div>
+                  <div className="feedback-role">{f.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="feedback-dots">
+          {feedbacks.map((_, i) => (
+            <button key={i} className={`feedback-dot ${i === activeDot ? 'active' : ''}`} onClick={() => scrollToCard(i)} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+});
+
+
 const TourCard = React.memo(({ card, onFavourite, isFav, onBookNow, onRate, rating }) => (
-  <div className="dest-card" style={{ margin: '0 8px' }}>
-    <div className="dest-card-img" style={{ height: 220, background: '#F3F4F6', position: 'relative' }}>
+  <div className="dest-card">
+    <div className="dest-card-img td-card-img-wrap">
       <img
         src={card.img || '/placeholder.jpg'}
         alt={card.title}
@@ -578,21 +929,28 @@ const TourCard = React.memo(({ card, onFavourite, isFav, onBookNow, onRate, rati
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         // onError={e => e.target.src = '/placeholder.jpg'}
       />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)', borderRadius: '20px 20px 0 0' }} />
       <button onClick={() => onFavourite(card._id)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }}>
         <FaHeart style={{ color: isFav ? '#E85757' : '#D1D5DB', fontSize: '0.9rem' }} />
       </button>
-      <span style={{ position: 'absolute', bottom: 12, left: 12, background: 'var(--forest)', color: 'white', fontFamily: 'Outfit', fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: 6 }}>2025</span>
+      <span className="td-price-tag">{card.price || '$300'}/person</span>
     </div>
-    <div style={{ padding: '18px 20px 20px' }}>
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>{card.title}</div>
-      <div style={{ fontFamily: 'Outfit', fontSize: '0.78rem', color: '#9CA3AF', marginBottom: 12 }}>{card.category || 'Popular Destination'}</div>
-      <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
+    <div style={{ padding: '24px 20px 20px' }}>
+      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.2rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 2 }}>{card.title}</div>
+      <div className="td-location-row">
+        <FaMapMarkerAlt style={{ color: 'var(--saffron)' }} />
+        {card.category || 'Bali, Indonesia'}
+      </div>
+      <div className="td-meta-row">
+        <span><FaUsers style={{ color: 'var(--saffron)' }} /> {card.people || 2}</span>
+        <span><FaClock style={{ color: 'var(--saffron)' }} /> {card.days || 3}</span>
+        <span><FaMountain style={{ color: 'var(--saffron)' }} /> {card.terrain || 'Near Mountain'}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 3, margin: '14px 0 4px' }}>
         {[1, 2, 3, 4, 5].map(s => (
           <button key={s} onClick={() => onRate(card._id, s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '1.1rem', color: s <= (rating || 0) ? '#F59E0B' : '#E5E7EB' }}>★</button>
         ))}
       </div>
-      <button onClick={onBookNow} className="btn-primary" style={{ width: '100%', padding: '11px', fontSize: '0.85rem', borderRadius: 12 }}>Book Now →</button>
     </div>
   </div>
 ));
@@ -665,7 +1023,7 @@ const AboutSection = React.memo(({ onBookNow }) => {
   return (
     <section id="about" style={{ background: 'var(--ink)', padding: '96px 0', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+        <Reveal style={{ textAlign: 'center', marginBottom: 64 }}>
           <div className="section-eyebrow" style={{ marginBottom: 12 }}>Our Story</div>
           <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 'clamp(2.2rem,5vw,4rem)', fontWeight: 700, color: 'white', lineHeight: 1.1 }}>
             Welcome to <em style={{ color: 'var(--saffron)' }}>Desi V Desi</em> Tours
@@ -673,9 +1031,9 @@ const AboutSection = React.memo(({ onBookNow }) => {
           <p style={{ fontFamily: 'Outfit', fontSize: '0.95rem', color: 'rgba(255,255,255,0.5)', marginTop: 14, maxWidth: 500, margin: '14px auto 0' }}>
             36 years of crafting unforgettable journeys across India and the world.
           </p>
-        </div>
+        </Reveal>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 24 }}>
-          <div className="glass-card" style={{ padding: 32 }}>
+          <Reveal delay={0} className="glass-card" style={{ padding: 32 }}>
             <div style={{ display: 'flex', gap: 18, marginBottom: 24 }}>
               <img src="/photo2.jpg" alt="Founder" loading="lazy" decoding="async" style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'cover', flexShrink: 0, border: '2px solid var(--saffron)' }} />
               <div>
@@ -689,8 +1047,8 @@ const AboutSection = React.memo(({ onBookNow }) => {
                 <a key={i} href="#" style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '0.85rem' }}>{icon}</a>
               ))}
             </div>
-          </div>
-          <div className="glass-card" style={{ padding: 32, display: 'flex', flexDirection: 'column' }}>
+          </Reveal>
+          <Reveal delay={120} className="glass-card" style={{ padding: 32, display: 'flex', flexDirection: 'column' }}>
             <div style={{ color: 'var(--saffron)', fontSize: '2.5rem', fontFamily: 'Cormorant Garamond, serif', lineHeight: 1, marginBottom: 16 }}>"</div>
             <div key={testimonialIdx} className="animate-fadeup" style={{ flex: 1 }}>
               <p style={{ fontFamily: 'Outfit', fontSize: '0.92rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.75, fontStyle: 'italic', marginBottom: 20 }}>{testimonials[testimonialIdx].text}</p>
@@ -707,8 +1065,8 @@ const AboutSection = React.memo(({ onBookNow }) => {
                 <button key={i} onClick={() => setTestimonialIdx(i)} style={{ width: i === testimonialIdx ? 24 : 8, height: 8, borderRadius: 4, border: 'none', background: i === testimonialIdx ? 'var(--saffron)' : 'rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'all 0.3s', padding: 0 }} />
               ))}
             </div>
-          </div>
-          <div style={{ background: 'linear-gradient(135deg, var(--saffron), var(--saffron-dark))', borderRadius: 20, padding: 32, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          </Reveal>
+          <Reveal delay={240} style={{ background: 'linear-gradient(135deg, var(--saffron), var(--saffron-dark))', borderRadius: 20, padding: 32, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Plan Your Dream Trip</div>
               <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2rem', fontWeight: 700, color: 'white', lineHeight: 1.2, marginBottom: 16 }}>Ready for Your Next Adventure?</h3>
@@ -720,7 +1078,7 @@ const AboutSection = React.memo(({ onBookNow }) => {
                 <FaPhone size={13} /> Call Us Now
               </a>
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -844,6 +1202,18 @@ function Start() {
     mobile: { breakpoint: { max: 640, min: 0 }, items: 1, slidesToSlide: 1 },
   }), []);
 
+  // ─── New: 6 static tour destination cards with local images ─────
+  // Fully static — does not depend on API data, so images/content
+  // never change regardless of backend response.
+  const sixTourCards = useMemo(() => ([
+    { _id: 'static-1', title: 'Bali, Indonesia', category: 'Bali, Indonesia', img: 'https://media.istockphoto.com/id/653953140/photo/hindu-temple-in-bali.jpg?s=612x612&w=0&k=20&c=ysj3S2kV1ZgCr4QZWDzjvHRowCI3-cR1xQNnqE8-BS4=', price: '$300', people: 2, days: 3, terrain: 'Near Mountain' },
+    { _id: 'static-2', title: 'Bali, Indonesia', category: 'Bali, Indonesia', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJbBbZr-ySYTs-Xxg3_qhmHozjHNIwLNHVNbkf5-tdZA&s=10', price: '$300', people: 2, days: 3, terrain: 'Near Beach' },
+    { _id: 'static-3', title: 'Bali, Indonesia', category: 'Bali, Indonesia', img: 'https://www.indietraveller.co/wp-content/uploads/2025/06/Bali-swing-at-tegalalang-rice-terrace-in-Bali-Indonesia-1024x683.jpg', price: '$300', people: 2, days: 3, terrain: 'Near Mountain' },
+    { _id: 'static-4', title: 'Bali, Indonesia', category: 'Bali, Indonesia', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwRyAwB50NWpst9amktR46lDJLXVIm5bDPTmDLQsG1lA&s=10', price: '$300', people: 2, days: 3, terrain: 'Near Beach' },
+    { _id: 'static-5', title: 'Bali, Indonesia', category: 'Bali, Indonesia', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSw1t7dcZ7C52q-Z28XDICJxX2t2HsNeRnmApfauQGbzg&s=10', price: '$300', people: 2, days: 3, terrain: 'Near Mountain' },
+    { _id: 'static-6', title: 'Bali, Indonesia', category: 'Bali, Indonesia', img: 'https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTmT7nVGNmtggrureiKCReLjpk4sLJfzhgvKfzT2IbAtmXG2lDn', price: '$300', people: 2, days: 3, terrain: 'Near Beach' },
+  ]), []);
+
   return (
     <>
       <GlobalStyles />
@@ -860,38 +1230,44 @@ function Start() {
       <StatsBar />
       <WidgetsRow />
 
-      {/* Tour Cards */}
-      <section style={{ background: 'var(--cream)', padding: '80px 0 40px' }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
-            <div>
-              <div className="section-eyebrow" style={{ marginBottom: 10 }}>Curated For You</div>
-              <h2 className="section-title">Perfect <em style={{ color: 'var(--saffron)' }}>India</em> Holidays</h2>
-            </div>
+      {/* New: Make Your Tour Memorable and Safe With Us */}
+      <IntroSection onBookNow={handleBookNow} />
+
+      {/* New: Best Place Destination */}
+      <BestPlaceSection />
+
+      {/* Tour Destination — 6 cards, same layout */}
+      <section className="td-section">
+        <Reveal style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 20 }}>
+          <div style={{ textAlign: 'center', flex: '1 0 100%' }}>
+            <div className="section-eyebrow" style={{ marginBottom: 10 }}>Curated For You</div>
+            <h2 className="section-title">Tour <em style={{ color: 'var(--saffron)' }}>Destination</em></h2>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             <button onClick={() => setShowPlanner(true)} className="btn-primary" style={{ padding: '12px 24px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
               <FaCalendarAlt /> AI Trip Planner ✨
             </button>
           </div>
-          {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 24 }}>
-              {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
-            </div>
-          ) : (
-            <Carousel responsive={responsive} infinite autoPlay autoPlaySpeed={3800} keyBoardControl showDots containerClass="pb-10" itemClass="px-2" removeArrowOnDeviceType={['mobile']}>
-              {tourCards.length > 0 ? tourCards.map(card => (
-                <TourCard key={card._id} card={card} onFavourite={toggleFavourite}
-                  isFav={wishlist.includes(card._id)} onBookNow={handleBookNow}
-                  onRate={(id, s) => setRatings(p => ({ ...p, [id]: s }))} rating={ratings[card._id]} />
-              )) : (
-                <div style={{ textAlign: 'center', padding: '60px 0', fontFamily: 'Outfit', color: '#9CA3AF' }}>No tours available.</div>
-              )}
-            </Carousel>
-          )}
+        </Reveal>
+
+        <div className="td-grid">
+          {sixTourCards.map((card, i) => (
+            <Reveal key={card._id} delay={(i % 3) * 100}>
+              <TourCard
+                card={card}
+                onFavourite={toggleFavourite}
+                isFav={wishlist.includes(card._id)}
+                onBookNow={handleBookNow}
+                onRate={(id, s) => setRatings(p => ({ ...p, [id]: s }))}
+                rating={ratings[card._id]}
+              />
+            </Reveal>
+          ))}
         </div>
       </section>
 
       {/* FIX 3: Sections mount only when scrolled near them */}
-      <div ref={domesticRef} id="domestic">
+      {/* <div ref={domesticRef} id="domestic">
         <Suspense fallback={<SectionSkeleton />}>
           {domesticVisible && (
             <Domestic
@@ -913,13 +1289,15 @@ function Start() {
             />
           )}
         </Suspense>
-      </div>
+      </div> */}
 
-      <div ref={northRef} id="destinations">
+      <div ref={northRef}>
         <Suspense fallback={<SectionSkeleton />}>
           {/* {northVisible && <NorthIndiaSection />} */}
         </Suspense>
       </div>
+
+      <FeedbackSection />
 
       <div ref={aboutRef} id="about-us">
         <AboutSection onBookNow={handleBookNow} />

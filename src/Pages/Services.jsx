@@ -3,26 +3,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../Components/Header/Header';
 import PackageContext from '../Context/PackageContext';
 
-// ── Real-time counters (simulated live data) ──────────────────────────────────
-const useCountUp = (target, duration = 2000, startOnVisible = true) => {
+const useCountUp = (target, duration = 2000) => {
   const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(!startOnVisible);
+  const [started, setStarted] = useState(false);
   const ref = useRef(null);
 
   useEffect(() => {
-    if (!startOnVisible) { setStarted(true); return; }
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setStarted(true); }, { threshold: 0.5 });
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
-  }, [startOnVisible]);
+  }, []);
 
   useEffect(() => {
     if (!started) return;
     let start = null;
+    const ease = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     const step = (ts) => {
       if (!start) start = ts;
       const progress = Math.min((ts - start) / duration, 1);
-      setCount(Math.floor(progress * target));
+      setCount(Math.floor(ease(progress) * target));
       if (progress < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -34,115 +33,31 @@ const useCountUp = (target, duration = 2000, startOnVisible = true) => {
 const useLiveBookings = () => {
   const [count, setCount] = useState(247);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCount(c => c + Math.floor(Math.random() * 3));
-    }, 8000);
+    const interval = setInterval(() => setCount(c => c + Math.floor(Math.random() * 3)), 8000);
     return () => clearInterval(interval);
   }, []);
   return count;
 };
 
-// ── Tour data ──────────────────────────────────────────────────────────────────
 const TOUR_PACKAGES = [
-  {
-    id: 1, title: "Custom Tours", type: 'custom-tour',
-    icon: "🎨", color: "#FF6B6B", gradFrom: "#FF6B6B", gradTo: "#FF8E53",
-    duration: "Flexible", price: "₹12,999", priceNote: "onwards",
-    rating: 4.9, reviews: 128, badge: null,
-    tagline: "Your Trip, Your Rules!",
-    description: "Craft a travel story that's uniquely yours — every detail tailored to your preferences.",
-    features: ["Tailor-Made Itineraries", "Flexible Scheduling", "Exclusive Experiences", "Handpicked Stays", "Local Expertise", "Your Budget, Your Way"],
-    seatsLeft: 12,
-  },
-  {
-    id: 2, title: "Adventure Tours", type: 'adventure-tour',
-    icon: "🏔️", color: "#4ECDC4", gradFrom: "#4ECDC4", gradTo: "#2C3E50",
-    duration: "5–14 Days", price: "₹18,999", priceNote: "per person",
-    rating: 4.8, reviews: 256, badge: "🔥 Most Popular",
-    tagline: "Feel the Rush!",
-    description: "Dare to explore the wild side of life with heart-pumping adventures in stunning landscapes.",
-    features: ["Thrilling Activities", "Professional Guides", "Stunning Landscapes", "Challenging Trails", "Group Adventures", "Safety Gear Included"],
-    seatsLeft: 5,
-  },
-  {
-    id: 3, title: "Family Tours", type: 'family-tour',
-    icon: "👨‍👩‍👧‍👦", color: "#FFB347", gradFrom: "#FFE66D", gradTo: "#FFB347",
-    duration: "7–21 Days", price: "₹15,999", priceNote: "per person",
-    rating: 4.9, reviews: 312, badge: null,
-    tagline: "Together We Travel!",
-    description: "Perfect memories for every generation — safe, fun, and stress-free journeys for the whole family.",
-    features: ["Kid-Friendly Activities", "Comfortable Stays", "Safe Travel", "Meal Plans", "Guided Sightseeing", "24/7 Assistance"],
-    seatsLeft: 18,
-  },
-  {
-    id: 4, title: "Group Tours", type: 'group-tour',
-    icon: "🚌", color: "#A37BFF", gradFrom: "#A37BFF", gradTo: "#6B4EFF",
-    duration: "4–10 Days", price: "₹8,999", priceNote: "per person",
-    rating: 4.7, reviews: 189, badge: "💰 Best Value",
-    tagline: "More People, More Fun!",
-    description: "Travel together, laugh louder, bond stronger — incredible experiences shared with amazing people.",
-    features: ["Fun With Friends", "Pre-Planned Itineraries", "Great Discounts", "Team Bonding", "Group Transport", "Dedicated Manager"],
-    seatsLeft: 24,
-  },
-  {
-    id: 5, title: "City Tours", type: 'city-tour',
-    icon: "🌆", color: "#FF9F1C", gradFrom: "#FF9F1C", gradTo: "#FCCF31",
-    duration: "1–3 Days", price: "₹3,999", priceNote: "per person",
-    rating: 4.6, reviews: 445, badge: null,
-    tagline: "Discover the City's Soul!",
-    description: "Explore iconic landmarks, hidden alleys, street food, and shopping in the world's best cities.",
-    features: ["Iconic Landmarks", "Local Street Food", "Shopping Hotspots", "Guided Tours", "Flexible Timings", "Photo Stops"],
-    seatsLeft: 30,
-  },
-  {
-    id: 6, title: "Honeymoon Tours", type: 'honeymoon-tour',
-    icon: "💑", color: "#FF6EB4", gradFrom: "#FF6EB4", gradTo: "#FF9A9E",
-    duration: "5–10 Days", price: "₹24,999", priceNote: "per couple",
-    rating: 5.0, reviews: 203, badge: "✨ New",
-    tagline: "Love in Every Moment!",
-    description: "Romantic escapes crafted for two — candlelit dinners, private beaches, luxury stays, and forever memories.",
-    features: ["Romantic Packages", "Private Transfers", "Couple Spa", "Candlelit Dinners", "Luxury Hotels", "Surprise Add-ons"],
-    seatsLeft: 8,
-  },
-  {
-    id: 7, title: "Weekend Getaways", type: 'weekend-getaway',
-    icon: "🌅", color: "#5BC0EB", gradFrom: "#5BC0EB", gradTo: "#0353A4",
-    duration: "2–3 Days", price: "₹4,999", priceNote: "per person",
-    rating: 4.7, reviews: 167, badge: "✨ New",
-    tagline: "Escape the Grind!",
-    description: "Quick, refreshing escapes from the hustle — perfectly planned for your precious weekend.",
-    features: ["Quick Escapes", "Nearby Destinations", "Hassle-free Planning", "Comfortable Hotels", "Guided Activities", "Flexible Dates"],
-    seatsLeft: 20,
-  },
-  {
-    id: 8, title: "Luxury Tours", type: 'luxury-tour',
-    icon: "💎", color: "#C9A84C", gradFrom: "#C9A84C", gradTo: "#8B6914",
-    duration: "7–14 Days", price: "₹49,999", priceNote: "per person",
-    rating: 5.0, reviews: 94, badge: "👑 Premium",
-    tagline: "Travel Like Royalty!",
-    description: "Five-star experiences, private jets, butler service, and the world's most exclusive destinations.",
-    features: ["5-Star Hotels", "Private Transfers", "Personal Butler", "Fine Dining", "VIP Experiences", "24/7 Concierge"],
-    seatsLeft: 4,
-  },
-  {
-    id: 9, title: "Pilgrimage Tours", type: 'pilgrimage-tour',
-    icon: "🕌", color: "#7BAE7F", gradFrom: "#7BAE7F", gradTo: "#4A7C59",
-    duration: "5–15 Days", price: "₹9,999", priceNote: "per person",
-    rating: 4.8, reviews: 321, badge: "✨ New",
-    tagline: "A Journey of the Soul!",
-    description: "Sacred journeys to holy sites across India and beyond — peaceful, organized, spiritually enriching.",
-    features: ["Sacred Sites", "Puja Arrangements", "Experienced Guides", "Comfortable Stays", "Vegetarian Meals", "Group Prayers"],
-    seatsLeft: 16,
-  },
+  { id: 1, title: "Custom Tours", type: 'custom-tour', icon: "✦", color: "#FF6B6B", duration: "Flexible", price: "₹12,999", priceNote: "onwards", tagline: "Your Trip, Your Rules", description: "Craft a travel story that's uniquely yours — every detail tailored to your preferences." },
+  { id: 2, title: "Adventure Tours", type: 'adventure-tour', icon: "◈", color: "#4ECDC4", duration: "5–14 Days", price: "₹18,999", priceNote: "per person", tagline: "Feel the Rush", description: "Dare to explore the wild side of life with heart-pumping adventures in stunning landscapes." },
+  { id: 3, title: "Family Tours", type: 'family-tour', icon: "❋", color: "#FFB347", duration: "7–21 Days", price: "₹15,999", priceNote: "per person", tagline: "Together We Travel", description: "Perfect memories for every generation — safe, fun, and stress-free journeys for the whole family." },
+  { id: 4, title: "Group Tours", type: 'group-tour', icon: "⬡", color: "#A37BFF", duration: "4–10 Days", price: "₹8,999", priceNote: "per person", tagline: "More People, More Fun", description: "Travel together, laugh louder, bond stronger — incredible experiences shared with amazing people." },
+  { id: 5, title: "City Tours", type: 'city-tour', icon: "◉", color: "#FF9F1C", duration: "1–3 Days", price: "₹3,999", priceNote: "per person", tagline: "Discover the City's Soul", description: "Explore iconic landmarks, hidden alleys, street food, and shopping in the world's best cities." },
+  { id: 6, title: "Honeymoon Tours", type: 'honeymoon-tour', icon: "✿", color: "#FF6EB4", duration: "5–10 Days", price: "₹24,999", priceNote: "per couple", tagline: "Love in Every Moment", description: "Romantic escapes crafted for two — candlelit dinners, private beaches, luxury stays, and forever memories." },
+  { id: 7, title: "Weekend Getaways", type: 'weekend-getaway', icon: "◐", color: "#5BC0EB", duration: "2–3 Days", price: "₹4,999", priceNote: "per person", tagline: "Escape the Grind", description: "Quick, refreshing escapes from the hustle — perfectly planned for your precious weekend." },
+  { id: 8, title: "Luxury Tours", type: 'luxury-tour', icon: "◆", color: "#C9A84C", duration: "7–14 Days", price: "₹49,999", priceNote: "per person", tagline: "Travel Like Royalty", description: "Five-star experiences, private jets, butler service, and the world's most exclusive destinations." },
+  { id: 9, title: "Pilgrimage Tours", type: 'pilgrimage-tour', icon: "✺", color: "#7BAE7F", duration: "5–15 Days", price: "₹9,999", priceNote: "per person", tagline: "A Journey of the Soul", description: "Sacred journeys to holy sites across India and beyond — peaceful, organized, spiritually enriching." },
 ];
 
 const DESTINATIONS = [
-  { img: "https://images.unsplash.com/photo-1544015759-237f43ca3d53?w=600&q=80", title: "Goa", tag: "Beach Paradise", price: "₹8,999" },
-  { img: "https://images.unsplash.com/photo-1477587458883-47145ed31d27?w=600&q=80", title: "Kerala", tag: "God's Own Country", price: "₹12,499" },
-  { img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&q=80", title: "Rajasthan", tag: "Land of Kings", price: "₹14,999" },
-  { img: "https://images.unsplash.com/photo-1506038634487-60a69ae4b7b1?w=600&q=80", title: "Manali", tag: "Snow Adventure", price: "₹11,999" },
-  { img: "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=600&q=80", title: "Dubai", tag: "Ultra Luxury", price: "₹42,999" },
-  { img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80", title: "Bali", tag: "Island Magic", price: "₹38,999" },
+  { img: "https://images.unsplash.com/photo-1544015759-237f43ca3d53?w=800&q=85", title: "Goa", tag: "Beach Paradise", price: "₹8,999" },
+  { img: "https://images.unsplash.com/photo-1477587458883-47145ed31d27?w=800&q=85", title: "Kerala", tag: "God's Own Country", price: "₹12,499" },
+  { img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&q=85", title: "Rajasthan", tag: "Land of Kings", price: "₹14,999" },
+  { img: "https://images.unsplash.com/photo-1506038634487-60a69ae4b7b1?w=800&q=85", title: "Manali", tag: "Snow Adventure", price: "₹11,999" },
+  { img: "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=800&q=85", title: "Dubai", tag: "Ultra Luxury", price: "₹42,999" },
+  { img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=85", title: "Bali", tag: "Island Magic", price: "₹38,999" },
 ];
 
 const TESTIMONIALS = [
@@ -153,12 +68,12 @@ const TESTIMONIALS = [
 ];
 
 const WHY_US = [
-  { icon: "🛡️", title: "Fully Insured", desc: "Every trip covered with comprehensive travel insurance for complete peace of mind." },
-  { icon: "⚡", title: "Instant Booking", desc: "Book in under 2 minutes. Instant confirmation, no long wait times." },
-  { icon: "🌐", title: "500+ Destinations", desc: "From remote Himalayan villages to luxury European capitals." },
-  { icon: "💰", title: "Best Price Guarantee", desc: "Find it cheaper elsewhere? We'll match it and give you ₹500 off." },
-  { icon: "🔄", title: "Free Cancellation", desc: "Cancel up to 48 hours before departure for a full refund." },
-  { icon: "🎯", title: "Expert Curation", desc: "Every itinerary handcrafted by travel experts with 15+ years experience." },
+  { icon: "🛡️", title: "Fully Insured", desc: "Every trip covered with comprehensive travel insurance for complete peace of mind.", accent: "#4ECDC4" },
+  { icon: "⚡", title: "Instant Booking", desc: "Book in under 2 minutes. Instant confirmation, no long wait times.", accent: "#FFD700" },
+  { icon: "🌐", title: "500+ Destinations", desc: "From remote Himalayan villages to luxury European capitals.", accent: "#A37BFF" },
+  { icon: "💰", title: "Best Price Guarantee", desc: "Find it cheaper elsewhere? We'll match it and give you ₹500 off.", accent: "#4CAF50" },
+  { icon: "🔄", title: "Free Cancellation", desc: "Cancel up to 48 hours before departure for a full refund.", accent: "#FF6B6B" },
+  { icon: "🎯", title: "Expert Curation", desc: "Every itinerary handcrafted by travel experts with 15+ years experience.", accent: "#D4A853" },
 ];
 
 export default function Services() {
@@ -166,12 +81,12 @@ export default function Services() {
   const navigate = useNavigate();
 
   const [activeFilter, setActiveFilter] = useState('all');
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [hoveredDest, setHoveredDest] = useState(null);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [currency, setCurrency] = useState('INR');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleSections, setVisibleSections] = useState({});
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const heroRef = useRef(null);
+  const cardRefs = useRef({});
 
   const liveBookings = useLiveBookings();
   const [happyCount, happyRef] = useCountUp(10482, 2200);
@@ -179,31 +94,55 @@ export default function Services() {
   const [yearsCount, yearsRef] = useCountUp(15, 1200);
   const [toursCount, toursRef] = useCountUp(2840, 2000);
 
-  // Intersection Observer for section reveals
+  useEffect(() => {
+    const handleMove = (e) => {
+      const { innerWidth, innerHeight } = window;
+      setMousePos({ x: (e.clientX / innerWidth - 0.5) * 2, y: (e.clientY / innerHeight - 0.5) * 2 });
+    };
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, []);
+
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => entries.forEach(e => {
         if (e.isIntersecting) setVisibleSections(prev => ({ ...prev, [e.target.dataset.section]: true }));
       }),
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     );
     document.querySelectorAll('[data-section]').forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, []);
 
-  // Testimonial auto-rotate
   useEffect(() => {
-    const t = setInterval(() => setActiveTestimonial(i => (i + 1) % TESTIMONIALS.length), 5000);
+    const t = setInterval(() => setActiveTestimonial(i => (i + 1) % TESTIMONIALS.length), 5500);
     return () => clearInterval(t);
   }, []);
 
+  const handleCardMouseMove = useCallback((e, id) => {
+    const card = cardRefs.current[id];
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    card.style.transform = `translateY(-10px) rotateX(${-y * 6}deg) rotateY(${x * 6}deg)`;
+    card.style.boxShadow = `${-x * 20}px ${-y * 20}px 60px rgba(0,0,0,0.2), 0 30px 60px rgba(0,0,0,0.15)`;
+  }, []);
+
+  const handleCardMouseLeave = useCallback((id) => {
+    const card = cardRefs.current[id];
+    if (!card) return;
+    card.style.transform = 'translateY(0) rotateX(0) rotateY(0)';
+    card.style.boxShadow = 'none';
+  }, []);
+
   const FILTERS = [
-    { key: 'all', label: 'All Tours' },
-    { key: 'domestic', label: '🇮🇳 Domestic' },
-    { key: 'international', label: '🌍 International' },
-    { key: 'budget', label: '💰 Budget' },
-    { key: 'luxury', label: '👑 Luxury' },
-    { key: 'new', label: '✨ New' },
+    { key: 'all', label: 'All' },
+    { key: 'domestic', label: 'Domestic' },
+    { key: 'international', label: 'International' },
+    { key: 'budget', label: 'Budget' },
+    { key: 'luxury', label: 'Luxury' },
+    { key: 'new', label: 'New' },
   ];
 
   const filterMap = {
@@ -225,36 +164,33 @@ export default function Services() {
   }, [activeFilter, searchQuery]);
 
   const handleBook = useCallback((type) => {
-    // setSelectedType(type);
     navigate(`/tourcard/${type}`);
-    console.log('type',type)
-  }, [setSelectedType, navigate]);
-  
+  }, [navigate]);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Outfit:wght@300;400;500;600&display=swap');
 
         :root {
-          --gold: #C9A84C;
-          --gold-light: #F0D080;
-          --navy: #1a1a2e;
-          --indigo: #3D52A0;
-          --indigo-light: #7091E6;
-          --rose: #FF6B6B;
-          --teal: #4ECDC4;
-          --cream: #FDFAF4;
-          --font-display: 'Cormorant Garamond', serif;
-          --font-body: 'DM Sans', sans-serif;
-          --ease: cubic-bezier(0.4,0,0.2,1);
+          --ink: #080C14;
+          --ink-2: #1C2333;
+          --gold: #D4A853;
+          --gold-pale: #F5E8C4;
+          --gold-dim: rgba(212,168,83,0.15);
+          --mist: #F7F8FC;
+          --border: rgba(0,0,0,0.07);
+          --serif: 'Cormorant Garamond', serif;
+          --sans: 'Outfit', sans-serif;
+          --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+          --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: var(--font-body); color: var(--navy); overflow-x: hidden; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--sans); color: var(--ink); overflow-x: hidden; }
 
-        /* ── Hero ── */
-        .svc-hero {
+        /* ── HERO ───────────────────────────────── */
+        .hero {
           min-height: 100vh;
           position: relative;
           display: flex;
@@ -263,965 +199,790 @@ export default function Services() {
           align-items: center;
           text-align: center;
           overflow: hidden;
-          background: var(--navy);
+          background: var(--ink);
         }
-        .svc-hero-bg {
+        .hero-photo {
           position: absolute; inset: 0;
           background: url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1800&q=85') center/cover no-repeat;
-          opacity: 0.35;
+          opacity: 0.22;
+          transform: scale(1.05);
+          animation: heroZoom 18s ease-in-out infinite alternate;
         }
-        .svc-hero-mesh {
+        @keyframes heroZoom { from { transform: scale(1.05); } to { transform: scale(1.12); } }
+        .hero-vignette {
           position: absolute; inset: 0;
-          background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,82,160,0.4) 0%, transparent 70%),
-                      linear-gradient(180deg, rgba(26,26,46,0.3) 0%, rgba(26,26,46,0.9) 100%);
+          background: radial-gradient(ellipse 75% 65% at 50% 45%, rgba(20,28,55,0.4) 0%, rgba(8,12,20,0.85) 100%);
         }
-        .svc-hero-content {
+        .hero-orb {
+          position: absolute; border-radius: 50%;
+          filter: blur(80px); pointer-events: none;
+          will-change: transform;
+          transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .orb-1 { width: 600px; height: 600px; background: rgba(61,82,160,0.25); top: -150px; left: -100px; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(212,168,83,0.15); bottom: -80px; right: -80px; }
+        .orb-3 { width: 300px; height: 300px; background: rgba(124,255,203,0.08); top: 40%; left: 60%; }
+        .hero-content {
           position: relative; z-index: 2;
-          padding: 0 1.5rem;
-          max-width: 900px;
+          padding: 0 1.5rem; max-width: 860px; width: 100%;
         }
-        .svc-hero-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(201,168,76,0.15);
-          border: 1px solid rgba(201,168,76,0.4);
-          color: var(--gold-light);
-          font-size: 0.78rem;
-          font-weight: 600;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          padding: 6px 18px;
-          border-radius: 50px;
-          margin-bottom: 1.75rem;
-          animation: dvdFadeUp 0.8s var(--ease) both;
-        }
-        .svc-hero-title {
-          font-family: var(--font-display);
-          font-size: clamp(3rem, 8vw, 6rem);
-          font-weight: 700;
-          color: white;
-          line-height: 1.05;
-          margin-bottom: 1.25rem;
-          animation: dvdFadeUp 0.8s 0.15s var(--ease) both;
-        }
-        .svc-hero-title .gold { color: var(--gold-light); }
-        .svc-hero-title .italic { font-style: italic; }
-        .svc-hero-sub {
-          font-size: clamp(1rem, 2.5vw, 1.2rem);
-          color: rgba(255,255,255,0.8);
-          max-width: 600px;
-          margin: 0 auto 2.5rem;
-          line-height: 1.7;
-          animation: dvdFadeUp 0.8s 0.3s var(--ease) both;
-        }
-        .svc-hero-search {
-          display: flex;
-          background: white;
-          border-radius: 16px;
-          overflow: hidden;
-          max-width: 580px;
-          width: 100%;
-          margin: 0 auto 2rem;
-          box-shadow: 0 30px 60px rgba(0,0,0,0.35);
-          animation: dvdFadeUp 0.8s 0.45s var(--ease) both;
-        }
-        .svc-hero-search input {
-          flex: 1; padding: 1rem 1.5rem;
-          border: none; outline: none;
-          font-size: 1rem; font-family: var(--font-body);
-          color: var(--navy);
-        }
-        .svc-hero-search button {
-          padding: 0 1.75rem;
-          background: linear-gradient(135deg, var(--indigo), var(--indigo-light));
-          border: none; color: white;
-          font-size: 0.9rem; font-weight: 600;
-          cursor: pointer; font-family: var(--font-body);
-          letter-spacing: 0.03em;
-          transition: opacity 0.2s;
-        }
-        .svc-hero-search button:hover { opacity: 0.9; }
-        .svc-hero-pills {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          justify-content: center;
-          animation: dvdFadeUp 0.8s 0.6s var(--ease) both;
-        }
-        .svc-hero-pill {
-          background: rgba(255,255,255,0.1);
-          border: 1px solid rgba(255,255,255,0.2);
-          color: rgba(255,255,255,0.9);
-          padding: 6px 14px;
-          border-radius: 50px;
-          font-size: 0.82rem;
-          cursor: pointer;
-          transition: all 0.25s;
-        }
-        .svc-hero-pill:hover {
-          background: rgba(201,168,76,0.2);
-          border-color: var(--gold);
-          color: var(--gold-light);
-        }
-        .svc-live-badge {
-          position: absolute;
-          bottom: 2.5rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255,255,255,0.08);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.15);
-          color: white;
-          padding: 10px 24px;
-          border-radius: 50px;
-          font-size: 0.85rem;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          white-space: nowrap;
-          animation: dvdFadeUp 0.8s 0.75s var(--ease) both;
-        }
-        .svc-live-dot {
-          width: 8px; height: 8px;
-          background: #4CAF50;
-          border-radius: 50%;
-          box-shadow: 0 0 0 3px rgba(76,175,80,0.25);
-          animation: svc-pulse 2s infinite;
-        }
-        @keyframes svc-pulse { 0%,100%{box-shadow:0 0 0 3px rgba(76,175,80,0.25)} 50%{box-shadow:0 0 0 6px rgba(76,175,80,0.1)} }
-
-        .svc-hero-scroll {
-          position: absolute; bottom: 2.5rem; right: 2.5rem;
-          display: flex; flex-direction: column;
-          align-items: center; gap: 6px;
-          color: rgba(255,255,255,0.5);
-          font-size: 0.72rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-        }
-        .svc-scroll-line {
-          width: 1px; height: 40px;
-          background: linear-gradient(to bottom, rgba(255,255,255,0.5), transparent);
-          animation: dvdScrollLine 1.5s ease-in-out infinite;
-        }
-        @keyframes dvdScrollLine { 0%,100%{transform:scaleY(1);opacity:1} 50%{transform:scaleY(0.5);opacity:0.4} }
-
-        /* ── Stats Bar ── */
-        .svc-stats {
-          background: white;
-          padding: 3.5rem 2rem;
-          border-bottom: 1px solid #f0f0f8;
-        }
-        .svc-stats-grid {
-          max-width: 1100px;
-          margin: 0 auto;
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 2rem;
-        }
-        .svc-stat-item {
-          text-align: center;
-          padding: 1.5rem;
-          border-radius: 16px;
-          background: #fafbff;
-          border: 1px solid #eef0ff;
-          transition: transform 0.3s var(--ease), box-shadow 0.3s;
-        }
-        .svc-stat-item:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 30px rgba(61,82,160,0.1);
-        }
-        .svc-stat-num {
-          font-family: var(--font-display);
-          font-size: 2.8rem;
-          font-weight: 700;
-          color: var(--indigo);
-          line-height: 1;
-          margin-bottom: 0.5rem;
-        }
-        .svc-stat-label { font-size: 0.9rem; color: #666; font-weight: 500; }
-
-        /* ── Section Commons ── */
-        .svc-section {
-          padding: 6rem 2rem;
-          opacity: 0;
-          transform: translateY(30px);
-          transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
-        }
-        .svc-section.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .svc-section-header {
-          text-align: center;
-          margin-bottom: 3.5rem;
-        }
-        .svc-eyebrow {
-          display: inline-block;
-          font-size: 0.75rem;
-          font-weight: 700;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: var(--indigo);
-          background: rgba(61,82,160,0.08);
-          padding: 5px 14px;
-          border-radius: 50px;
-          margin-bottom: 1rem;
-        }
-        .svc-section-title {
-          font-family: var(--font-display);
-          font-size: clamp(2rem, 5vw, 3.2rem);
-          font-weight: 700;
-          color: var(--navy);
-          margin-bottom: 0.75rem;
-          line-height: 1.15;
-        }
-        .svc-section-sub {
-          font-size: 1.05rem;
-          color: #666;
-          max-width: 600px;
-          margin: 0 auto;
-          line-height: 1.7;
-        }
-
-        /* ── Tour Packages Section ── */
-        .svc-packages { background: var(--cream); }
-        .svc-filter-bar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          justify-content: center;
-          margin-bottom: 2.5rem;
-        }
-        .svc-filter-btn {
-          padding: 8px 20px;
-          border-radius: 50px;
-          border: 1.5px solid #e0e3f0;
-          background: white;
-          color: #555;
-          font-size: 0.85rem;
-          font-weight: 500;
-          cursor: pointer;
-          font-family: var(--font-body);
-          transition: all 0.25s var(--ease);
-        }
-        .svc-filter-btn:hover { border-color: var(--indigo); color: var(--indigo); }
-        .svc-filter-btn.active {
-          background: var(--indigo);
-          border-color: var(--indigo);
-          color: white;
-          box-shadow: 0 6px 16px rgba(61,82,160,0.3);
-        }
-        .svc-search-wrap {
-          display: flex;
-          justify-content: center;
+        .hero-ticker {
+          display: inline-flex; align-items: center; gap: 10px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          backdrop-filter: blur(12px);
+          color: rgba(255,255,255,0.85);
+          font-size: 0.75rem; font-weight: 500;
+          letter-spacing: 0.08em; text-transform: uppercase;
+          padding: 7px 18px; border-radius: 50px;
           margin-bottom: 2rem;
+          animation: fadeUp 0.9s var(--ease-smooth) both;
         }
-        .svc-pkg-search {
-          display: flex;
-          background: white;
-          border: 1.5px solid #e0e3f0;
-          border-radius: 50px;
-          overflow: hidden;
-          width: 360px;
-          transition: border-color 0.2s;
+        .ticker-dot {
+          width: 7px; height: 7px; background: #7CFFCB;
+          border-radius: 50%; box-shadow: 0 0 0 3px rgba(124,255,203,0.2);
+          animation: tickPulse 2s ease-in-out infinite; flex-shrink: 0;
         }
-        .svc-pkg-search:focus-within { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(61,82,160,0.1); }
-        .svc-pkg-search input {
-          flex: 1; padding: 0.7rem 1.25rem;
-          border: none; outline: none;
-          font-size: 0.9rem; font-family: var(--font-body);
+        @keyframes tickPulse { 0%,100%{box-shadow:0 0 0 3px rgba(124,255,203,0.2)} 50%{box-shadow:0 0 0 7px rgba(124,255,203,0.06)} }
+        .hero-label {
+          font-family: var(--serif); font-size: clamp(0.85rem, 2vw, 1rem);
+          font-style: italic; color: var(--gold);
+          letter-spacing: 0.12em; text-transform: uppercase;
+          margin-bottom: 1rem;
+          animation: fadeUp 0.9s 0.1s var(--ease-smooth) both;
         }
-        .svc-pkg-search span { padding: 0 1rem; display: flex; align-items: center; color: #999; }
+        .hero-title {
+          font-family: var(--serif);
+          font-size: clamp(3.5rem, 9vw, 7rem);
+          font-weight: 700; color: white; line-height: 0.95;
+          margin-bottom: 1.5rem;
+          animation: fadeUp 0.9s 0.2s var(--ease-smooth) both;
+          letter-spacing: -0.02em;
+        }
+        .hero-title em { font-style: italic; color: var(--gold); display: block; }
+        .hero-sub {
+          font-size: clamp(0.95rem, 2.2vw, 1.1rem); font-weight: 300;
+          color: rgba(255,255,255,0.65); max-width: 520px;
+          margin: 0 auto 2.5rem; line-height: 1.8;
+          animation: fadeUp 0.9s 0.3s var(--ease-smooth) both;
+        }
+        .hero-search-bar {
+          display: flex; align-items: center;
+          background: rgba(255,255,255,0.97); border-radius: 100px;
+          overflow: hidden; max-width: 540px; margin: 0 auto 1.75rem;
+          box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+          animation: fadeUp 0.9s 0.4s var(--ease-smooth) both;
+        }
+        .hero-search-bar input {
+          flex: 1; padding: 1rem 1.5rem; border: none; outline: none;
+          font-size: 0.92rem; font-family: var(--sans); color: var(--ink); background: transparent;
+        }
+        .hero-search-bar input::placeholder { color: #aaa; }
+        .hero-search-btn {
+          margin: 5px; padding: 0 1.5rem; height: calc(100% - 10px);
+          background: var(--ink); border: none; color: white;
+          font-size: 0.82rem; font-weight: 600; font-family: var(--sans);
+          letter-spacing: 0.05em; border-radius: 100px; cursor: pointer;
+          transition: background 0.2s; white-space: nowrap; min-height: 40px;
+        }
+        .hero-search-btn:hover { background: #1C2333; }
+        .hero-pills {
+          display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+          animation: fadeUp 0.9s 0.5s var(--ease-smooth) both;
+        }
+        .hero-pill {
+          background: transparent; border: 1px solid rgba(255,255,255,0.18);
+          color: rgba(255,255,255,0.75); padding: 6px 14px; border-radius: 50px;
+          font-size: 0.78rem; font-family: var(--sans); cursor: pointer;
+          transition: all 0.25s; letter-spacing: 0.02em;
+        }
+        .hero-pill:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+        .hero-scroll {
+          position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          color: rgba(255,255,255,0.35); font-size: 0.65rem; letter-spacing: 0.15em;
+          text-transform: uppercase; animation: fadeUp 0.9s 0.8s var(--ease-smooth) both;
+        }
+        .scroll-chevron {
+          width: 20px; height: 20px;
+          border-right: 1.5px solid rgba(255,255,255,0.35);
+          border-bottom: 1.5px solid rgba(255,255,255,0.35);
+          transform: rotate(45deg);
+          animation: bounce 2s ease-in-out infinite;
+        }
+        @keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(5px)} }
 
-        .svc-pkg-grid {
+        /* ── STATS ──────────────────────────────── */
+        .stats-strip { background: white; padding: 0; border-bottom: 1px solid var(--border); }
+        .stats-inner {
+          max-width: 1200px; margin: 0 auto;
+          display: grid; grid-template-columns: repeat(4, 1fr);
+        }
+        .stat-cell {
+          padding: 2.5rem 2rem; text-align: center;
+          border-right: 1px solid var(--border);
+          transition: background 0.25s; position: relative; overflow: hidden;
+        }
+        .stat-cell:last-child { border-right: none; }
+        .stat-cell::before {
+          content: ''; position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(212,168,83,0.06), transparent);
+          opacity: 0; transition: opacity 0.3s;
+        }
+        .stat-cell:hover::before { opacity: 1; }
+        .stat-num {
+          font-family: var(--serif); font-size: 3rem; font-weight: 700;
+          color: var(--ink); line-height: 1; margin-bottom: 0.35rem;
+        }
+        .stat-label {
+          font-size: 0.78rem; font-weight: 500; color: #999;
+          letter-spacing: 0.08em; text-transform: uppercase;
+        }
+        .stat-accent {
+          position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+          width: 0; height: 2px; background: var(--gold);
+          transition: width 0.4s var(--ease-smooth);
+        }
+        .stat-cell:hover .stat-accent { width: 60%; }
+
+        /* ── SECTION COMMONS ────────────────────── */
+        .section {
+          padding: 7rem 2rem;
+          opacity: 0; transform: translateY(40px);
+          transition: opacity 0.9s var(--ease-smooth), transform 0.9s var(--ease-smooth);
+        }
+        .section.visible { opacity: 1; transform: translateY(0); }
+        .section-kicker {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 0.72rem; font-weight: 600;
+          letter-spacing: 0.15em; text-transform: uppercase;
+          color: var(--gold); margin-bottom: 1rem;
+        }
+        .section-kicker::before {
+          content: ''; display: inline-block; width: 24px; height: 1px; background: var(--gold);
+        }
+        .section-title {
+          font-family: var(--serif); font-size: clamp(2.2rem, 5vw, 3.5rem);
+          font-weight: 700; color: var(--ink); line-height: 1.1; margin-bottom: 0.75rem;
+        }
+        .section-title em { font-style: italic; color: var(--gold); }
+        .section-sub {
+          font-size: 1rem; font-weight: 300; color: #777; max-width: 520px; line-height: 1.75;
+        }
+        .section-header { margin-bottom: 3.5rem; }
+        .section-header.center { text-align: center; }
+        .section-header.center .section-kicker { justify-content: center; }
+        .section-header.center .section-sub { margin: 0 auto; }
+
+        /* ── PACKAGES — sticky fixed bg ─────────── */
+        /*
+         * The trick: wrap the section in a positioned container.
+         * The ::before pseudo holds the background-attachment:fixed image.
+         * This keeps the bg pinned to the viewport while only the section
+         * content (cards, headings) scrolls normally on top.
+         */
+        .packages-wrapper {
+          position: relative;
+          isolation: isolate;
+        }
+        .packages-wrapper::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=85');
+          background-size: cover;
+          background-position: center;
+          background-attachment: fixed;
+          z-index: -2;
+        }
+        /* Dark scrim so text stays legible */
+        .packages-wrapper::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: rgba(10, 8, 5, 0.82);
+          z-index: -1;
+        }
+
+        .packages-section {
+          padding: 7rem 2rem;
+          opacity: 0; transform: translateY(40px);
+          transition: opacity 0.9s var(--ease-smooth), transform 0.9s var(--ease-smooth);
+        }
+        .packages-section.visible { opacity: 1; transform: translateY(0); }
+        .packages-section .section-title { color: rgba(255,255,255,0.9); }
+        .packages-section .section-sub { color: rgba(255,255,255,0.4); }
+
+        /* Filters */
+        .filter-row {
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 1rem; margin-bottom: 2.5rem;
+        }
+        .filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filter-pill {
+          padding: 7px 18px; border-radius: 50px;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: transparent; color: rgba(255,255,255,0.45);
+          font-size: 0.78rem; font-family: var(--sans);
+          cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em;
+        }
+        .filter-pill:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.75); }
+        .filter-pill.active {
+          background: rgba(255,255,255,0.1);
+          border-color: rgba(255,255,255,0.25);
+          color: rgba(255,255,255,0.9);
+        }
+        .pkg-search {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 50px; padding: 0 1rem 0 1.25rem;
+          height: 38px; transition: border-color 0.2s;
+        }
+        .pkg-search:focus-within { border-color: rgba(212,168,83,0.4); }
+        .pkg-search input {
+          border: none; outline: none; font-size: 0.82rem; font-family: var(--sans);
+          color: rgba(255,255,255,0.8); background: transparent; width: 180px;
+        }
+        .pkg-search input::placeholder { color: rgba(255,255,255,0.25); }
+        .pkg-search svg { color: rgba(255,255,255,0.25); flex-shrink: 0; }
+
+        /* Card grid */
+        .pkg-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 1.75rem;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 1.25rem;
           max-width: 1300px;
           margin: 0 auto;
         }
 
-        .svc-pkg-card {
-          background: white;
-          border-radius: 20px;
-          overflow: hidden;
-          border: 1px solid rgba(200,200,230,0.25);
-          transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
-          position: relative;
-        }
-        .svc-pkg-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 24px 50px rgba(0,0,0,0.12);
-        }
-        .svc-pkg-card-header {
-          padding: 1.75rem 1.75rem 1.25rem;
-          position: relative;
-        }
-        .svc-pkg-badge {
-          position: absolute;
-          top: 1.25rem;
-          right: 1.25rem;
-          font-size: 0.7rem;
-          font-weight: 700;
-          padding: 4px 10px;
-          border-radius: 20px;
-          letter-spacing: 0.05em;
-        }
-        .svc-pkg-icon-wrap {
-          width: 60px; height: 60px;
+        /* Fully transparent cards — border + blur only */
+        .pkg-card {
+          background: transparent;
           border-radius: 16px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 1.75rem;
-          margin-bottom: 1rem;
-        }
-        .svc-pkg-title {
-          font-family: var(--font-display);
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--navy);
-          margin-bottom: 0.4rem;
-        }
-        .svc-pkg-tagline {
-          font-size: 0.85rem;
-          font-style: italic;
-          color: #888;
-          margin-bottom: 0.75rem;
-        }
-        .svc-pkg-desc {
-          font-size: 0.88rem;
-          color: #666;
-          line-height: 1.65;
-          margin-bottom: 1.25rem;
-        }
-        .svc-pkg-meta {
-          display: flex;
-          gap: 1.25rem;
-          font-size: 0.82rem;
-          color: #888;
-          margin-bottom: 1rem;
-        }
-        .svc-pkg-meta span { display: flex; align-items: center; gap: 4px; }
-        .svc-pkg-rating {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 0.85rem;
-          margin-bottom: 0.75rem;
-        }
-        .svc-pkg-stars { color: #FFD700; letter-spacing: 1px; font-size: 0.8rem; }
-        .svc-pkg-review-count { color: #999; }
-
-        /* Live seats */
-        .svc-pkg-seats {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.78rem;
-          margin-bottom: 1rem;
-        }
-        .svc-seats-bar-bg {
-          flex: 1; height: 5px;
-          background: #f0f0f8;
-          border-radius: 3px;
-          overflow: hidden;
-        }
-        .svc-seats-bar {
-          height: 100%;
-          border-radius: 3px;
-          transition: width 0.6s var(--ease);
-        }
-        .svc-seats-text { white-space: nowrap; font-weight: 600; }
-
-        .svc-pkg-features {
-          border-top: 1px solid #f0f0f8;
-          padding: 1.25rem 1.75rem;
-        }
-        .svc-pkg-feat-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.4rem 1rem;
-        }
-        .svc-pkg-feat {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.82rem;
-          color: #555;
-        }
-        .svc-pkg-feat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-
-        .svc-pkg-footer {
-          padding: 1.25rem 1.75rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-top: 1px solid #f0f0f8;
-        }
-        .svc-pkg-price {
-          font-family: var(--font-display);
-          font-size: 1.6rem;
-          font-weight: 700;
-        }
-        .svc-pkg-price-note { font-size: 0.78rem; color: #999; font-weight: 400; font-family: var(--font-body); }
-        .svc-book-btn {
-          padding: 0.65rem 1.5rem;
-          border-radius: 50px;
-          border: none;
-          color: white;
-          font-size: 0.88rem;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: var(--font-body);
-          letter-spacing: 0.02em;
-          transition: all 0.3s var(--ease);
-        }
-        .svc-book-btn:hover { transform: scale(1.04); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
-
-        /* ── Destinations Section ── */
-        .svc-destinations { background: white; }
-        .svc-dest-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          grid-template-rows: repeat(2, 260px);
-          gap: 1.25rem;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-        .svc-dest-card {
+          border: 1px solid rgba(255,255,255,0.1);
+          transition: border-color 0.3s, transform 0.35s var(--ease-smooth);
           position: relative;
-          border-radius: 20px;
-          overflow: hidden;
-          cursor: pointer;
-        }
-        .svc-dest-card:first-child {
-          grid-row: span 2;
-        }
-        .svc-dest-img {
-          width: 100%; height: 100%;
-          object-fit: cover;
-          transition: transform 0.6s var(--ease);
-        }
-        .svc-dest-card:hover .svc-dest-img { transform: scale(1.07); }
-        .svc-dest-overlay {
-          position: absolute; inset: 0;
-          background: linear-gradient(180deg, transparent 30%, rgba(10,10,30,0.82) 100%);
+          transform-style: preserve-3d;
+          will-change: transform;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          padding: 1.5rem;
-          transition: all 0.3s;
+          padding: 1.75rem;
+          backdrop-filter: blur(2px);
         }
-        .svc-dest-tag {
-          font-size: 0.72rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--gold-light);
-          margin-bottom: 4px;
-        }
-        .svc-dest-name {
-          font-family: var(--font-display);
-          font-size: 1.6rem;
-          font-weight: 700;
-          color: white;
-          margin-bottom: 6px;
-        }
-        .svc-dest-card:first-child .svc-dest-name { font-size: 2.2rem; }
-        .svc-dest-price {
-          font-size: 0.88rem;
-          color: rgba(255,255,255,0.8);
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .svc-dest-arrow {
-          position: absolute;
-          top: 1.25rem; right: 1.25rem;
-          width: 36px; height: 36px;
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(8px);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 0.85rem;
-          opacity: 0;
-          transform: translate(-5px, 5px);
-          transition: all 0.3s var(--ease);
-        }
-        .svc-dest-card:hover .svc-dest-arrow { opacity: 1; transform: translate(0, 0); }
+        .pkg-card:hover { border-color: rgba(212,168,83,0.35); }
 
-        /* ── Why Us ── */
-        .svc-why { background: var(--navy); }
-        .svc-why .svc-eyebrow { color: var(--gold-light); background: rgba(201,168,76,0.15); }
-        .svc-why .svc-section-title { color: white; }
-        .svc-why .svc-section-sub { color: rgba(255,255,255,0.6); }
-        .svc-why-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-          max-width: 1100px;
-          margin: 0 auto;
+        .pkg-card-toprow {
+          display: flex; align-items: flex-start;
+          justify-content: space-between; margin-bottom: 1.4rem;
         }
-        .svc-why-card {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 20px;
-          padding: 2rem;
-          transition: all 0.3s var(--ease);
+        .pkg-icon {
+          width: 44px; height: 44px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.1rem;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.55); flex-shrink: 0;
         }
-        .svc-why-card:hover {
-          background: rgba(255,255,255,0.08);
-          border-color: rgba(201,168,76,0.3);
-          transform: translateY(-4px);
+        .pkg-duration {
+          font-size: 0.75rem; color: rgba(255,255,255,0.3);
+          letter-spacing: 0.04em; padding-top: 4px;
         }
-        .svc-why-icon {
-          font-size: 2rem;
-          margin-bottom: 1rem;
+        .pkg-name {
+          font-family: var(--serif); font-size: 1.35rem;
+          font-weight: 600; font-style: italic;
+          margin-bottom: 0.65rem; line-height: 1.2;
         }
-        .svc-why-title {
-          font-size: 1.05rem;
-          font-weight: 700;
-          color: white;
+        .pkg-desc {
+          font-size: 0.83rem; font-weight: 300;
+          color: rgba(255,255,255,0.5); line-height: 1.75;
+          margin-bottom: 1.4rem; flex: 1;
+        }
+        .pkg-price-inline {
+          font-family: var(--serif); font-size: 1.1rem;
+          font-weight: 600; color: rgba(212,168,83,0.85);
           margin-bottom: 0.5rem;
         }
-        .svc-why-desc { font-size: 0.88rem; color: rgba(255,255,255,0.55); line-height: 1.65; }
+        .pkg-price-note-inline {
+          font-size: 0.68rem; color: rgba(255,255,255,0.3); font-family: var(--sans);
+        }
+        .pkg-author {
+          font-size: 0.75rem; color: rgba(255,255,255,0.25);
+          margin-bottom: 1.25rem; letter-spacing: 0.01em;
+        }
+        .pkg-author span { color: rgba(255,255,255,0.4); }
+        .pkg-cta {
+          display: flex; align-items: center; gap: 7px;
+          font-size: 0.78rem; font-weight: 500;
+          color: rgba(255,255,255,0.4);
+          cursor: pointer; border: none; background: none;
+          font-family: var(--sans); padding: 0;
+          letter-spacing: 0.03em; transition: color 0.2s; margin-top: auto;
+        }
+        .pkg-cta:hover { color: rgba(255,255,255,0.8); }
+        .pkg-cta svg { flex-shrink: 0; transition: transform 0.2s; }
+        .pkg-cta:hover svg { transform: translateX(2px); }
 
-        /* ── Testimonials ── */
-        .svc-testimonials { background: var(--cream); }
-        .svc-testi-wrap {
-          max-width: 900px;
-          margin: 0 auto;
+        /* ── DESTINATIONS ───────────────────────── */
+        .destinations-bg { background: white; }
+        .dest-mosaic {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1fr;
+          grid-template-rows: 280px 280px;
+          gap: 12px; max-width: 1200px; margin: 0 auto;
         }
-        .svc-testi-card {
-          background: white;
-          border-radius: 24px;
-          padding: 2.5rem;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.06);
-          border: 1px solid rgba(200,200,230,0.2);
-          position: relative;
-          overflow: hidden;
+        .dest-card { position: relative; border-radius: 18px; overflow: hidden; cursor: pointer; }
+        .dest-card:first-child { grid-row: span 2; }
+        .dest-img {
+          width: 100%; height: 100%; object-fit: cover;
+          transition: transform 0.7s var(--ease-smooth); display: block;
         }
-        .svc-testi-quote {
-          position: absolute;
-          top: 1.5rem; right: 2rem;
-          font-family: var(--font-display);
-          font-size: 6rem;
-          color: var(--indigo);
-          opacity: 0.07;
-          line-height: 1;
+        .dest-card:hover .dest-img { transform: scale(1.06); }
+        .dest-scrim {
+          position: absolute; inset: 0;
+          background: linear-gradient(180deg, transparent 25%, rgba(8,12,20,0.78) 100%);
         }
-        .svc-testi-text {
-          font-size: 1.1rem;
-          line-height: 1.8;
-          color: #444;
-          margin-bottom: 1.75rem;
-          position: relative;
-          font-style: italic;
+        .dest-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5rem; }
+        .dest-tag {
+          font-size: 0.68rem; font-weight: 600;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--gold); margin-bottom: 4px;
         }
-        .svc-testi-author {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
+        .dest-name {
+          font-family: var(--serif); font-size: 1.7rem;
+          font-weight: 700; color: white; line-height: 1.1; margin-bottom: 4px;
         }
-        .svc-testi-img {
-          width: 54px; height: 54px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 2px solid var(--indigo-light);
+        .dest-card:first-child .dest-name { font-size: 2.5rem; }
+        .dest-price { font-size: 0.82rem; color: rgba(255,255,255,0.65); font-weight: 300; }
+        .dest-arrow {
+          position: absolute; top: 1rem; right: 1rem;
+          width: 34px; height: 34px;
+          background: rgba(255,255,255,0.12); backdrop-filter: blur(6px);
+          border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+          display: flex; align-items: center; justify-content: center;
+          color: white; font-size: 1rem; opacity: 0;
+          transform: scale(0.8); transition: all 0.3s var(--ease-spring);
         }
-        .svc-testi-name { font-weight: 700; color: var(--navy); font-size: 0.97rem; }
-        .svc-testi-loc { font-size: 0.82rem; color: #888; }
-        .svc-testi-tour {
-          margin-left: auto;
-          background: rgba(61,82,160,0.08);
-          color: var(--indigo);
-          font-size: 0.75rem;
-          font-weight: 600;
-          padding: 5px 12px;
-          border-radius: 20px;
-        }
-        .svc-testi-stars { color: #FFD700; font-size: 0.85rem; margin-top: 2px; }
-        .svc-testi-dots {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 1.5rem;
-        }
-        .svc-testi-dot {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          border: none; cursor: pointer;
-          transition: all 0.3s;
-          background: #dde0f0;
-        }
-        .svc-testi-dot.active { background: var(--indigo); width: 24px; border-radius: 4px; }
+        .dest-card:hover .dest-arrow { opacity: 1; transform: scale(1); }
 
-        /* ── CTA ── */
-        .svc-cta {
-          background: linear-gradient(135deg, #1a1a2e 0%, #3D52A0 60%, #1a1a2e 100%);
-          background-size: 200% 100%;
-          animation: ctaShimmer 8s linear infinite;
-          text-align: center;
-          padding: 6rem 2rem;
+        /* ── WHY US ─────────────────────────────── */
+        .why-bg { background: var(--ink); }
+        .why-bg .section-title { color: white; }
+        .why-bg .section-sub { color: rgba(255,255,255,0.45); }
+        .bento-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 1px; max-width: 1100px; margin: 0 auto;
+          background: rgba(255,255,255,0.06);
+          border-radius: 24px; overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.06);
         }
-        @keyframes ctaShimmer { 0%{background-position:0%} 100%{background-position:200%} }
-        .svc-cta-title {
-          font-family: var(--font-display);
-          font-size: clamp(2rem, 5vw, 3.2rem);
-          font-weight: 700;
-          color: white;
-          margin-bottom: 1rem;
+        .bento-cell {
+          background: var(--ink); padding: 2.25rem 2rem;
+          transition: background 0.3s; position: relative; overflow: hidden;
         }
-        .svc-cta-sub {
-          font-size: 1.1rem;
-          color: rgba(255,255,255,0.75);
-          margin-bottom: 2.5rem;
-          max-width: 560px;
-          margin-left: auto;
-          margin-right: auto;
+        .bento-cell:hover { background: rgba(255,255,255,0.03); }
+        .bento-cell::after {
+          content: ''; position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(212,168,83,0.06), transparent);
+          opacity: 0; transition: opacity 0.3s;
         }
-        .svc-cta-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-        .svc-cta-btn-primary {
-          padding: 1rem 2.5rem;
-          background: var(--gold);
-          color: var(--navy);
-          border: none;
-          border-radius: 50px;
-          font-size: 1rem;
-          font-weight: 700;
-          cursor: pointer;
-          font-family: var(--font-body);
-          box-shadow: 0 10px 30px rgba(201,168,76,0.4);
-          transition: all 0.3s var(--ease);
-          text-decoration: none;
-          display: inline-block;
+        .bento-cell:hover::after { opacity: 1; }
+        .bento-icon { font-size: 1.75rem; margin-bottom: 1.1rem; display: block; }
+        .bento-title { font-size: 1rem; font-weight: 600; color: white; margin-bottom: 0.5rem; }
+        .bento-desc { font-size: 0.83rem; font-weight: 300; color: rgba(255,255,255,0.4); line-height: 1.7; }
+        .bento-accent-line {
+          position: absolute; bottom: 0; left: 2rem;
+          width: 0; height: 2px; transition: width 0.4s var(--ease-smooth);
         }
-        .svc-cta-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(201,168,76,0.5); }
-        .svc-cta-btn-secondary {
-          padding: 1rem 2.5rem;
-          background: transparent;
-          color: white;
-          border: 1.5px solid rgba(255,255,255,0.35);
-          border-radius: 50px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: var(--font-body);
-          transition: all 0.3s;
-          text-decoration: none;
-          display: inline-block;
-        }
-        .svc-cta-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+        .bento-cell:hover .bento-accent-line { width: calc(100% - 4rem); }
 
-        /* ── Animations ── */
-        @keyframes dvdFadeUp {
-          from { opacity: 0; transform: translateY(25px); }
+        /* ── TESTIMONIALS ───────────────────────── */
+        .testi-bg { background: var(--mist); }
+        .testi-layout {
+          display: grid; grid-template-columns: 1fr 340px;
+          gap: 3rem; max-width: 1100px; margin: 0 auto; align-items: start;
+        }
+        .testi-main {
+          background: white; border-radius: 24px; padding: 3rem;
+          border: 1px solid var(--border); position: relative; overflow: hidden;
+        }
+        .testi-bg-char {
+          position: absolute; top: -1rem; right: 1.5rem;
+          font-family: var(--serif); font-size: 9rem; font-weight: 700;
+          color: var(--ink); opacity: 0.04; line-height: 1;
+          pointer-events: none; user-select: none;
+        }
+        .testi-text {
+          font-family: var(--serif); font-size: 1.35rem; font-style: italic;
+          color: var(--ink); line-height: 1.7; margin-bottom: 2rem; position: relative;
+        }
+        .testi-author { display: flex; align-items: center; gap: 1rem; }
+        .testi-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); }
+        .testi-name { font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+        .testi-loc { font-size: 0.8rem; color: #aaa; font-weight: 300; }
+        .testi-stars { color: #F5A623; font-size: 0.8rem; margin-top: 1px; }
+        .testi-tour-tag {
+          margin-left: auto; background: var(--gold-dim); color: #8A6A1A;
+          font-size: 0.72rem; font-weight: 600; padding: 5px 12px;
+          border-radius: 50px; letter-spacing: 0.03em; white-space: nowrap;
+        }
+        .testi-dots { display: flex; gap: 6px; margin-top: 2rem; }
+        .testi-dot {
+          height: 5px; border-radius: 3px; border: none; cursor: pointer;
+          transition: all 0.35s var(--ease-smooth); background: #e0e0e0; width: 20px;
+        }
+        .testi-dot.active { background: var(--gold); width: 36px; }
+        .testi-stack { display: flex; flex-direction: column; gap: 10px; }
+        .testi-mini {
+          background: white; border-radius: 16px; padding: 1.1rem 1.25rem;
+          border: 1.5px solid transparent; cursor: pointer; transition: all 0.25s;
+          display: flex; align-items: center; gap: 0.85rem;
+        }
+        .testi-mini:hover { border-color: var(--gold-pale); }
+        .testi-mini.active { border-color: var(--gold); box-shadow: 0 4px 20px rgba(212,168,83,0.15); }
+        .mini-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .mini-name { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+        .mini-tour { font-size: 0.72rem; color: #aaa; font-weight: 300; margin-top: 1px; }
+        .mini-stars { color: #F5A623; font-size: 0.7rem; margin-top: 2px; }
+
+        /* ── CTA ────────────────────────────────── */
+        .cta-section {
+          position: relative; background: var(--ink);
+          text-align: center; padding: 8rem 2rem; overflow: hidden;
+        }
+        .cta-noise {
+          position: absolute; inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+          pointer-events: none;
+        }
+        .cta-orb { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
+        .cta-orb-1 { width: 500px; height: 500px; background: rgba(61,82,160,0.2); top: -200px; left: -100px; }
+        .cta-orb-2 { width: 350px; height: 350px; background: rgba(212,168,83,0.12); bottom: -120px; right: 5%; }
+        .cta-kicker {
+          display: inline-block; font-size: 0.72rem; font-weight: 600;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          color: var(--gold); margin-bottom: 1.25rem; position: relative;
+        }
+        .cta-title {
+          font-family: var(--serif); font-size: clamp(2.5rem, 6vw, 4.5rem);
+          font-weight: 700; color: white; line-height: 1; margin-bottom: 1rem; position: relative;
+        }
+        .cta-title em { font-style: italic; color: var(--gold); }
+        .cta-sub {
+          font-size: 1rem; font-weight: 300; color: rgba(255,255,255,0.5);
+          margin-bottom: 3rem; max-width: 480px; margin-left: auto; margin-right: auto;
+          line-height: 1.8; position: relative;
+        }
+        .cta-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; position: relative; }
+        .cta-btn-gold {
+          padding: 0.9rem 2.5rem; background: var(--gold); color: var(--ink);
+          border: none; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
+          font-family: var(--sans); cursor: pointer; letter-spacing: 0.04em;
+          box-shadow: 0 12px 40px rgba(212,168,83,0.35);
+          transition: all 0.3s var(--ease-spring); text-decoration: none; display: inline-block;
+        }
+        .cta-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 20px 50px rgba(212,168,83,0.45); }
+        .cta-btn-outline {
+          padding: 0.9rem 2.5rem; background: transparent; color: rgba(255,255,255,0.8);
+          border: 1px solid rgba(255,255,255,0.2); border-radius: 50px;
+          font-size: 0.9rem; font-weight: 500; font-family: var(--sans);
+          cursor: pointer; letter-spacing: 0.04em; transition: all 0.3s;
+          text-decoration: none; display: inline-block;
+        }
+        .cta-btn-outline:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.4); color: white; }
+
+        /* ── ANIMATIONS ─────────────────────────── */
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(22px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Responsive ── */
+        /* ── RESPONSIVE ─────────────────────────── */
         @media (max-width: 1024px) {
-          .svc-stats-grid { grid-template-columns: repeat(2, 1fr); }
-          .svc-why-grid { grid-template-columns: repeat(2, 1fr); }
-          .svc-dest-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; }
-          .svc-dest-card:first-child { grid-row: span 1; }
+          .stats-inner { grid-template-columns: repeat(2, 1fr); }
+          .bento-grid { grid-template-columns: repeat(2, 1fr); }
+          .dest-mosaic { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; }
+          .dest-card:first-child { grid-row: span 1; }
+          .testi-layout { grid-template-columns: 1fr; }
+          .testi-stack { flex-direction: row; flex-wrap: wrap; }
+          .testi-mini { flex: 1; min-width: 180px; }
         }
         @media (max-width: 640px) {
-          .svc-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-          .svc-why-grid { grid-template-columns: 1fr; }
-          .svc-dest-grid { grid-template-columns: 1fr; }
-          .svc-pkg-grid { grid-template-columns: 1fr; }
-          .svc-section { padding: 4rem 1.25rem; }
+          .stats-inner { grid-template-columns: repeat(2, 1fr); }
+          .stat-cell { padding: 1.75rem 1rem; }
+          .bento-grid { grid-template-columns: 1fr; }
+          .dest-mosaic { grid-template-columns: 1fr; }
+          .pkg-grid { grid-template-columns: 1fr; }
+          .section { padding: 4.5rem 1.25rem; }
+          .packages-section { padding: 4.5rem 1.25rem; }
+          .filter-row { flex-direction: column; align-items: flex-start; }
+          .pkg-search input { width: 140px; }
+          .packages-wrapper::before { background-attachment: scroll; }
         }
       `}</style>
 
       <Header />
 
-      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="svc-hero">
-        <div className="svc-hero-bg" />
-        <div className="svc-hero-mesh" />
-        <div className="svc-hero-content">
-          <span className="svc-hero-eyebrow">
-            <span className="svc-live-dot" style={{ margin: 0 }} />
-            {liveBookings} bookings made today
-          </span>
-          <h1 className="svc-hero-title">
-            Discover Your<br />
-            <span className="italic gold">Next</span> Adventure
+      {/* ── HERO ── */}
+      <section className="hero" ref={heroRef}>
+        <div className="hero-photo" />
+        <div className="hero-vignette" />
+        <div className="hero-orb orb-1" style={{ transform: `translate(${mousePos.x * -20}px, ${mousePos.y * -15}px)` }} />
+        <div className="hero-orb orb-2" style={{ transform: `translate(${mousePos.x * 15}px, ${mousePos.y * 12}px)` }} />
+        <div className="hero-orb orb-3" style={{ transform: `translate(${mousePos.x * 25}px, ${mousePos.y * 20}px)` }} />
+
+        <div className="hero-content">
+          <div className="hero-ticker">
+            <span className="ticker-dot" />
+            <span>{liveBookings} bookings today</span>
+            <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 4px' }}>·</span>
+            <span>24/7 support</span>
+          </div>
+          <p className="hero-label">India's finest travel experience</p>
+          <h1 className="hero-title">
+            Where Will<br /><em>You Go Next?</em>
           </h1>
-          <p className="svc-hero-sub">
-            From misty Himalayan peaks to sun-kissed beaches — craft your perfect journey with India's most trusted travel experts.
+          <p className="hero-sub">
+            From misty Himalayan peaks to sun-kissed shores — crafted journeys for those who travel with intention.
           </p>
-          <div className="svc-hero-search">
+          <div className="hero-search-bar">
             <input
               type="text"
-              placeholder="Search destinations, tour types, places..."
+              placeholder="Search destinations, tours, experiences..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
-            <button>Search</button>
+            <button className="hero-search-btn">Search</button>
           </div>
-          <div className="svc-hero-pills">
-            {["🏔️ Adventure", "🌊 Beach", "🏛️ Heritage", "💑 Honeymoon", "👨‍👩‍👧‍👦 Family", "💎 Luxury"].map(p => (
-              <span key={p} className="svc-hero-pill" onClick={() => setSearchQuery(p.split(' ')[1])}>{p}</span>
+          <div className="hero-pills">
+            {["Adventure", "Beach", "Heritage", "Honeymoon", "Family", "Luxury"].map(p => (
+              <button key={p} className="hero-pill" onClick={() => setSearchQuery(p)}>{p}</button>
             ))}
           </div>
         </div>
-        <div className="svc-live-badge">
-          <span className="svc-live-dot" />
-          <span><strong>500+</strong> destinations · <strong>9</strong> tour types · <strong>24/7</strong> support</span>
-        </div>
-        <div className="svc-hero-scroll">
-          <div className="svc-scroll-line" />
+
+        <div className="hero-scroll">
+          <div className="scroll-chevron" />
           <span>Scroll</span>
         </div>
       </section>
 
-      {/* ── STATS ────────────────────────────────────────────────────────────── */}
-      <section className="svc-stats">
-        <div className="svc-stats-grid">
+      {/* ── STATS ── */}
+      <div className="stats-strip">
+        <div className="stats-inner">
           {[
             { num: happyCount, suffix: '+', label: 'Happy Travelers', ref: happyRef },
             { num: destCount, suffix: '+', label: 'Destinations', ref: destRef },
             { num: yearsCount, suffix: '+', label: 'Years Experience', ref: yearsRef },
             { num: toursCount, suffix: '+', label: 'Tours Completed', ref: toursRef },
           ].map((s, i) => (
-            <div key={i} className="svc-stat-item" ref={s.ref}>
-              <div className="svc-stat-num">
-                {s.num.toLocaleString()}{s.suffix}
-              </div>
-              <div className="svc-stat-label">{s.label}</div>
+            <div key={i} className="stat-cell" ref={s.ref}>
+              <div className="stat-num">{s.num.toLocaleString()}{s.suffix}</div>
+              <div className="stat-label">{s.label}</div>
+              <div className="stat-accent" />
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* ── TOUR PACKAGES ────────────────────────────────────────────────────── */}
-      <section
-        className={`svc-section svc-packages ${visibleSections['packages'] ? 'visible' : ''}`}
-        data-section="packages"
-      >
-        <div className="svc-section-header">
-          <span className="svc-eyebrow">Our Offerings</span>
-          <h2 className="svc-section-title">Explore 9 Tour Categories</h2>
-          <p className="svc-section-sub">From weekend getaways to luxury escapes — find the journey that speaks to your soul.</p>
-        </div>
-
-        <div className="svc-filter-bar">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              className={`svc-filter-btn ${activeFilter === f.key ? 'active' : ''}`}
-              onClick={() => setActiveFilter(f.key)}
-            >{f.label}</button>
-          ))}
-        </div>
-
-        <div className="svc-search-wrap">
-          <div className="svc-pkg-search">
-            <input
-              type="text"
-              placeholder="Search tours..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-            <span>🔍</span>
+      {/* ── PACKAGES — fixed bg wrapper ── */}
+      <div className="packages-wrapper">
+        <section
+          className={`packages-section ${visibleSections['packages'] ? 'visible' : ''}`}
+          data-section="packages"
+        >
+          <div className="section-header center" style={{ maxWidth: 1300, margin: '0 auto 3.5rem' }}>
+            <div className="section-kicker">Our Offerings</div>
+            <h2 className="section-title">Nine Ways to <em>Explore</em></h2>
+            <p className="section-sub">From weekend escapes to once-in-a-lifetime expeditions — find the journey that calls to you.</p>
           </div>
-        </div>
 
-        <div className="svc-pkg-grid">
-          {filteredPackages.map((pkg, idx) => {
-            const seatsPercent = Math.min(100, ((30 - pkg.seatsLeft) / 30) * 100);
-            const seatsColor = pkg.seatsLeft <= 5 ? '#FF6B6B' : pkg.seatsLeft <= 12 ? '#FF9F1C' : '#4CAF50';
-            return (
-              <div
-                key={pkg.id}
-                className="svc-pkg-card"
-                style={{ animationDelay: `${idx * 0.08}s` }}
-                onMouseEnter={() => setHoveredCard(pkg.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {pkg.badge && (
-                  <div className="svc-pkg-badge" style={{
-                    background: pkg.badge.includes('Popular') ? '#fff3e0' :
-                                pkg.badge.includes('Value') ? '#e3f2fd' :
-                                pkg.badge.includes('Premium') ? '#fdf6e3' : '#e8f5e9',
-                    color: pkg.badge.includes('Popular') ? '#e65100' :
-                           pkg.badge.includes('Value') ? '#1565c0' :
-                           pkg.badge.includes('Premium') ? '#8B6914' : '#2e7d32',
-                  }}>{pkg.badge}</div>
-                )}
+          <div className="filter-row" style={{ maxWidth: 1300, margin: '0 auto 2rem' }}>
+            <div className="filter-pills">
+              {FILTERS.map(f => (
+                <button
+                  key={f.key}
+                  className={`filter-pill ${activeFilter === f.key ? 'active' : ''}`}
+                  onClick={() => setActiveFilter(f.key)}
+                >{f.label}</button>
+              ))}
+            </div>
+            <div className="pkg-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search tours..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
 
-                <div className="svc-pkg-card-header" style={{
-                  background: `linear-gradient(135deg, ${pkg.gradFrom}12, ${pkg.gradTo}08)`
-                }}>
-                  <div className="svc-pkg-icon-wrap" style={{
-                    background: `linear-gradient(135deg, ${pkg.gradFrom}25, ${pkg.gradTo}15)`
-                  }}>{pkg.icon}</div>
-                  <h3 className="svc-pkg-title">{pkg.title}</h3>
-                  <p className="svc-pkg-tagline">"{pkg.tagline}"</p>
-                  <p className="svc-pkg-desc">{pkg.description}</p>
-                  <div className="svc-pkg-meta">
-                    <span>⏱️ {pkg.duration}</span>
-                    <span>👥 Group & Solo</span>
+          <div className="pkg-grid">
+            {filteredPackages.map((pkg) => {
+              const isListen = ['custom-tour','adventure-tour','honeymoon-tour','weekend-getaway','pilgrimage-tour'].includes(pkg.type);
+              const ctaLabel = isListen ? 'Book Now' : 'Explore Package';
+              return (
+                <div
+                  key={pkg.id}
+                  className="pkg-card"
+                  ref={el => cardRefs.current[pkg.id] = el}
+                  onMouseMove={e => handleCardMouseMove(e, pkg.id)}
+                  onMouseLeave={() => handleCardMouseLeave(pkg.id)}
+                >
+                  <div className="pkg-card-toprow">
+                    <div className="pkg-icon">{pkg.icon}</div>
+                    {pkg.duration !== 'Flexible' && (
+                      <span className="pkg-duration">{pkg.duration}</span>
+                    )}
                   </div>
-                  <div className="svc-pkg-rating">
-                    <span className="svc-pkg-stars">{'★'.repeat(5)}</span>
-                    <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{pkg.rating}</span>
-                    <span className="svc-pkg-review-count">({pkg.reviews} reviews)</span>
+                  <h3 className="pkg-name" style={{ color: pkg.color }}>{pkg.title}</h3>
+                  <p className="pkg-desc">{pkg.description}</p>
+                  <div className="pkg-price-inline">
+                    {pkg.price}
+                    <span className="pkg-price-note-inline"> / {pkg.priceNote}</span>
                   </div>
-                  {/* Live seats */}
-                  <div className="svc-pkg-seats">
-                    <span style={{ color: seatsColor, fontWeight: 700 }}>🪑</span>
-                    <div className="svc-seats-bar-bg">
-                      <div className="svc-seats-bar" style={{ width: `${seatsPercent}%`, background: seatsColor }} />
-                    </div>
-                    <span className="svc-seats-text" style={{ color: seatsColor }}>
-                      {pkg.seatsLeft <= 5 ? `Only ${pkg.seatsLeft} left!` : `${pkg.seatsLeft} seats`}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="svc-pkg-features">
-                  <div className="svc-pkg-feat-grid">
-                    {pkg.features.map((f, i) => (
-                      <div key={i} className="svc-pkg-feat">
-                        <span className="svc-pkg-feat-dot" style={{ background: pkg.color }} />
-                        {f}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="svc-pkg-footer">
-                  <div>
-                    <div className="svc-pkg-price" style={{ color: pkg.color }}>{pkg.price}</div>
-                    <div className="svc-pkg-price-note">{pkg.priceNote}</div>
-                  </div>
-                  <button
-                    className="svc-book-btn"
-                    style={{ background: `linear-gradient(135deg, ${pkg.gradFrom}, ${pkg.gradTo})` }}
-                    onClick={() => handleBook(pkg.type)}
-                  >
-                    Book Now →
+                  <p className="pkg-author">by <span>{pkg.tagline}</span></p>
+                  <button className="pkg-cta" onClick={() => handleBook(pkg.type)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      {isListen
+                        ? <><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></>
+                        : <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>
+                      }
+                    </svg>
+                    {ctaLabel}
                   </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {filteredPackages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#999' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-            <p>No tours found. Try a different filter or search term.</p>
+              );
+            })}
           </div>
-        )}
-      </section>
 
-      {/* ── FEATURED DESTINATIONS ────────────────────────────────────────────── */}
+          {filteredPackages.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '4rem', color: 'rgba(255,255,255,0.4)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', opacity: 0.3 }}>◉</div>
+              <p style={{ font: '300 1rem var(--sans)' }}>No tours found. Try adjusting your search.</p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── DESTINATIONS ── */}
       <section
-        className={`svc-section svc-destinations ${visibleSections['destinations'] ? 'visible' : ''}`}
+        className={`section destinations-bg ${visibleSections['destinations'] ? 'visible' : ''}`}
         data-section="destinations"
       >
-        <div className="svc-section-header">
-          <span className="svc-eyebrow">Top Picks</span>
-          <h2 className="svc-section-title">Featured Destinations</h2>
-          <p className="svc-section-sub">Hand-picked locations for your next unforgettable journey.</p>
+        <div className="section-header center">
+          <div className="section-kicker">Top Picks</div>
+          <h2 className="section-title">Places That <em>Stay With You</em></h2>
+          <p className="section-sub">A hand-picked selection of destinations our travelers return to, year after year.</p>
         </div>
-        <div className="svc-dest-grid">
+        <div className="dest-mosaic">
           {DESTINATIONS.map((d, i) => (
-            <div
-              key={i}
-              className="svc-dest-card"
-              onMouseEnter={() => setHoveredDest(i)}
-              onMouseLeave={() => setHoveredDest(null)}
-            >
-              <img src={d.img} alt={d.title} className="svc-dest-img" loading="lazy" />
-              <div className="svc-dest-overlay">
-                <div className="svc-dest-tag">{d.tag}</div>
-                <div className="svc-dest-name">{d.title}</div>
-                <div className="svc-dest-price">✈️ From {d.price}</div>
+            <div key={i} className="dest-card">
+              <img src={d.img} alt={d.title} className="dest-img" loading="lazy" />
+              <div className="dest-scrim" />
+              <div className="dest-info">
+                <div className="dest-tag">{d.tag}</div>
+                <div className="dest-name">{d.title}</div>
+                <div className="dest-price">From {d.price}</div>
               </div>
-              <div className="svc-dest-arrow">→</div>
+              <div className="dest-arrow">→</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── WHY CHOOSE US ────────────────────────────────────────────────────── */}
+      {/* ── WHY US ── */}
       <section
-        className={`svc-section svc-why ${visibleSections['why'] ? 'visible' : ''}`}
+        className={`section why-bg ${visibleSections['why'] ? 'visible' : ''}`}
         data-section="why"
       >
-        <div className="svc-section-header">
-          <span className="svc-eyebrow">Why DesiVDesi</span>
-          <h2 className="svc-section-title" style={{ color: 'white' }}>Travel With Confidence</h2>
-          <p className="svc-section-sub" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            We go beyond booking — we craft experiences that stay with you forever.
-          </p>
+        <div className="section-header center" style={{ marginBottom: '3rem' }}>
+          <div className="section-kicker" style={{ color: 'rgba(255,255,255,0.4)' }}>Why DesiVDesi</div>
+          <h2 className="section-title" style={{ color: 'white' }}>Travel With <em>Confidence</em></h2>
+          <p className="section-sub">We go beyond booking. We build journeys that become stories.</p>
         </div>
-        <div className="svc-why-grid">
+        <div className="bento-grid">
           {WHY_US.map((w, i) => (
-            <div key={i} className="svc-why-card">
-              <div className="svc-why-icon">{w.icon}</div>
-              <div className="svc-why-title">{w.title}</div>
-              <div className="svc-why-desc">{w.desc}</div>
+            <div key={i} className="bento-cell">
+              <span className="bento-icon">{w.icon}</span>
+              <div className="bento-title">{w.title}</div>
+              <div className="bento-desc">{w.desc}</div>
+              <div className="bento-accent-line" style={{ background: w.accent }} />
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ─────────────────────────────────────────────────────── */}
+      {/* ── TESTIMONIALS ── */}
       <section
-        className={`svc-section svc-testimonials ${visibleSections['testimonials'] ? 'visible' : ''}`}
+        className={`section testi-bg ${visibleSections['testimonials'] ? 'visible' : ''}`}
         data-section="testimonials"
       >
-        <div className="svc-section-header">
-          <span className="svc-eyebrow">Traveler Stories</span>
-          <h2 className="svc-section-title">What Our Guests Say</h2>
-          <p className="svc-section-sub">Real stories from real explorers — unfiltered, unsponsored.</p>
+        <div className="section-header center">
+          <div className="section-kicker">Traveler Stories</div>
+          <h2 className="section-title">Told in Their <em>Own Words</em></h2>
+          <p className="section-sub">Real experiences, unfiltered. From real explorers who trusted us with their journey.</p>
         </div>
-        <div className="svc-testi-wrap">
-          <div className="svc-testi-card">
-            <div className="svc-testi-quote">"</div>
-            <p className="svc-testi-text">{TESTIMONIALS[activeTestimonial].text}</p>
-            <div className="svc-testi-author">
-              <img src={TESTIMONIALS[activeTestimonial].img} alt="" className="svc-testi-img" />
+        <div className="testi-layout">
+          <div className="testi-main">
+            <div className="testi-bg-char">"</div>
+            <p className="testi-text">{TESTIMONIALS[activeTestimonial].text}</p>
+            <div className="testi-author">
+              <img src={TESTIMONIALS[activeTestimonial].img} alt="" className="testi-avatar" />
               <div>
-                <div className="svc-testi-name">{TESTIMONIALS[activeTestimonial].name}</div>
-                <div className="svc-testi-loc">{TESTIMONIALS[activeTestimonial].loc}</div>
-                <div className="svc-testi-stars">{'★'.repeat(TESTIMONIALS[activeTestimonial].rating)}</div>
+                <div className="testi-name">{TESTIMONIALS[activeTestimonial].name}</div>
+                <div className="testi-loc">{TESTIMONIALS[activeTestimonial].loc}</div>
+                <div className="testi-stars">{'★'.repeat(TESTIMONIALS[activeTestimonial].rating)}</div>
               </div>
-              <span className="svc-testi-tour">{TESTIMONIALS[activeTestimonial].tour}</span>
+              <span className="testi-tour-tag">{TESTIMONIALS[activeTestimonial].tour}</span>
+            </div>
+            <div className="testi-dots">
+              {TESTIMONIALS.map((_, i) => (
+                <button
+                  key={i}
+                  className={`testi-dot ${i === activeTestimonial ? 'active' : ''}`}
+                  onClick={() => setActiveTestimonial(i)}
+                />
+              ))}
             </div>
           </div>
-          <div className="svc-testi-dots">
-            {TESTIMONIALS.map((_, i) => (
-              <button
+          <div className="testi-stack">
+            {TESTIMONIALS.map((t, i) => (
+              <div
                 key={i}
-                className={`svc-testi-dot ${i === activeTestimonial ? 'active' : ''}`}
+                className={`testi-mini ${i === activeTestimonial ? 'active' : ''}`}
                 onClick={() => setActiveTestimonial(i)}
-              />
+              >
+                <img src={t.img} alt={t.name} className="mini-avatar" />
+                <div>
+                  <div className="mini-name">{t.name}</div>
+                  <div className="mini-tour">{t.tour}</div>
+                  <div className="mini-stars">{'★'.repeat(t.rating)}</div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────────────────────────── */}
-      <section className="svc-cta">
-        <h2 className="svc-cta-title">Ready for Your Next Adventure?</h2>
-        <p className="svc-cta-sub">
-          Join 10,000+ happy travelers. Let us craft a journey you'll never forget.
+      {/* ── CTA ── */}
+      <section className="cta-section">
+        <div className="cta-noise" />
+        <div className="cta-orb cta-orb-1" />
+        <div className="cta-orb cta-orb-2" />
+        <div className="cta-kicker">Begin Your Story</div>
+        <h2 className="cta-title">
+          Your Next Adventure<br /><em>Awaits</em>
+        </h2>
+        <p className="cta-sub">
+          Join 10,000+ travelers who've trusted us with their most precious moments. Let's craft yours.
         </p>
-        <div className="svc-cta-btns">
-          <Link to="/contact" className="svc-cta-btn-primary">Plan My Trip 🗺️</Link>
-          <a href="tel:+917888251550" className="svc-cta-btn-secondary">📞 Call Us Now</a>
+        <div className="cta-actions">
+          <Link to="/contact" className="cta-btn-gold">Plan My Trip →</Link>
+          <a href="tel:+917888251550" className="cta-btn-outline">Call Us Now</a>
         </div>
       </section>
     </>

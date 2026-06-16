@@ -4,93 +4,179 @@ import { Link, useParams } from "react-router-dom";
 import axios from "axios";
 import TourPackageCard from "../../Components/TourPackageCard";
 import PackageContext from "../../Context/PackageContext";
-import { FaSearch, FaArrowUp, FaPhone, FaEnvelope, FaWhatsapp, FaFilter, FaTimes, FaSortAmountDown, FaThLarge, FaList, FaStar, FaMapMarkerAlt, FaArrowRight } from "react-icons/fa";
+import { FaSearch, FaArrowUp, FaPhone, FaEnvelope, FaWhatsapp, FaFilter, FaTimes, FaSortAmountDown, FaThLarge, FaList, FaStar, FaMapMarkerAlt, FaArrowRight, FaCalendarAlt, FaUsers, FaClock, FaChevronDown, FaChevronUp, FaHeart, FaShareAlt, FaEye, FaDollarSign, FaTachometerAlt, FaGem, FaMountain, FaUmbrellaBeach, FaTree, FaCity, FaCompass } from "react-icons/fa";
 import Header from "../../Components/Header/Header";
-import api from '../../utils/api.js'
+import api from '../../utils/api.js';
 
-// ── Skeleton Card ─────────────────────────────────────────────────────────────
-const SkeletonCard = () => (
+// ── Premium Skeleton Card ─────────────────────────────────────────────────────────────
+const PremiumSkeletonCard = () => (
   <div className="col-xl-4 col-lg-4 col-md-6 mb-4">
-    <div className="btb-skeleton-card">
-      <div className="btb-skel btb-skel-img" />
-      <div style={{ padding: '1.25rem' }}>
-        <div className="btb-skel btb-skel-chip" />
-        <div className="btb-skel btb-skel-line" style={{ width: '80%', marginTop: 8 }} />
-        <div className="btb-skel btb-skel-line" style={{ width: '60%', marginTop: 8 }} />
-        <div className="btb-skel btb-skel-line" style={{ width: '90%', marginTop: 8 }} />
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <div className="btb-skel btb-skel-line" style={{ width: '40%', height: 10 }} />
-          <div className="btb-skel btb-skel-line" style={{ width: '40%', height: 10 }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20, alignItems: 'center' }}>
-          <div className="btb-skel btb-skel-line" style={{ width: '30%', height: 28 }} />
-          <div className="btb-skel btb-skel-btn" />
+    <div className="premium-skeleton-card">
+      <div className="premium-skel-img shimmer" />
+      <div className="premium-skel-content">
+        <div className="premium-skel-chip shimmer" style={{ width: '40%' }} />
+        <div className="premium-skel-line shimmer" style={{ width: '85%' }} />
+        <div className="premium-skel-line shimmer" style={{ width: '60%' }} />
+        <div className="premium-skel-footer">
+          <div className="premium-skel-line shimmer" style={{ width: '35%', height: 24 }} />
+          <div className="premium-skel-btn shimmer" />
         </div>
       </div>
     </div>
   </div>
 );
 
-// ── Live weather for destination ──────────────────────────────────────────────
-const useDestWeather = (destination) => {
-  const [data, setData] = useState(null);
+// ── Enhanced Weather Component ──────────────────────────────────────────────────────────────
+const EnhancedWeatherWidget = ({ destination }) => {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (!destination) return;
-    // Simulated — replace with Open-Meteo API call in production
+    setLoading(true);
+    // Simulated weather data - replace with actual API call
     const weatherMap = {
-      goa: { temp: 31, desc: 'Sunny & Humid', icon: '☀️', humidity: 78, uv: 8, best: 'Nov–Feb' },
-      kerala: { temp: 28, desc: 'Partly Cloudy', icon: '⛅', humidity: 82, uv: 6, best: 'Sep–Mar' },
-      rajasthan: { temp: 38, desc: 'Hot & Dry', icon: '🌤️', humidity: 25, uv: 10, best: 'Oct–Mar' },
-      manali: { temp: 12, desc: 'Cool & Clear', icon: '🏔️', humidity: 60, uv: 4, best: 'May–Jun' },
-      shimla: { temp: 15, desc: 'Misty', icon: '🌫️', humidity: 72, uv: 3, best: 'Mar–Jun' },
-      default: { temp: 26, desc: 'Pleasant', icon: '🌤️', humidity: 65, uv: 5, best: 'Oct–Mar' },
+      goa: { temp: 31, feelsLike: 34, desc: 'Sunny & Humid', icon: '☀️', humidity: 78, wind: 12, uv: 8, best: 'Nov–Feb', airQuality: 'Moderate' },
+      kerala: { temp: 28, feelsLike: 30, desc: 'Partly Cloudy', icon: '⛅', humidity: 82, wind: 8, uv: 6, best: 'Sep–Mar', airQuality: 'Good' },
+      rajasthan: { temp: 38, feelsLike: 40, desc: 'Hot & Dry', icon: '🌤️', humidity: 25, wind: 15, uv: 10, best: 'Oct–Mar', airQuality: 'Poor' },
+      manali: { temp: 12, feelsLike: 10, desc: 'Cool & Clear', icon: '🏔️', humidity: 60, wind: 20, uv: 4, best: 'May–Jun', airQuality: 'Good' },
+      shimla: { temp: 15, feelsLike: 14, desc: 'Misty', icon: '🌫️', humidity: 72, wind: 10, uv: 3, best: 'Mar–Jun', airQuality: 'Good' },
+      default: { temp: 26, feelsLike: 27, desc: 'Pleasant', icon: '🌤️', humidity: 65, wind: 8, uv: 5, best: 'Oct–Mar', airQuality: 'Moderate' },
     };
     setTimeout(() => {
-      const key = destination.toLowerCase().split('-')[0];
-      setData(weatherMap[key] || weatherMap.default);
-    }, 800);
+      const key = destination?.toLowerCase().split('-')[0] || 'default';
+      setWeather(weatherMap[key] || weatherMap.default);
+      setLoading(false);
+    }, 500);
   }, [destination]);
-  return data;
+
+  if (loading) {
+    return (
+      <div className="premium-weather-card loading">
+        <div className="premium-weather-header">
+          <span className="premium-weather-location">{destination || 'Loading...'}</span>
+        </div>
+        <div className="premium-weather-temp shimmer" style={{ height: 40, width: 100 }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="premium-weather-card">
+      <div className="premium-weather-header">
+        <span className="premium-weather-location">
+          <FaMapMarkerAlt size={12} /> {destination || 'Current Location'}
+        </span>
+        <span className="premium-weather-updated">Live</span>
+      </div>
+      <div className="premium-weather-main">
+        <div className="premium-weather-icon">{weather.icon}</div>
+        <div className="premium-weather-info">
+          <div className="premium-weather-temp">{weather.temp}°C</div>
+          <div className="premium-weather-desc">{weather.desc}</div>
+        </div>
+        <div className="premium-weather-details">
+          <div className="premium-weather-detail">
+            <span>💧 {weather.humidity}%</span>
+            <span>Humidity</span>
+          </div>
+          <div className="premium-weather-detail">
+            <span>🌬️ {weather.wind} km/h</span>
+            <span>Wind</span>
+          </div>
+          <div className="premium-weather-detail">
+            <span>☀️ UV {weather.uv}</span>
+            <span>UV Index</span>
+          </div>
+        </div>
+        <div className="premium-weather-best">
+          <span>🏆 Best Time to Visit</span>
+          <strong>{weather.best}</strong>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-// ── Dynamic pricing hook ──────────────────────────────────────────────────────
-const useDynamicPricing = () => {
-  const [multiplier, setMultiplier] = useState(1);
-  const [trend, setTrend] = useState('stable'); // 'rising' | 'falling' | 'stable'
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const change = (Math.random() - 0.48) * 0.05;
-      setMultiplier(prev => {
-        const next = Math.max(0.85, Math.min(1.25, prev + change));
-        setTrend(next > prev ? 'rising' : next < prev ? 'falling' : 'stable');
-        return next;
-      });
-    }, 12000);
-    return () => clearInterval(interval);
-  }, []);
-  return { multiplier, trend };
+// ── Dynamic Pricing Widget ──────────────────────────────────────────────────────────────
+const DynamicPricingWidget = ({ multiplier, trend }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  const getTrendColor = () => {
+    if (trend === 'rising') return '#FF6B6B';
+    if (trend === 'falling') return '#51CF66';
+    return '#FFD43B';
+  };
+
+  const getTrendIcon = () => {
+    if (trend === 'rising') return '📈';
+    if (trend === 'falling') return '📉';
+    return '📊';
+  };
+
+  const getTrendText = () => {
+    if (trend === 'rising') return 'Prices Rising';
+    if (trend === 'falling') return 'Prices Dropping';
+    return 'Prices Stable';
+  };
+
+  return (
+    <div className="premium-pricing-widget" onMouseEnter={() => setExpanded(true)} onMouseLeave={() => setExpanded(false)}>
+      <div className="premium-pricing-header">
+        <div className="premium-pricing-trend" style={{ background: `${getTrendColor()}15`, borderColor: `${getTrendColor()}30` }}>
+          <span className="premium-trend-icon">{getTrendIcon()}</span>
+          <span className="premium-trend-text" style={{ color: getTrendColor() }}>{getTrendText()}</span>
+          <span className="premium-trend-value">{Math.round(multiplier * 100)}%</span>
+        </div>
+        <FaChevronDown className={`premium-pricing-chevron ${expanded ? 'expanded' : ''}`} size={12} />
+      </div>
+      {expanded && (
+        <div className="premium-pricing-expanded">
+          <p>Real-time dynamic pricing based on:</p>
+          <ul>
+            <li>Current demand & seasonality</li>
+            <li>Booking velocity</li>
+            <li>Available inventory</li>
+          </ul>
+          <div className="premium-pricing-multiplier">
+            <span>Current Multiplier</span>
+            <strong>{multiplier.toFixed(2)}x</strong>
+          </div>
+          <small>Prices refresh every 5 minutes</small>
+        </div>
+      )}
+    </div>
+  );
 };
 
-// ── Tour type metadata ────────────────────────────────────────────────────────
+// ── Tour Type Metadata ────────────────────────────────────────────────────────
 const TOUR_META = {
-  'custom-tour':     { title: 'Custom Tours',     icon: '🎨', grad: 'linear-gradient(135deg, #FF6B6B, #FF8E53)', desc: 'Personalized journeys built around your dreams.' },
-  'adventure-tour':  { title: 'Adventure Tours',  icon: '🏔️', grad: 'linear-gradient(135deg, #4ECDC4, #2C3E50)', desc: 'Thrilling experiences for the bold and brave.' },
-  'family-tour':     { title: 'Family Tours',     icon: '👨‍👩‍👧‍👦', grad: 'linear-gradient(135deg, #FFE66D, #FFB347)', desc: 'Joyful journeys for every generation.' },
-  'group-tour':      { title: 'Group Tours',      icon: '🚌', grad: 'linear-gradient(135deg, #A37BFF, #6B4EFF)', desc: 'Better together — explore as a community.' },
-  'city-tour':       { title: 'City Tours',       icon: '🌆', grad: 'linear-gradient(135deg, #FF9F1C, #FCCF31)', desc: 'Uncover the soul of iconic cities.' },
-  'honeymoon-tour':  { title: 'Honeymoon Tours',  icon: '💑', grad: 'linear-gradient(135deg, #FF6EB4, #FF9A9E)', desc: 'Romantic escapes crafted for two.' },
-  'weekend-getaway': { title: 'Weekend Getaways', icon: '🌅', grad: 'linear-gradient(135deg, #5BC0EB, #0353A4)', desc: 'Escape the grind for a perfect 2-3 days.' },
-  'luxury-tour':     { title: 'Luxury Tours',     icon: '💎', grad: 'linear-gradient(135deg, #C9A84C, #8B6914)', desc: 'Five-star experiences for discerning travelers.' },
-  'pilgrimage-tour': { title: 'Pilgrimage Tours', icon: '🕌', grad: 'linear-gradient(135deg, #7BAE7F, #4A7C59)', desc: 'Sacred journeys that nourish the soul.' },
+  'custom-tour':     { title: 'Custom Tours',     icon: '🎨', grad: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', desc: 'Personalized journeys crafted around your dreams.', features: ['Tailored Itineraries', 'Private Guides', 'Flexible Dates'] },
+  'adventure-tour':  { title: 'Adventure Tours',  icon: '🏔️', grad: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', desc: 'Thrilling experiences for the bold and brave.', features: ['Rock Climbing', 'River Rafting', 'Trekking'] },
+  'family-tour':     { title: 'Family Tours',     icon: '👨‍👩‍👧‍👦', grad: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', desc: 'Joyful journeys for every generation.', features: ['Kid-Friendly', 'Group Activities', 'Safe Travel'] },
+  'group-tour':      { title: 'Group Tours',      icon: '🚌', grad: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', desc: 'Better together — explore as a community.', features: ['Group Discounts', 'Shared Experiences', 'Social Travel'] },
+  'city-tour':       { title: 'City Tours',       icon: '🌆', grad: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', desc: 'Uncover the soul of iconic cities.', features: ['Historical Sites', 'Local Cuisine', 'Cultural Tours'] },
+  'honeymoon-tour':  { title: 'Honeymoon Tours',  icon: '💑', grad: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', desc: 'Romantic escapes crafted for two.', features: ['Couple Spa', 'Candlelight Dinners', 'Private Villas'] },
+  'weekend-getaway': { title: 'Weekend Getaways', icon: '🌅', grad: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', desc: 'Escape the grind for a perfect 2-3 days.', features: ['Short Trips', 'Quick Escapes', 'Budget Friendly'] },
+  'luxury-tour':     { title: 'Luxury Tours',     icon: '💎', grad: 'linear-gradient(135deg, #d4af37 0%, #8b6914 100%)', desc: 'Five-star experiences for discerning travelers.', features: ['5-Star Hotels', 'Private Jets', 'Concierge Service'] },
+  'pilgrimage-tour': { title: 'Pilgrimage Tours', icon: '🕌', grad: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)', desc: 'Sacred journeys that nourish the soul.', features: ['Spiritual Guides', 'Temple Visits', 'Religious Ceremonies'] },
 };
 
 const SORT_OPTIONS = [
-  { value: 'default',   label: 'Recommended' },
-  { value: 'price-asc', label: 'Price: Low to High' },
-  { value: 'price-desc',label: 'Price: High to Low' },
-  { value: 'rating',    label: 'Highest Rated' },
-  { value: 'newest',    label: 'Newest First' },
-  { value: 'popular',   label: 'Most Popular' },
+  { value: 'default',   label: 'Recommended', icon: '⭐' },
+  { value: 'price-asc', label: 'Price: Low to High', icon: '💰' },
+  { value: 'price-desc',label: 'Price: High to Low', icon: '💎' },
+  { value: 'rating',    label: 'Highest Rated', icon: '🏆' },
+  { value: 'newest',    label: 'Newest First', icon: '🆕' },
+  { value: 'popular',   label: 'Most Popular', icon: '🔥' },
+];
+
+const DURATION_OPTIONS = [
+  { value: 'all', label: 'Any Duration' },
+  { value: '1-3', label: '1-3 Days' },
+  { value: '4-7', label: '4-7 Days' },
+  { value: '7-14', label: '1-2 Weeks' },
+  { value: '14+', label: '2+ Weeks' },
 ];
 
 const BaseTourPage = () => {
@@ -108,44 +194,39 @@ const BaseTourPage = () => {
   const [sortBy, setSortBy] = useState("default");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [activeDestination, setActiveDestination] = useState(null);
   const [resultsCount, setResultsCount] = useState(0);
+  const [favorites, setFavorites] = useState([]);
+  const [priceRangeValue, setPriceRangeValue] = useState(100000);
 
   const packagesRef = useRef(null);
   const meta = TOUR_META[packageType] || TOUR_META['custom-tour'];
-  const weather = useDestWeather(activeDestination);
   const { multiplier, trend } = useDynamicPricing();
 
-  // const themeKey = packageType?.split("-")[0] || "custom";
-
-  // ── Fetch packages ──────────────────────────────────────────────────────────
+  // Fetch packages
   useEffect(() => {
-
-    console.log('packageType',packageType)
-    if (!packageType) return; null
-    const fetch_ = async () => {
+    if (!packageType) return;
+    const fetchPackages = async () => {
       try {
         setLoading(true);
-        const res = await api.get(
-          `/packages/${packageType}`
-        );
+        const res = await api.get(`/packages/${packageType}`);
         setPackages(res.data);
-        console.log('package Data:',res.data)
-        // Set first destination for weather
-        if (res.data?.[0]?.location) setActiveDestination(res.data[1].location);
-      } catch {
+        if (res.data?.[0]?.location) setActiveDestination(res.data[0].location);
+      } catch (error) {
+        console.error('Error fetching packages:', error);
         setPackages([]);
       } finally {
-        setTimeout(() => setLoading(false), 400); // min loading for skeleton UX
+        setTimeout(() => setLoading(false), 400);
       }
     };
-    fetch_();
+    fetchPackages();
   }, [packageType]);
 
-  // ── Filter + Sort logic ─────────────────────────────────────────────────────
+  // Filter and sort logic
   useEffect(() => {
     let result = [...packages];
+    
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       result = result.filter(p =>
@@ -154,17 +235,25 @@ const BaseTourPage = () => {
         p.description?.toLowerCase().includes(q)
       );
     }
+    
     result = result.filter(p => {
       const price = p.durations?.[0]?.discountedPrice || p.durations?.[0]?.price || p.price || 0;
-      return price >= priceRange[0] && price <= priceRange[1];
+      return price >= priceRange[0] && price <= priceRangeValue;
     });
+    
     if (selectedDuration !== "all") {
-      result = result.filter(p => p.duration?.includes(selectedDuration));
+      result = result.filter(p => {
+        const duration = p.duration || p.days || '';
+        const [min, max] = selectedDuration.split('-').map(Number);
+        if (selectedDuration === '14+') return parseInt(duration) >= 14;
+        return parseInt(duration) >= min && parseInt(duration) <= max;
+      });
     }
+    
     if (selectedRating > 0) {
       result = result.filter(p => (p.rating || 4.5) >= selectedRating);
     }
-    // Sort
+    
     switch (sortBy) {
       case 'price-asc':  result.sort((a,b) => (a.price||0) - (b.price||0)); break;
       case 'price-desc': result.sort((a,b) => (b.price||0) - (a.price||0)); break;
@@ -172,771 +261,1566 @@ const BaseTourPage = () => {
       case 'popular':    result.sort((a,b) => (b.reviews||0) - (a.reviews||0)); break;
       default: break;
     }
+    
     setFilteredPackages(result);
     setResultsCount(result.length);
-  }, [packages, searchTerm, priceRange, selectedDuration, selectedRating, sortBy]);
+  }, [packages, searchTerm, priceRange, priceRangeValue, selectedDuration, selectedRating, sortBy]);
 
   useEffect(() => {
-    const h = () => setShowScrollTop(window.scrollY > 400);
-    window.addEventListener("scroll", h);
-    return () => window.removeEventListener("scroll", h);
+    const handleScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const resetFilters = useCallback(() => {
     setSearchTerm("");
     setPriceRange([0, 100000]);
+    setPriceRangeValue(100000);
     setSelectedDuration("all");
     setSelectedRating(0);
     setSortBy("default");
   }, []);
 
-  const hasActiveFilters = searchTerm || priceRange[1] < 100000 || priceRange[0] > 0 || selectedDuration !== "all" || selectedRating > 0;
+  const toggleFavorite = (id) => {
+    setFavorites(prev => 
+      prev.includes(id) ? prev.filter(fid => fid !== id) : [...prev, id]
+    );
+  };
 
-  const priceRangeText = priceRange[1] >= 100000
-    ? `Up to ₹1L+`
-    : `₹${(priceRange[0]/1000).toFixed(0)}k – ₹${(priceRange[1]/1000).toFixed(0)}k`;
+  const hasActiveFilters = searchTerm || priceRangeValue < 100000 || priceRange[0] > 0 || selectedDuration !== "all" || selectedRating > 0;
+  const priceRangeText = priceRangeValue >= 100000 ? `Up to ₹1L+` : `₹${(priceRange[0]/1000).toFixed(0)}k – ₹${(priceRangeValue/1000).toFixed(0)}k`;
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+        
         :root {
-          --font-body: 'DM Sans', sans-serif;
-          --font-display: 'Cormorant Garamond', serif;
-          --ease: cubic-bezier(0.4,0,0.2,1);
-          --navy: #1a1a2e;
-          --indigo: #3D52A0;
-          --gold: #C9A84C;
+          --font-primary: 'Inter', sans-serif;
+          --font-display: 'Playfair Display', serif;
+          --primary: #3D52A0;
+          --primary-dark: #2D3A7A;
+          --primary-light: #6B84C8;
+          --secondary: #C9A84C;
+          --accent: #FF6B6B;
+          --dark: #1A1A2E;
+          --gray-100: #F8F9FA;
+          --gray-200: #E9ECEF;
+          --gray-300: #DEE2E6;
+          --gray-400: #CED4DA;
+          --gray-500: #ADB5BD;
+          --gray-600: #6C757D;
+          --gray-700: #495057;
+          --gray-800: #343A40;
+          --gray-900: #212529;
+          --shadow-sm: 0 2px 4px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+          --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+          --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.02);
+          --shadow-xl: 0 20px 35px -10px rgba(0,0,0,0.15);
+          --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.25);
+          --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+          --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+          --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
         }
-        * { box-sizing: border-box; }
-        body { font-family: var(--font-body); }
-
-        /* ── Skeleton ── */
-        .btb-skeleton-card {
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+          font-family: var(--font-primary);
+          background: var(--gray-100);
+          color: var(--gray-800);
+        }
+        
+        /* Premium Animations */
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .shimmer {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 1000px 100%;
+          animation: shimmer 1.5s infinite;
+        }
+        
+        /* Premium Skeleton */
+        .premium-skeleton-card {
           background: white;
-          border-radius: 20px;
+          border-radius: 24px;
           overflow: hidden;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-          border: 1px solid #f0f0f8;
+          box-shadow: var(--shadow-md);
         }
-        .btb-skel {
-          background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
-          background-size: 400px 100%;
-          animation: btb-shimmer 1.4s infinite;
+        
+        .premium-skel-img {
+          height: 260px;
+          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+          background-size: 1000px 100%;
+          animation: shimmer 1.5s infinite;
+        }
+        
+        .premium-skel-content {
+          padding: 1.5rem;
+        }
+        
+        .premium-skel-chip {
+          height: 24px;
+          width: 80px;
+          border-radius: 12px;
+          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+          background-size: 1000px 100%;
+          animation: shimmer 1.5s infinite;
+          margin-bottom: 12px;
+        }
+        
+        .premium-skel-line {
+          height: 16px;
           border-radius: 8px;
+          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+          background-size: 1000px 100%;
+          animation: shimmer 1.5s infinite;
+          margin-bottom: 12px;
         }
-        .btb-skel-img { height: 230px; border-radius: 0; }
-        .btb-skel-chip { height: 22px; width: 100px; }
-        .btb-skel-line { height: 12px; }
-        .btb-skel-btn { height: 36px; width: 100px; border-radius: 50px; }
-        @keyframes btb-shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-
-        /* ── Hero ── */
-        .btb-hero {
+        
+        .premium-skel-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 20px;
+        }
+        
+        .premium-skel-btn {
+          width: 100px;
+          height: 40px;
+          border-radius: 40px;
+          background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+          background-size: 1000px 100%;
+          animation: shimmer 1.5s infinite;
+        }
+        
+        /* Premium Hero Section */
+        .premium-hero {
           position: relative;
-          min-height: 50vh;
+          min-height: 75vh;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
+          justify-content: center;
           overflow: hidden;
         }
-        .btb-hero-bg {
-          position: absolute; inset: 0;
-          background-size: cover; background-position: center;
-          transition: transform 0.6s var(--ease);
+        
+        .premium-hero-bg {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          transition: transform 1.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
-        .btb-hero:hover .btb-hero-bg { transform: scale(1.02); }
-        .btb-hero-overlay {
-          position: absolute; inset: 0;
-          background: linear-gradient(180deg, rgba(10,10,30,0.2) 0%, rgba(10,10,30,0.8) 100%);
+        
+        .premium-hero:hover .premium-hero-bg {
+          transform: scale(1.05);
         }
-        .btb-hero-content {
-          position: relative; z-index: 2;
-          padding: 3rem 2rem 2.5rem;
-          max-width: 1300px;
+        
+        .premium-hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%);
+        }
+        
+        .premium-hero-content {
+          position: relative;
+          z-index: 2;
+          padding: 6rem 2rem 4rem;
+          max-width: 1400px;
           width: 100%;
           margin: 0 auto;
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 1.5rem;
+          animation: fadeInUp 0.8s ease-out;
         }
-        .btb-hero-left {}
-        .btb-hero-eyebrow {
-          display: inline-flex; align-items: center; gap: 8px;
-          color: rgba(255,255,255,0.8);
-          font-size: 0.78rem;
+        
+        .premium-hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255,255,255,0.15);
+          backdrop-filter: blur(10px);
+          padding: 8px 20px;
+          border-radius: 40px;
+          font-size: 0.85rem;
           font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          margin-bottom: 0.75rem;
+          color: white;
+          letter-spacing: 0.05em;
+          margin-bottom: 1.5rem;
+          border: 1px solid rgba(255,255,255,0.2);
         }
-        .btb-hero-title {
+        
+        .premium-hero-title {
           font-family: var(--font-display);
-          font-size: clamp(2.2rem, 6vw, 4rem);
-          font-weight: 700;
+          font-size: clamp(3rem, 8vw, 5.5rem);
+          font-weight: 800;
           color: white;
           line-height: 1.1;
-          margin-bottom: 0.5rem;
+          margin-bottom: 1rem;
+          text-shadow: 0 2px 20px rgba(0,0,0,0.2);
         }
-        .btb-hero-desc {
-          font-size: 1rem;
-          color: rgba(255,255,255,0.75);
-          max-width: 500px;
+        
+        .premium-hero-desc {
+          font-size: 1.1rem;
+          color: rgba(255,255,255,0.85);
+          max-width: 550px;
           line-height: 1.6;
+          margin-bottom: 2rem;
         }
-        .btb-hero-right {
+        
+        .premium-hero-stats {
+          display: flex;
+          gap: 2rem;
+          flex-wrap: wrap;
+        }
+        
+        .premium-hero-stat {
+          text-align: center;
+        }
+        
+        .premium-hero-stat-number {
+          font-family: var(--font-display);
+          font-size: 2rem;
+          font-weight: 700;
+          color: var(--secondary);
+        }
+        
+        .premium-hero-stat-label {
+          font-size: 0.8rem;
+          color: rgba(255,255,255,0.7);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        
+        .premium-hero-right {
+          position: absolute;
+          right: 2rem;
+          bottom: 2rem;
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
+          gap: 1rem;
           align-items: flex-end;
         }
-
-        /* Weather card */
-        .btb-weather-card {
+        
+        /* Premium Weather Card */
+        .premium-weather-card {
           background: rgba(255,255,255,0.12);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 16px;
-          padding: 1rem 1.5rem;
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255,255,255,0.2);
+          border-radius: 28px;
+          padding: 1.25rem;
+          min-width: 280px;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .premium-weather-card:hover {
+          transform: translateY(-5px);
+          background: rgba(255,255,255,0.18);
+          box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
+        }
+        
+        .premium-weather-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: rgba(255,255,255,0.7);
+        }
+        
+        .premium-weather-location {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .premium-weather-updated {
+          background: rgba(255,255,255,0.15);
+          padding: 2px 8px;
+          border-radius: 20px;
+        }
+        
+        .premium-weather-main {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .premium-weather-icon {
+          font-size: 3rem;
+        }
+        
+        .premium-weather-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        
+        .premium-weather-temp {
+          font-family: var(--font-display);
+          font-size: 2.5rem;
+          font-weight: 700;
           color: white;
+        }
+        
+        .premium-weather-desc {
+          color: rgba(255,255,255,0.7);
+          font-size: 0.9rem;
+        }
+        
+        .premium-weather-details {
+          display: flex;
+          justify-content: space-between;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(255,255,255,0.15);
+        }
+        
+        .premium-weather-detail {
+          text-align: center;
+          font-size: 0.75rem;
+        }
+        
+        .premium-weather-detail span:first-child {
+          display: block;
+          font-weight: 600;
+          color: white;
+        }
+        
+        .premium-weather-detail span:last-child {
+          font-size: 0.7rem;
+          color: rgba(255,255,255,0.5);
+        }
+        
+        .premium-weather-best {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: rgba(255,255,255,0.08);
+          padding: 0.5rem 0.75rem;
+          border-radius: 16px;
+          margin-top: 0.5rem;
+          font-size: 0.75rem;
+        }
+        
+        /* Premium Pricing Widget */
+        .premium-pricing-widget {
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255,255,255,0.2);
+          border-radius: 20px;
+          padding: 0.75rem 1.25rem;
+          cursor: pointer;
+          position: relative;
           min-width: 200px;
         }
-        .btb-weather-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; margin-bottom: 6px; }
-        .btb-weather-main { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .btb-weather-temp { font-family: var(--font-display); font-size: 2rem; font-weight: 700; line-height: 1; }
-        .btb-weather-desc { font-size: 0.85rem; opacity: 0.85; }
-        .btb-weather-row { display: flex; gap: 1rem; font-size: 0.75rem; opacity: 0.7; }
-        .btb-weather-best { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
-
-        /* Dynamic pricing badge */
-        .btb-price-trend {
-          display: flex; align-items: center; gap: 6px;
-          background: rgba(255,255,255,0.12);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 50px;
-          padding: 6px 14px;
-          color: white;
+        
+        .premium-pricing-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        
+        .premium-pricing-trend {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 4px 12px;
+          border-radius: 40px;
           font-size: 0.8rem;
           font-weight: 600;
         }
-        .btb-trend-dot {
-          width: 8px; height: 8px; border-radius: 50%;
+        
+        .premium-trend-icon {
+          font-size: 1rem;
         }
-
-        /* ── Toolbar ── */
-        .btb-toolbar {
+        
+        .premium-trend-value {
+          background: rgba(0,0,0,0.3);
+          padding: 2px 6px;
+          border-radius: 20px;
+        }
+        
+        .premium-pricing-chevron {
+          transition: transform 0.3s ease;
+          color: rgba(255,255,255,0.6);
+        }
+        
+        .premium-pricing-chevron.expanded {
+          transform: rotate(180deg);
+        }
+        
+        .premium-pricing-expanded {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 0.5rem;
+          background: rgba(0,0,0,0.9);
+          backdrop-filter: blur(20px);
+          border-radius: 16px;
+          padding: 1rem;
+          min-width: 240px;
+          font-size: 0.75rem;
+          z-index: 10;
+          animation: fadeInUp 0.2s ease-out;
+        }
+        
+        .premium-pricing-expanded p {
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+        }
+        
+        .premium-pricing-expanded ul {
+          margin-left: 1rem;
+          margin-bottom: 0.75rem;
+          color: rgba(255,255,255,0.7);
+        }
+        
+        .premium-pricing-expanded li {
+          margin-bottom: 0.25rem;
+        }
+        
+        .premium-pricing-multiplier {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: rgba(255,255,255,0.1);
+          padding: 0.5rem;
+          border-radius: 12px;
+          margin-bottom: 0.5rem;
+        }
+        
+        /* Premium Toolbar */
+        .premium-toolbar {
           background: white;
-          border-bottom: 1px solid #f0f0f8;
+          border-bottom: 1px solid rgba(0,0,0,0.05);
           position: sticky;
-          top: 72px;
+          top: 0;
           z-index: 100;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+          box-shadow: var(--shadow-sm);
         }
-        .btb-toolbar-inner {
-          max-width: 1300px;
+        
+        .premium-toolbar-inner {
+          max-width: 1400px;
           margin: 0 auto;
-          padding: 0.75rem 2rem;
+          padding: 1rem 2rem;
           display: flex;
           align-items: center;
           gap: 1rem;
           flex-wrap: wrap;
         }
-        .btb-search-wrap {
-          display: flex;
-          background: #f8f9ff;
-          border: 1.5px solid #e8eaf6;
-          border-radius: 50px;
-          overflow: hidden;
+        
+        .premium-search-wrapper {
           flex: 1;
-          min-width: 200px;
-          max-width: 380px;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          min-width: 250px;
+          max-width: 400px;
         }
-        .btb-search-wrap:focus-within {
-          border-color: var(--indigo);
-          box-shadow: 0 0 0 3px rgba(61,82,160,0.1);
+        
+        .premium-search {
+          display: flex;
+          align-items: center;
+          background: var(--gray-100);
+          border: 2px solid transparent;
+          border-radius: 60px;
+          overflow: hidden;
+          transition: all 0.3s ease;
         }
-        .btb-search-input {
-          flex: 1; padding: 0.6rem 1.1rem;
-          border: none; outline: none;
-          font-size: 0.88rem;
+        
+        .premium-search:focus-within {
+          border-color: var(--primary);
+          background: white;
+          box-shadow: 0 0 0 4px rgba(61,82,160,0.1);
+        }
+        
+        .premium-search-input {
+          flex: 1;
+          padding: 0.85rem 1.25rem;
+          border: none;
+          outline: none;
+          font-size: 0.9rem;
           background: transparent;
-          font-family: var(--font-body);
-          color: var(--navy);
+          font-family: var(--font-primary);
         }
-        .btb-search-icon {
-          padding: 0 1rem;
-          display: flex; align-items: center;
-          color: #aaa;
+        
+        .premium-search-icon {
+          padding: 0 1.25rem;
+          color: var(--gray-500);
         }
-
-        .btb-filter-btn {
-          display: flex; align-items: center; gap: 6px;
-          padding: 0.55rem 1.1rem;
-          border: 1.5px solid #e8eaf6;
-          border-radius: 50px;
+        
+        .premium-filter-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0.7rem 1.5rem;
+          background: white;
+          border: 2px solid var(--gray-200);
+          border-radius: 60px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          color: var(--gray-700);
+        }
+        
+        .premium-filter-btn:hover,
+        .premium-filter-btn.active {
+          border-color: var(--primary);
+          color: var(--primary);
+          background: rgba(61,82,160,0.05);
+        }
+        
+        .premium-filter-badge {
+          background: var(--primary);
+          color: white;
+          font-size: 0.7rem;
+          padding: 2px 8px;
+          border-radius: 20px;
+        }
+        
+        .premium-sort-select {
+          padding: 0.7rem 1.25rem;
+          border: 2px solid var(--gray-200);
+          border-radius: 60px;
           background: white;
           font-size: 0.85rem;
+          font-family: var(--font-primary);
           font-weight: 500;
           cursor: pointer;
-          font-family: var(--font-body);
-          color: var(--navy);
-          transition: all 0.2s;
-          white-space: nowrap;
+          transition: all 0.3s ease;
         }
-        .btb-filter-btn:hover, .btb-filter-btn.active {
-          border-color: var(--indigo);
-          color: var(--indigo);
-          background: rgba(61,82,160,0.04);
-        }
-        .btb-filter-badge {
-          background: var(--indigo);
-          color: white;
-          font-size: 0.65rem;
-          font-weight: 700;
-          padding: 1px 6px;
-          border-radius: 20px;
-          min-width: 18px;
-          text-align: center;
-        }
-
-        .btb-sort-select {
-          padding: 0.55rem 1.1rem;
-          border: 1.5px solid #e8eaf6;
-          border-radius: 50px;
-          background: white;
-          font-size: 0.85rem;
-          font-family: var(--font-body);
-          color: var(--navy);
-          cursor: pointer;
+        
+        .premium-sort-select:focus {
+          border-color: var(--primary);
           outline: none;
-          transition: border-color 0.2s;
         }
-        .btb-sort-select:focus { border-color: var(--indigo); }
-
-        .btb-view-toggles {
+        
+        .premium-view-toggles {
           display: flex;
-          background: #f8f9ff;
-          border: 1.5px solid #e8eaf6;
-          border-radius: 50px;
-          overflow: hidden;
+          background: var(--gray-100);
+          border-radius: 60px;
+          padding: 4px;
         }
-        .btb-view-btn {
-          padding: 0.5rem 0.9rem;
-          border: none; cursor: pointer;
+        
+        .premium-view-btn {
+          padding: 0.5rem 1rem;
+          border: none;
           background: transparent;
-          color: #aaa;
-          font-size: 0.85rem;
-          transition: all 0.2s;
+          border-radius: 40px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          color: var(--gray-600);
         }
-        .btb-view-btn.active { background: var(--indigo); color: white; }
-
-        .btb-results-count {
+        
+        .premium-view-btn.active {
+          background: var(--primary);
+          color: white;
+        }
+        
+        .premium-results-count {
           margin-left: auto;
-          font-size: 0.82rem;
-          color: #888;
+          font-size: 0.85rem;
+          color: var(--gray-600);
           white-space: nowrap;
         }
-        .btb-results-count strong { color: var(--navy); }
-
-        /* ── Layout ── */
-        .btb-layout {
+        
+        .premium-results-count strong {
+          color: var(--primary);
+          font-size: 1.1rem;
+        }
+        
+        /* Premium Layout */
+        .premium-layout {
           display: flex;
-          max-width: 1300px;
-          margin: 0 auto;
-          padding: 2rem;
+          max-width: 1400px;
+          margin: 2rem auto;
+          padding: 0 2rem;
           gap: 2rem;
           align-items: flex-start;
           min-height: 60vh;
         }
-
-        /* ── Sidebar ── */
-        .btb-sidebar {
-          width: 280px;
+        
+        /* Premium Sidebar */
+        .premium-sidebar {
+          width: 300px;
           flex-shrink: 0;
           background: white;
-          border-radius: 20px;
-          border: 1px solid #f0f0f8;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+          border-radius: 28px;
+          box-shadow: var(--shadow-md);
           position: sticky;
-          top: 130px;
+          top: 100px;
           overflow: hidden;
+          transition: all 0.3s ease;
         }
-        .btb-sidebar-header {
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid #f0f0f8;
+        
+        .premium-sidebar-header {
+          padding: 1.5rem;
+          border-bottom: 1px solid var(--gray-200);
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
-        .btb-sidebar-title {
-          font-size: 1rem; font-weight: 700; color: var(--navy);
+        
+        .premium-sidebar-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--dark);
         }
-        .btb-reset-btn {
-          font-size: 0.78rem; color: #FF6B6B;
-          background: none; border: none; cursor: pointer;
-          font-family: var(--font-body); font-weight: 600;
-          display: flex; align-items: center; gap: 4px;
-        }
-        .btb-reset-btn:hover { text-decoration: underline; }
-        .btb-sidebar-section {
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid #f0f0f8;
-        }
-        .btb-sidebar-section:last-child { border-bottom: none; }
-        .btb-sidebar-label {
-          font-size: 0.78rem; font-weight: 700;
-          letter-spacing: 0.08em; text-transform: uppercase;
-          color: #888; margin-bottom: 0.9rem;
-        }
-
-        /* Price slider */
-        .btb-price-display {
-          font-size: 0.9rem; font-weight: 600; color: var(--indigo);
-          margin-bottom: 0.75rem;
-        }
-        .btb-slider {
-          -webkit-appearance: none;
-          width: 100%; height: 4px;
-          border-radius: 2px;
-          background: linear-gradient(to right, var(--indigo) 0%, var(--indigo) 50%, #e8eaf6 50%, #e8eaf6 100%);
-          outline: none; cursor: pointer;
-        }
-        .btb-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 18px; height: 18px;
-          border-radius: 50%;
-          background: var(--indigo);
-          border: 3px solid white;
-          box-shadow: 0 2px 8px rgba(61,82,160,0.3);
-          cursor: pointer;
-        }
-
-        /* Duration chips */
-        .btb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .btb-chip {
-          padding: 5px 12px;
-          border-radius: 50px;
-          border: 1.5px solid #e8eaf6;
-          background: white;
-          font-size: 0.78rem;
-          font-weight: 500;
-          cursor: pointer;
-          font-family: var(--font-body);
-          transition: all 0.2s;
-          color: #555;
-        }
-        .btb-chip:hover { border-color: var(--indigo); color: var(--indigo); }
-        .btb-chip.active {
-          background: var(--indigo);
-          border-color: var(--indigo);
-          color: white;
-        }
-
-        /* Rating filter */
-        .btb-rating-opts { display: flex; flex-direction: column; gap: 6px; }
-        .btb-rating-opt {
-          display: flex; align-items: center; gap: 8px;
-          padding: 6px 0; cursor: pointer;
-          font-size: 0.85rem; color: #555;
-          border: none; background: none;
-          font-family: var(--font-body);
-          text-align: left;
-          transition: color 0.2s;
-        }
-        .btb-rating-opt:hover, .btb-rating-opt.active { color: var(--navy); font-weight: 600; }
-        .btb-rating-stars { color: #FFD700; }
-        .btb-radio {
-          width: 14px; height: 14px;
-          border-radius: 50%;
-          border: 2px solid #ddd;
-          margin-left: auto;
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .btb-radio.active { border-color: var(--indigo); }
-        .btb-radio.active::after {
-          content: '';
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: var(--indigo);
-        }
-
-        /* ── Main grid ── */
-        .btb-main { flex: 1; min-width: 0; }
-        .btb-grid { /* Bootstrap row class handles this */ }
-
-        /* List view */
-        .btb-list-card {
+        
+        .premium-reset-btn {
           display: flex;
-          background: white;
-          border-radius: 16px;
-          border: 1px solid #f0f0f8;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-          margin-bottom: 1rem;
-          overflow: hidden;
-          transition: transform 0.3s var(--ease), box-shadow 0.3s;
-        }
-        .btb-list-card:hover {
-          transform: translateX(4px);
-          box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-        }
-        .btb-list-img {
-          width: 220px; flex-shrink: 0;
-          object-fit: cover;
-        }
-        .btb-list-content {
-          flex: 1; padding: 1.25rem 1.5rem;
-          display: flex; flex-direction: column;
-        }
-        .btb-list-footer {
-          margin-top: auto;
-          display: flex; align-items: center; justify-content: space-between;
-        }
-        .btb-list-price {
-          font-family: var(--font-display);
-          font-size: 1.5rem; font-weight: 700;
-          color: var(--indigo);
-        }
-
-        /* Empty state */
-        .btb-empty {
-          text-align: center;
-          padding: 5rem 2rem;
-        }
-        .btb-empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
-        .btb-empty-title {
-          font-family: var(--font-display);
-          font-size: 1.5rem; font-weight: 700;
-          color: var(--navy); margin-bottom: 0.5rem;
-        }
-        .btb-empty-sub { color: #888; font-size: 0.9rem; margin-bottom: 1.5rem; }
-        .btb-empty-btn {
-          padding: 0.7rem 1.75rem;
-          border-radius: 50px;
+          align-items: center;
+          gap: 4px;
+          background: none;
           border: none;
-          background: var(--indigo);
-          color: white;
+          color: var(--accent);
+          font-size: 0.8rem;
           font-weight: 600;
           cursor: pointer;
-          font-family: var(--font-body);
-          font-size: 0.9rem;
+          transition: opacity 0.3s ease;
         }
-
-        /* ── Contact strip ── */
-        .btb-contact {
-          padding: 4rem 2rem;
+        
+        .premium-reset-btn:hover {
+          opacity: 0.8;
+        }
+        
+        .premium-sidebar-section {
+          padding: 1.25rem 1.5rem;
+          border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .premium-sidebar-section:last-child {
+          border-bottom: none;
+        }
+        
+        .premium-sidebar-label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--gray-500);
+          margin-bottom: 1rem;
+        }
+        
+        /* Price Range */
+        .premium-price-display {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--primary);
+          margin-bottom: 1rem;
+        }
+        
+        .premium-slider {
+          width: 100%;
+          height: 4px;
+          border-radius: 4px;
+          background: var(--gray-200);
+          outline: none;
+          -webkit-appearance: none;
+        }
+        
+        .premium-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: var(--primary);
+          border: 3px solid white;
+          box-shadow: var(--shadow-md);
+          cursor: pointer;
+        }
+        
+        /* Chips */
+        .premium-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        
+        .premium-chip {
+          padding: 6px 16px;
+          border-radius: 40px;
+          border: 1.5px solid var(--gray-200);
+          background: white;
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          color: var(--gray-700);
+        }
+        
+        .premium-chip:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
+        
+        .premium-chip.active {
+          background: var(--primary);
+          border-color: var(--primary);
+          color: white;
+        }
+        
+        /* Rating Options */
+        .premium-rating-opts {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        
+        .premium-rating-opt {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 0;
+          cursor: pointer;
+          font-size: 0.85rem;
+          color: var(--gray-700);
+          transition: color 0.3s ease;
+        }
+        
+        .premium-rating-opt:hover,
+        .premium-rating-opt.active {
+          color: var(--primary);
+          font-weight: 600;
+        }
+        
+        .premium-rating-stars {
+          color: #FFD700;
+        }
+        
+        .premium-radio {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 2px solid var(--gray-300);
+          margin-left: auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .premium-radio.active {
+          border-color: var(--primary);
+        }
+        
+        .premium-radio.active::after {
+          content: '';
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--primary);
+        }
+        
+        /* Premium Grid Cards */
+        .premium-grid-card {
+          background: white;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: var(--shadow-md);
+          transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .premium-grid-card:hover {
+          transform: translateY(-8px);
+          box-shadow: var(--shadow-xl);
+        }
+        
+        .premium-card-image {
+          position: relative;
+          height: 260px;
+          overflow: hidden;
+        }
+        
+        .premium-card-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        
+        .premium-grid-card:hover .premium-card-image img {
+          transform: scale(1.08);
+        }
+        
+        .premium-card-badge {
+          position: absolute;
+          top: 1rem;
+          left: 1rem;
+          background: var(--primary);
+          color: white;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          z-index: 2;
+        }
+        
+        .premium-card-favorite {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          background: rgba(255,255,255,0.9);
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          z-index: 2;
+        }
+        
+        .premium-card-favorite:hover {
+          transform: scale(1.1);
+        }
+        
+        .premium-card-favorite.active {
+          background: var(--accent);
+          color: white;
+        }
+        
+        .premium-card-content {
+          padding: 1.5rem;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .premium-card-location {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.75rem;
+          color: var(--gray-500);
+          margin-bottom: 8px;
+        }
+        
+        .premium-card-title {
+          font-family: var(--font-display);
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: var(--dark);
+          margin-bottom: 12px;
+          line-height: 1.3;
+        }
+        
+        .premium-card-desc {
+          font-size: 0.85rem;
+          color: var(--gray-600);
+          line-height: 1.5;
+          margin-bottom: 16px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        .premium-card-meta {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 16px;
+          flex-wrap: wrap;
+        }
+        
+        .premium-card-meta-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.75rem;
+          color: var(--gray-600);
+        }
+        
+        .premium-card-rating {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+        
+        .premium-card-stars {
+          display: flex;
+          gap: 2px;
+          color: #FFD700;
+        }
+        
+        .premium-card-review {
+          font-size: 0.75rem;
+          color: var(--gray-500);
+        }
+        
+        .premium-card-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: auto;
+          padding-top: 16px;
+          border-top: 1px solid var(--gray-200);
+        }
+        
+        .premium-card-price {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .premium-card-price-amount {
+          font-family: var(--font-display);
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: var(--primary);
+        }
+        
+        .premium-card-price-per {
+          font-size: 0.7rem;
+          color: var(--gray-500);
+        }
+        
+        .premium-card-link {
+          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+          color: white;
+          padding: 8px 20px;
+          border-radius: 40px;
+          text-decoration: none;
+          font-size: 0.85rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .premium-card-link:hover {
+          transform: translateX(4px);
+          background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+          color: white;
+        }
+        
+        /* List View */
+        .premium-list-card {
+          display: flex;
+          background: white;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: var(--shadow-md);
+          margin-bottom: 1.5rem;
+          transition: all 0.4s ease;
+        }
+        
+        .premium-list-card:hover {
+          transform: translateX(6px);
+          box-shadow: var(--shadow-lg);
+        }
+        
+        .premium-list-image {
+          width: 280px;
+          flex-shrink: 0;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .premium-list-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.6s ease;
+        }
+        
+        .premium-list-card:hover .premium-list-image img {
+          transform: scale(1.05);
+        }
+        
+        .premium-list-content {
+          flex: 1;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .premium-list-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+        }
+        
+        .premium-list-title {
+          font-family: var(--font-display);
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: var(--dark);
+        }
+        
+        .premium-list-rating {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(255,215,0,0.1);
+          padding: 4px 12px;
+          border-radius: 20px;
+        }
+        
+        .premium-list-meta {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+        }
+        
+        .premium-list-desc {
+          font-size: 0.85rem;
+          color: var(--gray-600);
+          line-height: 1.6;
+          margin-bottom: 16px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        .premium-list-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: auto;
+        }
+        
+        .premium-list-price {
+          font-family: var(--font-display);
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: var(--primary);
+        }
+        
+        /* Empty State */
+        .premium-empty {
+          text-align: center;
+          padding: 5rem 2rem;
+          background: white;
+          border-radius: 28px;
+        }
+        
+        .premium-empty-icon {
+          font-size: 5rem;
+          margin-bottom: 1.5rem;
+          opacity: 0.5;
+        }
+        
+        .premium-empty-title {
+          font-family: var(--font-display);
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--dark);
+          margin-bottom: 0.5rem;
+        }
+        
+        .premium-empty-sub {
+          color: var(--gray-500);
+          margin-bottom: 2rem;
+        }
+        
+        .premium-empty-btn {
+          background: var(--primary);
+          color: white;
+          padding: 0.85rem 2rem;
+          border: none;
+          border-radius: 60px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .premium-empty-btn:hover {
+          background: var(--primary-dark);
+          transform: translateY(-2px);
+        }
+        
+        /* Contact Section */
+        .premium-contact {
+          padding: 5rem 2rem;
           text-align: center;
           color: white;
+          background-size: cover;
+          background-position: center;
+          position: relative;
         }
-        .btb-contact-title {
+        
+        .premium-contact::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+        }
+        
+        .premium-contact > * {
+          position: relative;
+          z-index: 1;
+        }
+        
+        .premium-contact-title {
           font-family: var(--font-display);
-          font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;
+          font-size: 2.5rem;
+          font-weight: 700;
+          margin-bottom: 1rem;
         }
-        .btb-contact-sub { opacity: 0.85; margin-bottom: 2rem; }
-        .btb-contact-row {
-          display: flex; justify-content: center;
-          gap: 1.5rem; flex-wrap: wrap;
+        
+        .premium-contact-sub {
+          opacity: 0.85;
+          margin-bottom: 2rem;
         }
-        .btb-contact-item {
-          display: flex; align-items: center; gap: 8px;
+        
+        .premium-contact-row {
+          display: flex;
+          justify-content: center;
+          gap: 1.5rem;
+          flex-wrap: wrap;
+        }
+        
+        .premium-contact-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
           background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.18);
-          padding: 0.75rem 1.5rem;
-          border-radius: 50px;
-          font-size: 0.9rem; font-weight: 500;
-          text-decoration: none; color: white;
-          transition: all 0.2s;
-        }
-        .btb-contact-item:hover { background: rgba(255,255,255,0.2); }
-
-        /* Scroll top */
-        .btb-scroll-top {
-          position: fixed;
-          bottom: 2rem; right: 2rem;
-          width: 46px; height: 46px;
-          border-radius: 50%;
-          border: none; cursor: pointer;
-          color: white;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-          transition: all 0.3s var(--ease);
-          z-index: 200;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255,255,255,0.2);
+          padding: 0.75rem 1.75rem;
+          border-radius: 60px;
           font-size: 0.9rem;
+          font-weight: 500;
+          text-decoration: none;
+          color: white;
+          transition: all 0.3s ease;
         }
-        .btb-scroll-top:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.25); }
-
-        /* Mobile sidebar overlay */
-        .btb-sidebar-overlay {
-          position: fixed; inset: 0;
+        
+        .premium-contact-item:hover {
+          background: rgba(255,255,255,0.25);
+          transform: translateY(-2px);
+        }
+        
+        /* Scroll to Top */
+        .premium-scroll-top {
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: none;
+          background: var(--primary);
+          color: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          z-index: 200;
+          box-shadow: var(--shadow-lg);
+        }
+        
+        .premium-scroll-top:hover {
+          transform: translateY(-5px);
+          background: var(--primary-dark);
+        }
+        
+        /* Mobile Sidebar */
+        .premium-sidebar-overlay {
+          position: fixed;
+          inset: 0;
           background: rgba(0,0,0,0.5);
           backdrop-filter: blur(4px);
           z-index: 300;
-          opacity: 0; visibility: hidden;
-          transition: all 0.3s;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.3s ease;
         }
-        .btb-sidebar-overlay.open { opacity: 1; visibility: visible; }
-        .btb-sidebar-drawer {
+        
+        .premium-sidebar-overlay.open {
+          opacity: 1;
+          visibility: visible;
+        }
+        
+        .premium-sidebar-drawer {
           position: fixed;
-          top: 0; left: 0; bottom: 0;
-          width: 300px;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          width: 85%;
+          max-width: 320px;
           background: white;
           z-index: 301;
           transform: translateX(-100%);
-          transition: transform 0.4s var(--ease);
+          transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
           overflow-y: auto;
-          box-shadow: 4px 0 30px rgba(0,0,0,0.15);
         }
-        .btb-sidebar-drawer.open { transform: translateX(0); }
-
-        @media (max-width: 1024px) {
-          .btb-sidebar { display: none; }
-          .btb-layout { padding: 1.25rem; }
+        
+        .premium-sidebar-drawer.open {
+          transform: translateX(0);
         }
-        @media (max-width: 640px) {
-          .btb-hero-content { padding: 2rem 1.25rem 2rem; }
-          .btb-toolbar-inner { padding: 0.6rem 1rem; gap: 0.5rem; }
-          .btb-results-count { display: none; }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+          .premium-layout {
+            padding: 0 1.5rem;
+          }
+        }
+        
+        @media (max-width: 992px) {
+          .premium-sidebar {
+            display: none;
+          }
+          
+          .premium-list-image {
+            width: 200px;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .premium-hero-content {
+            padding: 4rem 1.5rem;
+          }
+          
+          .premium-hero-right {
+            position: static;
+            margin-top: 2rem;
+            align-items: flex-start;
+          }
+          
+          .premium-toolbar-inner {
+            padding: 0.75rem 1rem;
+          }
+          
+          .premium-layout {
+            padding: 0 1rem;
+            margin: 1rem auto;
+          }
+          
+          .premium-list-card {
+            flex-direction: column;
+          }
+          
+          .premium-list-image {
+            width: 100%;
+            height: 200px;
+          }
+          
+          .premium-results-count {
+            display: none;
+          }
+        }
+        
+        @media (max-width: 576px) {
+          .premium-hero-stats {
+            gap: 1rem;
+          }
+          
+          .premium-hero-stat-number {
+            font-size: 1.5rem;
+          }
         }
       `}</style>
 
-      <Header />
+      {/* <Header /> */}
 
-      {/* ── HERO ───────────────────────────────────────────────────────────── */}
-      <section className="btb-hero">
+      {/* Premium Hero Section */}
+      <section className="premium-hero">
         <div
-          className="btb-hero-bg"
-          style={{ background: `${meta.grad}, url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1600&q=80') center/cover no-repeat`, backgroundBlendMode: 'multiply' }}
+          className="premium-hero-bg"
+          style={{ background: `${meta.grad}, url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1600&q=80') center/cover no-repeat`, backgroundBlendMode: 'overlay' }}
         />
-        <div className="btb-hero-overlay" />
-        <div className="btb-hero-content">
-          <div className="btb-hero-left">
-            <div className="btb-hero-eyebrow">
-              <span>{meta.icon}</span>
-              <span>DesiVDesi Tours</span>
-              <span style={{ opacity: 0.5 }}>›</span>
-              <span>{meta.title}</span>
-            </div>
-            <h1 className="btb-hero-title">{meta.title}</h1>
-            <p className="btb-hero-desc">{meta.desc}</p>
+        <div className="premium-hero-overlay" />
+        <div className="premium-hero-content">
+          <div className="premium-hero-badge">
+            <span>{meta.icon}</span>
+            <span>DesiVDesi Tours</span>
+            <span>›</span>
+            <span>{meta.title}</span>
           </div>
-          <div className="btb-hero-right">
-            {/* Dynamic pricing indicator */}
-            <div className="btb-price-trend">
-              <span
-                className="btb-trend-dot"
-                style={{ background: trend === 'rising' ? '#FF6B6B' : trend === 'falling' ? '#4CAF50' : '#FFD700' }}
-              />
-              <span>
-                {trend === 'rising' ? '📈 Prices rising' : trend === 'falling' ? '📉 Prices dropping' : '📊 Prices stable'} · {Math.round(multiplier * 100)}% of base
-              </span>
+          <h1 className="premium-hero-title">{meta.title}</h1>
+          <p className="premium-hero-desc">{meta.desc}</p>
+          <div className="premium-hero-stats">
+            <div className="premium-hero-stat">
+              <div className="premium-hero-stat-number">{resultsCount}+</div>
+              <div className="premium-hero-stat-label">Experiences</div>
             </div>
-            {/* Weather */}
-            {weather ? (
-              <div className="btb-weather-card">
-                <div className="btb-weather-title">📍 {activeDestination || 'Destination'} Weather</div>
-                <div className="btb-weather-main">
-                  <span style={{ fontSize: '1.8rem' }}>{weather.icon}</span>
-                  <div>
-                    <div className="btb-weather-temp">{weather.temp}°C</div>
-                    <div className="btb-weather-desc">{weather.desc}</div>
-                  </div>
-                </div>
-                <div className="btb-weather-row">
-                  <span>💧 {weather.humidity}%</span>
-                  <span>☀️ UV {weather.uv}</span>
-                </div>
-                <div className="btb-weather-best">🗓️ Best time: {weather.best}</div>
-              </div>
-            ) : (
-              <div className="btb-weather-card" style={{ opacity: 0.7 }}>
-                <div className="btb-weather-title">Loading weather...</div>
-                <div style={{ height: 60, background: 'rgba(255,255,255,0.1)', borderRadius: 8, marginTop: 8 }} />
-              </div>
-            )}
+            <div className="premium-hero-stat">
+              <div className="premium-hero-stat-number">4.9</div>
+              <div className="premium-hero-stat-label">Rating</div>
+            </div>
+            <div className="premium-hero-stat">
+              <div className="premium-hero-stat-number">5k+</div>
+              <div className="premium-hero-stat-label">Travelers</div>
+            </div>
           </div>
+        </div>
+        <div className="premium-hero-right">
+          <EnhancedWeatherWidget destination={activeDestination} />
+          <DynamicPricingWidget multiplier={multiplier} trend={trend} />
         </div>
       </section>
 
-      {/* ── TOOLBAR ──────────────────────────────────────────────────────────── */}
-      <div className="btb-toolbar">
-        <div className="btb-toolbar-inner">
-          <div className="btb-search-wrap">
-            <input
-              type="text"
-              className="btb-search-input"
-              placeholder={`Search ${meta.title.toLowerCase()}...`}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-            <div className="btb-search-icon"><FaSearch size={12} /></div>
+      {/* Premium Toolbar */}
+      <div className="premium-toolbar">
+        <div className="premium-toolbar-inner">
+          <div className="premium-search-wrapper">
+            <div className="premium-search">
+              <input
+                type="text"
+                className="premium-search-input"
+                placeholder={`Search ${meta.title.toLowerCase()}...`}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              <div className="premium-search-icon"><FaSearch size={14} /></div>
+            </div>
           </div>
 
           <button
-            className={`btb-filter-btn ${hasActiveFilters ? 'active' : ''}`}
+            className={`premium-filter-btn ${hasActiveFilters ? 'active' : ''}`}
             onClick={() => setSidebarOpen(true)}
           >
-            <FaFilter size={11} />
+            <FaFilter size={12} />
             Filters
-            {hasActiveFilters && <span className="btb-filter-badge">!</span>}
+            {hasActiveFilters && <span className="premium-filter-badge">!</span>}
           </button>
 
-          <select
-            className="btb-sort-select"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-          >
-            {SORT_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+          <select className="premium-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            {SORT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
             ))}
           </select>
 
-          <div className="btb-view-toggles">
-            <button className={`btb-view-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><FaThLarge /></button>
-            <button className={`btb-view-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><FaList /></button>
+          <div className="premium-view-toggles">
+            <button className={`premium-view-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>
+              <FaThLarge size={14} />
+            </button>
+            <button className={`premium-view-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>
+              <FaList size={14} />
+            </button>
           </div>
 
-          <div className="btb-results-count">
+          <div className="premium-results-count">
             <strong>{resultsCount}</strong> {resultsCount === 1 ? 'package' : 'packages'} found
           </div>
         </div>
       </div>
 
-      {/* ── CONTENT ──────────────────────────────────────────────────────────── */}
-      <div className="btb-layout">
+      {/* Main Layout */}
+      <div className="premium-layout">
         {/* Desktop Sidebar */}
-        <aside className="btb-sidebar">
-          <div className="btb-sidebar-header">
-            <span className="btb-sidebar-title">Filters</span>
+        <aside className="premium-sidebar">
+          <div className="premium-sidebar-header">
+            <span className="premium-sidebar-title">Filters</span>
             {hasActiveFilters && (
-              <button className="btb-reset-btn" onClick={resetFilters}>
+              <button className="premium-reset-btn" onClick={resetFilters}>
                 <FaTimes size={10} /> Reset
               </button>
             )}
           </div>
 
-          {/* Price Range */}
-          <div className="btb-sidebar-section">
-            <div className="btb-sidebar-label">Price Range</div>
-            <div className="btb-price-display">{priceRangeText}</div>
+          <div className="premium-sidebar-section">
+            <div className="premium-sidebar-label">Price Range</div>
+            <div className="premium-price-display">{priceRangeText}</div>
             <input
-              type="range" className="btb-slider"
-              min={0} max={100000} step={1000}
-              value={priceRange[1]}
-              onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
-              style={{ '--val': `${(priceRange[1] / 100000) * 100}%` }}
+              type="range"
+              className="premium-slider"
+              min={0}
+              max={100000}
+              step={1000}
+              value={priceRangeValue}
+              onChange={e => setPriceRangeValue(Number(e.target.value))}
             />
           </div>
 
-          {/* Duration */}
-          <div className="btb-sidebar-section">
-            <div className="btb-sidebar-label">Duration</div>
-            <div className="btb-chips">
-              {['all', '1-3', '4-7', '7-14', '14+'].map(d => (
+          <div className="premium-sidebar-section">
+            <div className="premium-sidebar-label">Duration</div>
+            <div className="premium-chips">
+              {DURATION_OPTIONS.map(opt => (
                 <button
-                  key={d}
-                  className={`btb-chip ${selectedDuration === d ? 'active' : ''}`}
-                  onClick={() => setSelectedDuration(d)}
+                  key={opt.value}
+                  className={`premium-chip ${selectedDuration === opt.value ? 'active' : ''}`}
+                  onClick={() => setSelectedDuration(opt.value)}
                 >
-                  {d === 'all' ? 'Any' : `${d} days`}
+                  {opt.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Rating */}
-          <div className="btb-sidebar-section">
-            <div className="btb-sidebar-label">Minimum Rating</div>
-            <div className="btb-rating-opts">
+          <div className="premium-sidebar-section">
+            <div className="premium-sidebar-label">Minimum Rating</div>
+            <div className="premium-rating-opts">
               {[0, 3, 4, 4.5, 5].map(r => (
                 <button
                   key={r}
-                  className={`btb-rating-opt ${selectedRating === r ? 'active' : ''}`}
+                  className={`premium-rating-opt ${selectedRating === r ? 'active' : ''}`}
                   onClick={() => setSelectedRating(r)}
                 >
                   {r === 0 ? 'Any rating' : (
                     <>
-                      <span className="btb-rating-stars">{'★'.repeat(Math.floor(r))}{r % 1 ? '½' : ''}</span>
+                      <span className="premium-rating-stars">{'★'.repeat(Math.floor(r))}{r % 1 ? '½' : ''}</span>
                       <span>{r}+ stars</span>
                     </>
                   )}
-                  <div className={`btb-radio ${selectedRating === r ? 'active' : ''}`} />
+                  <div className={`premium-radio ${selectedRating === r ? 'active' : ''}`} />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Dynamic Pricing note */}
-          <div className="btb-sidebar-section">
-            <div className="btb-sidebar-label">Live Pricing</div>
-            <div style={{ fontSize: '0.8rem', color: '#888', lineHeight: 1.6 }}>
-              Prices update in real-time based on demand.
-              Current rate: <strong style={{ color: trend === 'rising' ? '#FF6B6B' : trend === 'falling' ? '#4CAF50' : '#FFD700' }}>
-                {trend === 'rising' ? '↑' : trend === 'falling' ? '↓' : '→'} {Math.round(multiplier * 100)}% of base
-              </strong>
+          <div className="premium-sidebar-section">
+            <div className="premium-sidebar-label">Tour Features</div>
+            <div className="premium-chips">
+              {meta.features?.map(feature => (
+                <span key={feature} className="premium-chip" style={{ cursor: 'default' }}>
+                  {feature}
+                </span>
+              ))}
             </div>
           </div>
         </aside>
 
-        {/* Main content */}
-        <main className="btb-main" ref={packagesRef}>
+        {/* Main Content */}
+        <main className="premium-main flex-grow-1" ref={packagesRef}>
           {loading ? (
             <div className="row g-4">
-              {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
+              {[1,2,3,4,5,6].map(i => <PremiumSkeletonCard key={i} />)}
             </div>
           ) : filteredPackages.length > 0 ? (
             viewMode === 'grid' ? (
               <div className="row g-4">
                 {filteredPackages.map((pkg, i) => (
-                  <TourPackageCard
-                    key={pkg._id || i}
-                    pkg={pkg}
-                    // themeColor={themeKey}
-                    index={i}
-                  />
+                  <div className="col-xl-4 col-lg-4 col-md-6" key={pkg._id || i}>
+                    <div className="premium-grid-card">
+                      <div className="premium-card-image">
+                        <img
+                          src={pkg.images?.[0] || pkg.image || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80'}
+                          alt={pkg.title}
+                          onError={e => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80'}
+                        />
+                        <div className="premium-card-badge">{meta.title}</div>
+                        <div 
+                          className={`premium-card-favorite ${favorites.includes(pkg._id) ? 'active' : ''}`}
+                          onClick={() => toggleFavorite(pkg._id)}
+                        >
+                          <FaHeart size={16} />
+                        </div>
+                      </div>
+                      <div className="premium-card-content">
+                        <div className="premium-card-location">
+                          <FaMapMarkerAlt size={10} />
+                          <span>{pkg.location || 'Multiple Locations'}</span>
+                        </div>
+                        <h3 className="premium-card-title">{pkg.title}</h3>
+                        <p className="premium-card-desc">{pkg.description || 'Experience an unforgettable journey with expert guides and premium accommodations.'}</p>
+                        <div className="premium-card-meta">
+                          <div className="premium-card-meta-item">
+                            <FaClock size={11} />
+                            <span>{pkg.duration || '7 Days'}</span>
+                          </div>
+                          <div className="premium-card-meta-item">
+                            <FaUsers size={11} />
+                            <span>Max {pkg.groupSize || 15}</span>
+                          </div>
+                        </div>
+                        <div className="premium-card-rating">
+                          <div className="premium-card-stars">
+                            {[...Array(5)].map((_, idx) => (
+                              <FaStar key={idx} size={12} color={idx < Math.floor(pkg.rating || 4.5) ? '#FFD700' : '#E0E0E0'} />
+                            ))}
+                          </div>
+                          <span className="premium-card-review">{pkg.rating || 4.8} ({pkg.reviews || 128} reviews)</span>
+                        </div>
+                        <div className="premium-card-footer">
+                          <div className="premium-card-price">
+                            <span className="premium-card-price-amount">₹{(pkg.price || 4999).toLocaleString()}</span>
+                            <span className="premium-card-price-per">per person</span>
+                          </div>
+                          <Link to={`/package/${packageType}/${pkg.location?.toLowerCase().replace(/ /g, "-") || pkg._id}`} className="premium-card-link">
+                            View Details <FaArrowRight size={10} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
               <div>
                 {filteredPackages.map((pkg, i) => (
-                  <div key={pkg._id || i} className="btb-list-card">
-                    <img
-                      src={pkg.images?.[0] || pkg.image || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}
-                      alt={pkg.location}
-                      className="btb-list-img"
-                      onError={e => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}
-                    />
-                    <div className="btb-list-content">
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div key={pkg._id || i} className="premium-list-card">
+                    <div className="premium-list-image">
+                      <img
+                        src={pkg.images?.[0] || pkg.image || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80'}
+                        alt={pkg.title}
+                        onError={e => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80'}
+                      />
+                      <div className="premium-card-badge">{meta.title}</div>
+                    </div>
+                    <div className="premium-list-content">
+                      <div className="premium-list-header">
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <FaMapMarkerAlt size={11} style={{ color: '#3D52A0' }} />
-                            <span style={{ fontSize: '0.82rem', color: '#888' }}>{pkg.location}</span>
+                          <div className="premium-card-location" style={{ marginBottom: 4 }}>
+                            <FaMapMarkerAlt size={10} />
+                            <span>{pkg.location || 'Multiple Locations'}</span>
                           </div>
-                          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.3rem', fontWeight: 700, color: '#1a1a2e' }}>{pkg.title}</h3>
+                          <h3 className="premium-list-title">{pkg.title}</h3>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#FFD70015', padding: '4px 10px', borderRadius: 20 }}>
-                          <FaStar size={11} color="#FFD700" />
-                          <span style={{ fontSize: '0.82rem', fontWeight: 700 }}>{pkg.rating || '4.8'}</span>
+                        <div className="premium-list-rating">
+                          <FaStar size={12} color="#FFD700" />
+                          <span style={{ fontWeight: 600 }}>{pkg.rating || 4.8}</span>
+                          <span style={{ fontSize: '0.7rem', color: '#666' }}>({pkg.reviews || 128})</span>
                         </div>
                       </div>
-                      <p style={{ fontSize: '0.85rem', color: '#777', lineHeight: 1.6, marginBottom: 12, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{pkg.description}</p>
-                      <div style={{ display: 'flex', gap: 16, fontSize: '0.82rem', color: '#888', marginBottom: 12 }}>
-                        <span>⏱️ {pkg.duration || '7 Days'}</span>
-                        <span>👥 {pkg.groupSize || 'Max 15'}</span>
-                        <span>({pkg.reviews || 128} reviews)</span>
+                      <div className="premium-list-meta">
+                        <div className="premium-card-meta-item">
+                          <FaClock size={11} />
+                          <span>{pkg.duration || '7 Days'}</span>
+                        </div>
+                        <div className="premium-card-meta-item">
+                          <FaUsers size={11} />
+                          <span>Max {pkg.groupSize || 15}</span>
+                        </div>
                       </div>
-                      <div className="btb-list-footer">
-                        <div className="btb-list-price">₹{pkg.price?.toLocaleString() || '4,999'}</div>
-                        <Link to={`/package/${packageType}/${pkg.location?.toLowerCase().replace(/ /g, "-")}`} style={{
-                          padding: '0.55rem 1.25rem',
-                          borderRadius: 50, color: 'white', background: meta.grad,
-                          textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600,
-                          display: 'flex', alignItems: 'center', gap: 6,
-                        }}>
+                      <p className="premium-list-desc">{pkg.description || 'Experience an unforgettable journey with expert guides and premium accommodations.'}</p>
+                      <div className="premium-list-footer">
+                        <div className="premium-list-price">₹{(pkg.price || 4999).toLocaleString()}</div>
+                        <Link to={`/package/${packageType}/${pkg.location?.toLowerCase().replace(/ /g, "-") || pkg._id}`} className="premium-card-link">
                           View Details <FaArrowRight size={10} />
                         </Link>
                       </div>
@@ -946,79 +1830,104 @@ const BaseTourPage = () => {
               </div>
             )
           ) : (
-            <div className="btb-empty">
-              <div className="btb-empty-icon">🔍</div>
-              <div className="btb-empty-title">No packages found</div>
-              <div className="btb-empty-sub">Try adjusting your filters or search term.</div>
-              <button className="btb-empty-btn" onClick={resetFilters}>Clear All Filters</button>
+            <div className="premium-empty">
+              <div className="premium-empty-icon">🔍</div>
+              <h2 className="premium-empty-title">No packages found</h2>
+              <p className="premium-empty-sub">Try adjusting your filters or search term.</p>
+              <button className="premium-empty-btn" onClick={resetFilters}>Clear All Filters</button>
             </div>
           )}
         </main>
       </div>
 
-      {/* ── CONTACT STRIP ────────────────────────────────────────────────────── */}
-      <section className="btb-contact" style={{ background: meta.grad }}>
-        <h2 className="btb-contact-title">Need Help Planning?</h2>
-        <p className="btb-contact-sub">Our travel experts are available 24/7 to craft your perfect {meta.title.toLowerCase()}.</p>
-        <div className="btb-contact-row">
-          <a href="tel:+917888251550" className="btb-contact-item"><FaPhone size={14} /> +91 78882 51550</a>
-          <a href="https://wa.me/917888251550" target="_blank" rel="noreferrer" className="btb-contact-item"><FaWhatsapp size={14} /> WhatsApp Us</a>
-          <a href="mailto:tours.desivdesi@gmail.com" className="btb-contact-item"><FaEnvelope size={14} /> Email Us</a>
+      {/* Contact Section */}
+      <section className="premium-contact" style={{ background: meta.grad }}>
+        <h2 className="premium-contact-title">Need Help Planning?</h2>
+        <p className="premium-contact-sub">Our travel experts are available 24/7 to craft your perfect {meta.title.toLowerCase()}.</p>
+        <div className="premium-contact-row">
+          <a href="tel:+917888251550" className="premium-contact-item"><FaPhone size={14} /> +91 78882 51550</a>
+          <a href="https://wa.me/917888251550" target="_blank" rel="noreferrer" className="premium-contact-item"><FaWhatsapp size={14} /> WhatsApp Us</a>
+          <a href="mailto:tours.desivdesi@gmail.com" className="premium-contact-item"><FaEnvelope size={14} /> Email Us</a>
         </div>
       </section>
 
-      {/* ── Mobile Sidebar Drawer ─────────────────────────────────────────────── */}
-      <div className={`btb-sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
-      <div className={`btb-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
-        <div className="btb-sidebar-header" style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f0f0f8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="btb-sidebar-title">Filters</span>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {hasActiveFilters && <button className="btb-reset-btn" onClick={resetFilters}><FaTimes size={10} /> Reset</button>}
-            <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#999' }}>✕</button>
+      {/* Mobile Sidebar Drawer */}
+      <div className={`premium-sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+      <div className={`premium-sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+        <div className="premium-sidebar-header">
+          <span className="premium-sidebar-title">Filters</span>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {hasActiveFilters && (
+              <button className="premium-reset-btn" onClick={resetFilters}>
+                <FaTimes size={10} /> Reset
+              </button>
+            )}
+            <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
           </div>
         </div>
-        {/* Same sidebar content */}
-        <div className="btb-sidebar-section">
-          <div className="btb-sidebar-label">Price Range</div>
-          <div className="btb-price-display">{priceRangeText}</div>
-          <input type="range" className="btb-slider" min={0} max={100000} step={1000} value={priceRange[1]} onChange={e => setPriceRange([0, Number(e.target.value)])} />
+        
+        <div className="premium-sidebar-section">
+          <div className="premium-sidebar-label">Price Range</div>
+          <div className="premium-price-display">{priceRangeText}</div>
+          <input type="range" className="premium-slider" min={0} max={100000} step={1000} value={priceRangeValue} onChange={e => setPriceRangeValue(Number(e.target.value))} />
         </div>
-        <div className="btb-sidebar-section">
-          <div className="btb-sidebar-label">Duration</div>
-          <div className="btb-chips">
-            {['all', '1-3', '4-7', '7-14', '14+'].map(d => (
-              <button key={d} className={`btb-chip ${selectedDuration === d ? 'active' : ''}`} onClick={() => setSelectedDuration(d)}>
-                {d === 'all' ? 'Any' : `${d} days`}
+        
+        <div className="premium-sidebar-section">
+          <div className="premium-sidebar-label">Duration</div>
+          <div className="premium-chips">
+            {DURATION_OPTIONS.map(opt => (
+              <button key={opt.value} className={`premium-chip ${selectedDuration === opt.value ? 'active' : ''}`} onClick={() => setSelectedDuration(opt.value)}>
+                {opt.label}
               </button>
             ))}
           </div>
         </div>
-        <div className="btb-sidebar-section">
-          <div className="btb-sidebar-label">Minimum Rating</div>
-          <div className="btb-rating-opts">
+        
+        <div className="premium-sidebar-section">
+          <div className="premium-sidebar-label">Minimum Rating</div>
+          <div className="premium-rating-opts">
             {[0, 3, 4, 4.5, 5].map(r => (
-              <button key={r} className={`btb-rating-opt ${selectedRating === r ? 'active' : ''}`} onClick={() => setSelectedRating(r)}>
-                {r === 0 ? 'Any rating' : <><span className="btb-rating-stars">{'★'.repeat(Math.floor(r))}</span><span>{r}+ stars</span></>}
-                <div className={`btb-radio ${selectedRating === r ? 'active' : ''}`} />
+              <button key={r} className={`premium-rating-opt ${selectedRating === r ? 'active' : ''}`} onClick={() => setSelectedRating(r)}>
+                {r === 0 ? 'Any rating' : <><span className="premium-rating-stars">{'★'.repeat(Math.floor(r))}</span><span>{r}+ stars</span></>}
+                <div className={`premium-radio ${selectedRating === r ? 'active' : ''}`} />
               </button>
             ))}
           </div>
         </div>
+        
         <div style={{ padding: '1.25rem 1.5rem' }}>
-          <button onClick={() => setSidebarOpen(false)} style={{ width: '100%', padding: '0.85rem', borderRadius: 50, border: 'none', background: meta.grad, color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>
+          <button onClick={() => setSidebarOpen(false)} style={{ width: '100%', padding: '0.85rem', borderRadius: 60, border: 'none', background: meta.grad, color: 'white', fontWeight: 700, cursor: 'pointer' }}>
             Show {resultsCount} Results
           </button>
         </div>
       </div>
 
-      {/* Scroll to top */}
+      {/* Scroll to Top */}
       {showScrollTop && (
-        <button className="btb-scroll-top" style={{ background: meta.grad }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <FaArrowUp />
+        <button className="premium-scroll-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <FaArrowUp size={18} />
         </button>
       )}
     </>
   );
+};
+
+// ── Dynamic pricing hook (kept from original) ──────────────────────────────────────────────
+const useDynamicPricing = () => {
+  const [multiplier, setMultiplier] = useState(1);
+  const [trend, setTrend] = useState('stable');
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const change = (Math.random() - 0.48) * 0.05;
+      setMultiplier(prev => {
+        const next = Math.max(0.85, Math.min(1.25, prev + change));
+        setTrend(next > prev ? 'rising' : next < prev ? 'falling' : 'stable');
+        return next;
+      });
+    }, 12000);
+    return () => clearInterval(interval);
+  }, []);
+  return { multiplier, trend };
 };
 
 export default BaseTourPage;

@@ -30,6 +30,7 @@ import Login from "./Pages/Login.jsx";
 import { PackageProvider } from "./Context/PackageContext.jsx";
 import Profile, { BookingsTab, EnquiriesTab, OverviewTab, SavedTab, SettingsTab } from "./Components/ProfileDropdown/Profile.jsx";
 import ProfilePopup from "./Components/Profile/Profile.jsx";
+import AdminInquiries from "./Pages/Admin/AdminInquiries.jsx";
 
 /* Lazy Pages */
 const Start = lazy(() => import("./Pages/Start"));
@@ -107,6 +108,7 @@ const App = () => {
             <Route path="/enquiries" element={<EnquiriesTab />} />
           <Route path="/saved" element={<SavedTab />} />
             <Route path="/settings" element={<SettingsTab />} />
+
 
             {/* 404 */}
             <Route path="*" element={<PageNotFound />} />

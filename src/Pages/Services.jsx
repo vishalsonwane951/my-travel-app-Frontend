@@ -1035,7 +1035,7 @@ export default function Services() {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section
+      {/* <section
         className={`section testi-bg ${visibleSections['testimonials'] ? 'visible' : ''}`}
         data-section="testimonials"
       >
@@ -1084,7 +1084,7 @@ export default function Services() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       <div className='newsletter-section'>
         <NewsletterSubscribe/>

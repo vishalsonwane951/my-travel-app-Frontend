@@ -226,6 +226,7 @@ export default function Services() {
         .hero-content {
           position: relative; z-index: 2;
           padding: 0 1.5rem; max-width: 860px; width: 100%;
+          margin-top: 1.5rem;
         }
         .hero-ticker {
           display: inline-flex; align-items: center; gap: 10px;
@@ -290,6 +291,7 @@ export default function Services() {
         .hero-pills {
           display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
           animation: fadeUp 0.9s 0.5s var(--ease-smooth) both;
+          margin-bottom: 2.5rem;
         }
         .hero-pill {
           background: transparent; border: 1px solid rgba(255,255,255,0.18);
@@ -349,7 +351,7 @@ export default function Services() {
 
         /* ── SECTION COMMONS ────────────────────── */
         .section {
-          padding: 7rem 2rem;
+          padding: 3.5rem 2rem;
           opacity: 0; transform: translateY(40px);
           transition: opacity 0.9s var(--ease-smooth), transform 0.9s var(--ease-smooth);
         }
@@ -407,7 +409,7 @@ export default function Services() {
         }
 
         .packages-section {
-          padding: 7rem 2rem;
+          padding: 3.5rem 2rem;
           opacity: 0; transform: translateY(40px);
           transition: opacity 0.9s var(--ease-smooth), transform 0.9s var(--ease-smooth);
         }

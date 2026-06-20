@@ -469,7 +469,7 @@ const TourPackageCard = ({ pkg, themeColor = 'default', index = 0, onWishlistCha
               <div className="dvd-img-shimmer" />
             ) : (
               <img
-                src={pkg?.images?.[0] || pkg?.image || fallbackImg}
+                src={pkg?.images || fallbackImg}
                 alt={locationDisplay}
                 className="dvd-img"
                 loading="lazy"

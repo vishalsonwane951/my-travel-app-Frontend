@@ -70,7 +70,7 @@ const CATEGORIES = [
 const QUICK_ACTIONS = [
   { label: 'Hotels', icon: '🏨', color: '#3D52A0' },
   { label: 'Things To Do', icon: '🎯', color: '#FF6B6B' },
-  { label: 'Restaurants', icon: '🍽️', color: '#FFB347' },
+  { label: 'Restaurants', icon: '🍽️', color: '#FFB347'},
   { label: 'Holiday Homes', icon: '🏡', color: '#4ECDC4' },
 ];
 
@@ -696,11 +696,11 @@ function Maharashtra() {
                 )}
                 <div style={{ padding: '1.25rem 1.5rem 1.5rem' }}>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.35rem' }}>
-                    <Link to={card.link} style={{ color: 'inherit', textDecoration: 'none' }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--saffron)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--navy)'}>
-                      {card.title}
-                    </Link>
+                    <Link to={`/locations/${card._id}`} style={{ color: 'inherit', textDecoration: 'none' }}
+  onMouseEnter={e => e.currentTarget.style.color = 'var(--saffron)'}
+  onMouseLeave={e => e.currentTarget.style.color = 'var(--navy)'}>
+  {card.title}
+</Link>
                   </h3>
                   {card.subtitle && (
                     <p style={{ fontSize: '0.85rem', color: '#888', fontFamily: 'var(--font-body)', lineHeight: 1.55 }}>{card.subtitle}</p>
@@ -709,10 +709,10 @@ function Maharashtra() {
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--saffron)', fontFamily: 'var(--font-body)' }}>
                       {CATEGORIES.find(c => c.key === selected)?.label}
                     </span>
-                    <Link to={card.link}
-                      style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--indigo)', textDecoration: 'none', fontFamily: 'var(--font-body)' }}>
-                      View Details →
-                    </Link>
+                    <Link to={`/locations/${card._id}`}
+  style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--indigo)', textDecoration: 'none', fontFamily: 'var(--font-body)' }}>
+  View Details →
+</Link>
                   </div>
                 </div>
               </div>

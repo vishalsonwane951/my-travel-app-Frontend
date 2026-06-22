@@ -953,11 +953,12 @@ export const useStats = (user, token) => {
     useEffect(() => {
         if (!user) return;
         const tk = token || localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${tk}` };
+        const headers = { Authorization: `Bearer ${tk}` };  
         Promise.allSettled([
             // api.get(user.isAdmin ? "/bookings/confirmed" : "/bookings/confirmed-user", { headers }),
             // api.get(user.isAdmin ? "/bookings" : `/bookings/user/${user._id}`, { headers }),
             api.get(`/favourites/${user._id}`, { headers }),
+            console.log("useeId",user._id)
         ]).then(([b, e, f]) => {
             setStats({
                 bookings: b.status === "fulfilled" && b.value.data.success ? (b.value.data.bookings || []).length : 0,

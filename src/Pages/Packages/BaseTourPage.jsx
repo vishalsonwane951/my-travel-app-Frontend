@@ -133,7 +133,7 @@ const BaseTourPage = () => {
         setPackages(res.data);
         console.log('package Data:',res.data)
         // Set first destination for weather
-        if (res.data?.[0]?.location) setActiveDestination(res.data[0].location);
+        if (res.data?.[0]?.location) setActiveDestination(res.data[1].location);
       } catch {
         setPackages([]);
       } finally {

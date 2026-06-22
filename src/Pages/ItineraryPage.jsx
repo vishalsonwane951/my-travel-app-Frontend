@@ -1,11 +1,11 @@
 // Pages/ItineraryPage.jsx
 // Route: /package/:type/:location
+// Bootstrap 5 loaded via CDN (inline — no separate CSS file needed)
+// UI aligned to Style Context — coral-red #F04B5A primary, navy #1A2340 sidebar,
+// amber #F97316 day badges, teal-green #10B981 success/checks, DM Sans + Cormorant Garamond
 
 import React, { useState, useEffect, useRef, useCallback, useContext } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
-import Header from "../Components/Header/Header";
-import Footer from "../Components/Footer/Footer";
 import {
   FaMapMarkerAlt, FaClock, FaUsers, FaStar, FaArrowLeft,
   FaChevronDown, FaChevronUp, FaCheck, FaTimes,
@@ -16,36 +16,127 @@ import {
 } from "react-icons/fa";
 import { AuthContext } from "../Context/AuthContext";
 import TripPlannerModal from "../Components/TripPlannerModal";
-import api from '../utils/api.js';
+import api from "../utils/api.js";
 
-// ── Cloudinary URL optimizer ──────────────────────────────────
-// Adds f_auto,q_auto,w_900 only for Cloudinary URLs; passes all others through unchanged
+// ── Bootstrap CDN injector (runs once) ───────────────────────────────────────
+(function injectBootstrap() {
+  if (document.getElementById("bs5-css")) return;
+  const link = document.createElement("link");
+  link.id = "bs5-css";
+  link.rel = "stylesheet";
+  link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css";
+  link.integrity = "sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH";
+  link.crossOrigin = "anonymous";
+  document.head.appendChild(link);
+  if (document.getElementById("bs5-js")) return;
+  const script = document.createElement("script");
+  script.id = "bs5-js";
+  script.src = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js";
+  script.integrity = "sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmAb45HFn/6f5m9VFvkF6C1B0e7";
+  script.crossOrigin = "anonymous";
+  document.body.appendChild(script);
+})();
+
+// ── Design tokens (from UI Style Context) ────────────────────────────────────
+const BRAND = {
+  primary:    "#F04B5A",   // coral-red — CTAs, icon backgrounds, active states
+  primaryDark:"#D03848",   // hover state for primary
+  navy:       "#1A2340",   // sidebar card bg, footer
+  navyBorder: "rgba(255,255,255,0.10)", // dividers inside navy card
+  success:    "#10B981",   // teal-green — checkmarks, success icons
+  amber:      "#F97316",   // day badges, star ratings
+  charcoal:   "#111827",   // headings
+  bodyText:   "#374151",   // body copy
+  meta:       "#6B7280",   // labels, secondary text
+  placeholder:"#9CA3AF",   // input placeholder
+  border:     "#E5E7EB",   // card/input borders
+  borderLight:"#F3F4F6",   // row separators
+  bgLight:    "#F5F6F8",   // page bg, section backgrounds
+  bgCard:     "#fafbff",   // quick-stat chip background
+  teal:       "#14B8A6",   // links, "send a message"
+  // Gradient used only for multi-stop decorative moments (hero overlay, etc.)
+  // All CTAs use flat primary, not gradients
+};
+
+// ── Cloudinary URL optimizer ──────────────────────────────────────────────────
 const getCloudinaryUrl = (url, width = 900) => {
-  if (!url || !url.startsWith('http')) return url;
-  if (!url.includes('cloudinary.com')) return url;
-  return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
+  if (!url || !url.startsWith("http")) return url;
+  if (!url.includes("cloudinary.com")) return url;
+  return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`);
 };
 
-// ── Per-type colour themes ────────────────────────────────────────────────────
-const THEMES = {
-  "custom-tour": { grad: "linear-gradient(135deg,#FF6B6B,#FF8E53)", primary: "#FF6B6B", light: "#FFF0F0", icon: "🎨" },
-  "adventure-tour": { grad: "linear-gradient(135deg,#4ECDC4,#2C3E50)", primary: "#4ECDC4", light: "#E8F8F5", icon: "🏔️" },
-  "family-tour": { grad: "linear-gradient(135deg,#FFE66D,#FFB347)", primary: "#FFB347", light: "#FFF9E6", icon: "👨‍👩‍👧‍👦" },
-  "group-tour": { grad: "linear-gradient(135deg,#A37BFF,#6B4EFF)", primary: "#A37BFF", light: "#F3EDFF", icon: "🚌" },
-  "city-tour": { grad: "linear-gradient(135deg,#FF9F1C,#FCCF31)", primary: "#FF9F1C", light: "#FFF3E0", icon: "🌆" },
-  "honeymoon-tour": { grad: "linear-gradient(135deg,#FF6EB4,#FF9A9E)", primary: "#FF6EB4", light: "#FFF0F7", icon: "💑" },
-  "weekend-getaway": { grad: "linear-gradient(135deg,#5BC0EB,#0353A4)", primary: "#5BC0EB", light: "#E8F4FD", icon: "🌅" },
-  "luxury-tour": { grad: "linear-gradient(135deg,#C9A84C,#8B6914)", primary: "#C9A84C", light: "#FDF6E3", icon: "💎" },
-  "pilgrimage-tour": { grad: "linear-gradient(135deg,#7BAE7F,#4A7C59)", primary: "#7BAE7F", light: "#EEFBEE", icon: "🕌" },
-};
-const getTheme = (type) =>
-  THEMES[type] || THEMES[`${type}-tour`] ||
-  { grad: "linear-gradient(135deg,#667eea,#764ba2)", primary: "#667eea", light: "#F0F2FF", icon: "✈️" };
+// ── Lat/Lng extractor from Google Maps URL ────────────────────────────────────
+export function extractLatLng(url) {
+  if (!url) return null;
+  const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  const llMatch = url.match(/[?&](?:ll|center)=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (llMatch) return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) };
+  return null;
+}
 
-// ── Normalise the raw API package into a consistent shape ─────────────────────
+// ── WMO weather-code → emoji + label map ─────────────────────────────────────
+const WMO_CODES = {
+  0: { e: "☀️", l: "Clear sky" }, 1: { e: "🌤️", l: "Mostly clear" },
+  2: { e: "⛅", l: "Partly cloudy" }, 3: { e: "☁️", l: "Overcast" },
+  45: { e: "🌫️", l: "Foggy" }, 48: { e: "🌫️", l: "Icy fog" },
+  51: { e: "🌦️", l: "Drizzle" }, 61: { e: "🌧️", l: "Light rain" },
+  63: { e: "🌧️", l: "Moderate rain" }, 65: { e: "🌧️", l: "Heavy rain" },
+  71: { e: "🌨️", l: "Light snow" }, 73: { e: "🌨️", l: "Snow" },
+  75: { e: "❄️", l: "Heavy snow" }, 80: { e: "🌦️", l: "Rain showers" },
+  95: { e: "⛈️", l: "Thunderstorm" }, 99: { e: "⛈️", l: "Thunderstorm" },
+};
+const wmoInfo = (code) => WMO_CODES[code] ?? { e: "🌡️", l: "Variable" };
+
+// ── Best-visit-time lookup ────────────────────────────────────────────────────
+const BEST_TIMES = {
+  manali: "Mar – Jun, Sep – Oct", goa: "Nov – Feb", kerala: "Sep – Mar",
+  rajasthan: "Oct – Mar", andaman: "Oct – May", shimla: "Mar – Jun, Sep – Nov",
+  leh: "Jun – Sep", jaipur: "Oct – Mar", ooty: "Apr – Jun, Sep – Nov",
+  coorg: "Oct – May", munnar: "Sep – May", varanasi: "Oct – Mar",
+  agra: "Oct – Mar", delhi: "Oct – Mar", mumbai: "Nov – Feb",
+};
+const getBestTime = (loc) =>
+  BEST_TIMES[(loc || "").toLowerCase()] ?? "Oct – Mar";
+
+// ── useDestinationWeather hook ────────────────────────────────────────────────
+function useDestinationWeather(lat, lng, locationName) {
+  const [weather, setWeather] = useState(null);
+  useEffect(() => {
+    if (!lat || !lng) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const url =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=${lat}&longitude=${lng}` +
+          `&current=temperature_2m,relative_humidity_2m,weather_code,uv_index,wind_speed_10m` +
+          `&timezone=auto&forecast_days=1`;
+        const res = await fetch(url);
+        const json = await res.json();
+        const c = json.current;
+        if (!cancelled) {
+          setWeather({
+            temp: Math.round(c.temperature_2m),
+            humidity: c.relative_humidity_2m,
+            uv: Math.round(c.uv_index ?? 0),
+            wind: Math.round(c.wind_speed_10m),
+            icon: wmoInfo(c.weather_code).e,
+            desc: wmoInfo(c.weather_code).l,
+            best: getBestTime(locationName),
+          });
+        }
+      } catch { /* non-fatal */ }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [lat, lng, locationName]);
+  return weather;
+}
+
+// ── Normalise the raw API package ─────────────────────────────────────────────
 function normalisePackage(raw) {
   if (!raw) return null;
-
   let gallery = [];
   if (Array.isArray(raw.gallery) && raw.gallery.length) {
     gallery = raw.gallery;
@@ -54,7 +145,6 @@ function normalisePackage(raw) {
   } else if (Array.isArray(raw.images) && raw.images.length) {
     gallery = raw.images.map((img) => ({ img, caption: "" }));
   }
-
   let durations = [];
   if (Array.isArray(raw.durations) && raw.durations.length) {
     durations = raw.durations.map((d) => ({
@@ -65,18 +155,14 @@ function normalisePackage(raw) {
       discountedPrice: d.discountedPrice || null,
     }));
   } else {
-    const rawLabel =
-      (typeof raw.durations === "string" && raw.durations) ||
-      raw.duration ||
-      "";
+    const rawLabel = (typeof raw.durations === "string" && raw.durations) || raw.duration || "";
     const matchND = rawLabel.match(/(\d+)\s*N\s*\/?\s*(\d+)\s*D/i);
     const matchD = rawLabel.match(/^(\d+)\s*D$/i);
     const nights = matchND ? parseInt(matchND[1]) : null;
     const days = matchND ? parseInt(matchND[2]) : matchD ? parseInt(matchD[1]) : null;
     durations = [{
       label: rawLabel || (days ? `${days} Day${days > 1 ? "s" : ""}` : ""),
-      nights,
-      days,
+      nights, days,
       price: raw.price || 0,
       discountedPrice: null,
     }];
@@ -85,10 +171,8 @@ function normalisePackage(raw) {
       durations[0].price = raw.strikePrice;
     }
   }
-
   const inclusions = raw.inclusions || raw.inclExcl?.inclusions || [];
   const exclusions = raw.exclusions || raw.inclExcl?.exclusions || [];
-
   const itinerary = (raw.itinerary || []).map((day) => ({
     ...day,
     meals: Array.isArray(day.meals)
@@ -102,7 +186,6 @@ function normalisePackage(raw) {
         ? day.activities.split(/[,;]/).map((a) => a.trim()).filter(Boolean)
         : [],
   }));
-
   return { ...raw, gallery, durations, inclusions, exclusions, itinerary };
 }
 
@@ -110,29 +193,16 @@ function normalisePackage(raw) {
 const buildFallbackDays = (locationTitle, numDays = 1) =>
   Array.from({ length: numDays }, (_, i) => ({
     day: i + 1,
-    title: i === 0
-      ? `Arrival in ${locationTitle}`
+    title: i === 0 ? `Arrival in ${locationTitle}` : i === numDays - 1 ? `Departure from ${locationTitle}` : `Explore ${locationTitle} — Day ${i + 1}`,
+    description: i === 0
+      ? `Welcome to ${locationTitle}! Transfer from airport/station to hotel. Check in, freshen up, and enjoy a welcome dinner.`
       : i === numDays - 1
-        ? `Departure from ${locationTitle}`
-        : `Explore ${locationTitle} — Day ${i + 1}`,
-    description:
-      i === 0
-        ? `Welcome to ${locationTitle}! Transfer from airport/station to hotel. Check in, freshen up, and enjoy a welcome dinner.`
-        : i === numDays - 1
-          ? `Enjoy breakfast at the hotel. Check out and transfer to airport/station for your return journey.`
-          : `Full day of guided sightseeing, local cuisine, and cultural experiences across the best of ${locationTitle}.`,
-    activities:
-      i === 0
-        ? ["Airport / station pickup", "Hotel check-in", "Orientation walk", "Welcome dinner"]
-        : i === numDays - 1
-          ? ["Breakfast at hotel", "Check-out", "Transfer to departure point"]
-          : ["Sightseeing tour", "Local street food", "Cultural experience", "Leisure time"],
-    meals:
-      i === 0
-        ? ["Dinner"]
-        : i === numDays - 1
-          ? ["Breakfast"]
-          : ["Breakfast", "Lunch", "Dinner"],
+        ? `Enjoy breakfast at the hotel. Check out and transfer to airport/station for your return journey.`
+        : `Full day of guided sightseeing, local cuisine, and cultural experiences across the best of ${locationTitle}.`,
+    activities: i === 0 ? ["Airport / station pickup", "Hotel check-in", "Orientation walk", "Welcome dinner"]
+      : i === numDays - 1 ? ["Breakfast at hotel", "Check-out", "Transfer to departure point"]
+        : ["Sightseeing tour", "Local street food", "Cultural experience", "Leisure time"],
+    meals: i === 0 ? ["Dinner"] : i === numDays - 1 ? ["Breakfast"] : ["Breakfast", "Lunch", "Dinner"],
     accommodation: i < numDays - 1 ? "Hotel (as per selected plan)" : null,
   }));
 
@@ -158,14 +228,18 @@ function useLivePrice(base) {
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 const Skel = ({ h = 16, w = "100%", r = 8, mb = 8 }) => (
-  <div style={{ height: h, width: w, borderRadius: r, marginBottom: mb, background: "linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%)", backgroundSize: "400px 100%", animation: "itp-shimmer 1.4s infinite" }} />
+  <div style={{
+    height: h, width: w, borderRadius: r, marginBottom: mb,
+    background: "linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%)",
+    backgroundSize: "400px 100%",
+    animation: "itp-shimmer 1.4s infinite",
+  }} />
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ItineraryPage() {
   const { type, location } = useParams();
   const navigate = useNavigate();
-  const theme = getTheme(type);
   const { user } = useContext(AuthContext);
 
   const locationTitle = location
@@ -175,12 +249,12 @@ export default function ItineraryPage() {
     ? type.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
     : "Tour Package";
 
+  // ── State ────────────────────────────────────────────────────────────────
   const [pkg, setPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [selectedDurationIdx, setSelectedDurationIdx] = useState(0);
-
   const [openDay, setOpenDay] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [activeTab, setActiveTab] = useState("itinerary");
@@ -208,6 +282,11 @@ export default function ItineraryPage() {
   const [travelDate, setTravelDate] = useState("");
   const bookingRef = useRef(null);
 
+  // ── Weather ──────────────────────────────────────────────────────────────
+  const coords = extractLatLng(pkg?.locationurl);
+  const weather = useDestinationWeather(coords?.lat, coords?.lng, locationTitle);
+
+  // ── Countdown ────────────────────────────────────────────────────────────
   useEffect(() => {
     const id = setInterval(() => {
       setCountdown(({ h, m, s }) => {
@@ -219,14 +298,13 @@ export default function ItineraryPage() {
     return () => clearInterval(id);
   }, []);
 
+  // ── Prefill form from logged-in user ─────────────────────────────────────
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
         if (!token) return;
-        const res = await api.get("/auth/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get("/auth/profile", { headers: { Authorization: `Bearer ${token}` } });
         setEnquiryForm((f) => ({
           ...f,
           fullName: res.data.fullName || res.data.name || "",
@@ -239,6 +317,7 @@ export default function ItineraryPage() {
     fetchUser();
   }, []);
 
+  // ── Load package ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!type || !location) return;
     const load = async () => {
@@ -266,6 +345,7 @@ export default function ItineraryPage() {
     load();
   }, [type, location]);
 
+  // ── Open compare modal ────────────────────────────────────────────────────
   const openCompare = useCallback(async () => {
     setCompareOpen(true);
     setCompareScope("duration");
@@ -283,6 +363,7 @@ export default function ItineraryPage() {
     finally { setCompareLoading(false); }
   }, [type, compareAllPkgs.length, compareSelected.length, pkg]);
 
+  // ── Derived values ────────────────────────────────────────────────────────
   const durationOptions = pkg?.durations || [];
   const _safeIdx = Math.min(selectedDurationIdx, Math.max(0, durationOptions.length - 1));
   const selDur = durationOptions[_safeIdx] || {};
@@ -295,29 +376,26 @@ export default function ItineraryPage() {
     ? pkg.itinerary
     : buildFallbackDays(locationTitle, selDur?.days || 1);
   const itinerary = fullItinerary.slice(0, selDur?.days || fullItinerary.length);
-
   const inclusions = pkg?.inclusions || [];
   const exclusions = pkg?.exclusions || [];
-
-  // Extract image URLs and run through Cloudinary optimizer
   const images = (pkg?.gallery?.length
     ? pkg.gallery.map((item) => (typeof item === "string" ? item : item.img)).filter(Boolean)
     : []
   ).map((url) => getCloudinaryUrl(url));
 
+  // ── Open enquiry ──────────────────────────────────────────────────────────
   const openEnquiry = useCallback(() => {
     if (!user) {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    setEnquiryForm((f) => ({
-      ...f, travelDate, adults: travelers, travelers, destination: locationTitle,
-    }));
+    setEnquiryForm((f) => ({ ...f, travelDate, adults: travelers, travelers, destination: locationTitle }));
     setEnquiryDone(false);
     setEnquiryError(null);
     setEnquiryOpen(true);
   }, [user, navigate, travelDate, travelers, locationTitle]);
 
+  // ── Submit enquiry ────────────────────────────────────────────────────────
   const handleEnquirySubmit = useCallback(async (e) => {
     e.preventDefault();
     setEnquiryLoading(true);
@@ -325,39 +403,27 @@ export default function ItineraryPage() {
     const payload = {
       customer: {
         userId: user?._id || user?.id,
-        fullName: enquiryForm.fullName,
-        email: enquiryForm.email,
-        mobile: enquiryForm.mobile,
-        destination: enquiryForm.destination,
-        adults: enquiryForm.adults,
-        city: enquiryForm.city,
+        fullName: enquiryForm.fullName, email: enquiryForm.email,
+        mobile: enquiryForm.mobile, destination: enquiryForm.destination,
+        adults: enquiryForm.adults, city: enquiryForm.city,
       },
       package: {
         packageId: pkg?._id,
         title: pkg?.title || `${locationTitle} ${typeTitle}`,
         type, location, locationTitle, typeTitle,
-        rating: pkg?.rating,
-        reviews: pkg?.reviews,
-        groupSize: pkg?.groupSize,
+        rating: pkg?.rating, reviews: pkg?.reviews, groupSize: pkg?.groupSize,
       },
       duration: { label: selDur?.label, nights: selDur?.nights, days: selDur?.days },
       itinerary: itinerary.map((day) => ({
-        day: day.day,
-        title: day.title,
-        description: day.description,
-        activities: day.activities || [],
-        meals: day.meals || [],
+        day: day.day, title: day.title, description: day.description,
+        activities: day.activities || [], meals: day.meals || [],
         accommodation: day.accommodation || null,
       })),
-      inclusions,
-      exclusions,
+      inclusions, exclusions,
       pricing: {
-        pricePerPerson: livePrice,
-        adults: enquiryForm.adults,
-        travelers: enquiryForm.adults,
-        totalPrice: livePrice * enquiryForm.adults,
-        currency: "INR",
-        durationType: selDur?.label,
+        pricePerPerson: livePrice, adults: enquiryForm.adults,
+        travelers: enquiryForm.adults, totalPrice: livePrice * enquiryForm.adults,
+        currency: "INR", durationType: selDur?.label,
       },
       travelDate: enquiryForm.travelDate,
       notes: enquiryForm.notes,
@@ -388,251 +454,170 @@ export default function ItineraryPage() {
     });
   };
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // ── Global styles (Style Context aligned) ────────────────────────────────
+  const globalStyles = `
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: ${BRAND.bgLight}; }
+
+    @keyframes itp-shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+    @keyframes itp-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes itp-modal-in { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+
+    /* Hero */
+    .itp-hero { position:relative; height:68vh; min-height:460px; overflow:hidden; }
+    .itp-hero-img { width:100%; height:100%; object-fit:cover; transition:transform 8s ease; }
+    .itp-hero:hover .itp-hero-img { transform:scale(1.05); }
+    .itp-hero-grad { position:absolute; inset:0; background:linear-gradient(180deg,rgba(10,10,30,.12) 0%,rgba(10,10,30,.82) 100%); }
+    .itp-hero-content { position:absolute; inset:0; display:flex; justify-content:space-between; align-items:flex-end; padding:2.5rem; animation:itp-up .7s cubic-bezier(.4,0,.2,1) both; }
+    .itp-hero-left { max-width:680px; }
+    .itp-hero-title { font-family:'Cormorant Garamond',serif; font-size:clamp(2rem,5vw,3.4rem); font-weight:700; color:#fff; line-height:1.08; margin-bottom:.6rem; }
+
+    /* Thumbnail strip */
+    .itp-thumb { width:52px; height:38px; border-radius:7px; object-fit:cover; cursor:pointer; border:2px solid transparent; opacity:.6; transition:all .2s; }
+    .itp-thumb.active { border-color:#fff; opacity:1; }
+
+    /* Tabs */
+    .itp-tab-btn { border:none; background:transparent; font-family:'DM Sans',sans-serif; font-size:.88rem; cursor:pointer; white-space:nowrap; padding:.5rem .9rem .6rem; transition:all .2s; border-bottom:3px solid transparent; color:${BRAND.meta}; font-weight:500; }
+    .itp-tab-btn.active { color:${BRAND.charcoal}; font-weight:700; border-bottom-color:${BRAND.primary}; }
+
+    /* Duration pills */
+    .itp-dur-pill { border:2px solid ${BRAND.border}; background:#fff; font-weight:600; font-size:.82rem; color:${BRAND.meta}; cursor:pointer; transition:all .22s; border-radius:50px; padding:.45rem 1.1rem; display:inline-flex; flex-direction:column; align-items:center; gap:2px; }
+    .itp-dur-pill:hover { border-color:#c0c8f0; color:${BRAND.charcoal}; }
+    .itp-dur-pill.active { background:${BRAND.primary}; border-color:${BRAND.primary}; color:#fff; }
+
+    /* Itinerary timeline */
+    .itp-timeline { position:relative; padding-left:20px; }
+    .itp-timeline::before { content:''; position:absolute; left:19px; top:0; bottom:0; width:2px; background:${BRAND.border}; border-radius:2px; }
+    .itp-day-card { border:1px solid ${BRAND.border}; border-radius:12px; margin-bottom:10px; overflow:hidden; background:#fff; transition:box-shadow .2s; }
+    .itp-day-card:hover { box-shadow:0 4px 18px rgba(240,75,90,.08); }
+    .itp-day-card.open { box-shadow:0 4px 18px rgba(240,75,90,.10); }
+    .itp-day-header { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; background:#fff; }
+    .itp-day-badge { width:36px; height:36px; border-radius:9px; background:${BRAND.amber}; color:#fff; font-weight:700; font-size:.78rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .itp-day-body { background:#fff; padding:0 16px; max-height:0; overflow:hidden; transition:max-height .35s ease, padding .25s ease; }
+    .itp-day-body.open { max-height:600px; padding:0 16px 16px; }
+    .itp-activity-pill { background:${BRAND.bgCard}; color:#3D52A0; font-size:.73rem; font-weight:500; border-radius:50px; padding:.3rem .85rem; border:1px solid #e4e8ff; }
+
+    /* Gallery */
+    .itp-gal-img { width:100%; object-fit:cover; border-radius:12px; cursor:pointer; transition:transform .3s,opacity .2s; aspect-ratio:4/3; }
+    .itp-gal-img:hover { transform:scale(1.02); opacity:.9; }
+    .itp-gal-first { aspect-ratio:16/7; }
+
+    /* Sidebar booking card */
+    .itp-booking-card { border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.10); border:1px solid ${BRAND.border}; }
+    .itp-booking-head { background:${BRAND.navy}; padding:1.5rem 1.5rem 1.25rem; }
+    .itp-booking-body { background:#fff; padding:1.25rem 1.5rem 1.5rem; }
+    .itp-booking-trust { background:${BRAND.bgCard}; border-top:1px solid ${BRAND.borderLight}; padding:.85rem 1.5rem; display:flex; flex-direction:column; gap:8px; }
+
+    /* Checklist in navy head */
+    .itp-checklist-item { display:flex; align-items:center; gap:8px; font-size:.82rem; color:rgba(255,255,255,.85); padding:.35rem 0; border-bottom:1px solid ${BRAND.navyBorder}; }
+    .itp-checklist-item:last-child { border-bottom:none; }
+
+    /* CTA buttons */
+    .itp-btn-primary { background:${BRAND.primary}; border:none; color:#fff; font-weight:700; border-radius:50px; padding:.85rem 1.5rem; font-size:.95rem; cursor:pointer; transition:all .25s; font-family:'DM Sans',sans-serif; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .itp-btn-primary:hover { background:${BRAND.primaryDark}; transform:translateY(-1px); box-shadow:0 6px 20px rgba(240,75,90,.30); }
+    .itp-btn-primary:active { transform:scale(.98); }
+    .itp-btn-outline { border:2px dashed ${BRAND.border}; background:transparent; color:#3D52A0; font-weight:600; font-size:.84rem; border-radius:50px; padding:.55rem 1rem; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; width:100%; display:flex; align-items:center; justify-content:center; gap:6px; }
+    .itp-btn-outline:hover { border-color:#3D52A0; }
+
+    /* Form inputs */
+    .itp-input { border:1px solid ${BRAND.border}; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.88rem; height:46px; padding:0 14px; width:100%; transition:border-color .2s; background:#fff; color:${BRAND.charcoal}; }
+    .itp-input::placeholder { color:${BRAND.placeholder}; }
+    .itp-input:focus { outline:none; border-color:${BRAND.primary}; box-shadow:0 0 0 3px rgba(240,75,90,.10); }
+    .itp-input-group { position:relative; }
+    .itp-input-group .itp-input { padding-left:36px; }
+    .itp-input-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:${BRAND.placeholder}; pointer-events:none; }
+    textarea.itp-input { height:auto; padding:10px 14px; resize:vertical; }
+    textarea.itp-input:focus { outline:none; border-color:${BRAND.primary}; box-shadow:0 0 0 3px rgba(240,75,90,.10); }
+
+    /* Contact chips */
+    .itp-contact-chip { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; border:1.5px solid ${BRAND.border}; border-radius:8px; color:${BRAND.meta}; text-decoration:none; padding:.5rem; font-size:.77rem; font-weight:600; transition:all .2s; background:#fff; }
+    .itp-contact-chip:hover { border-color:${BRAND.primary}; color:${BRAND.primary}; }
+
+    /* Quick-stat chips */
+    .itp-stat-chip { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid ${BRAND.border}; border-radius:10px; padding:.5rem .85rem; font-size:.84rem; }
+
+    /* Highlight pills */
+    .itp-highlight-pill { background:rgba(240,75,90,.06); color:${BRAND.primary}; font-size:.79rem; font-weight:600; border-radius:50px; padding:.3rem .85rem; border:1px solid rgba(240,75,90,.15); }
+
+    /* Travelers counter */
+    .itp-counter { display:flex; align-items:center; justify-content:space-between; border:1.5px solid ${BRAND.border}; border-radius:8px; padding:.45rem .85rem; background:#fff; }
+    .itp-counter-btn { width:28px; height:28px; border:1px solid ${BRAND.border}; border-radius:6px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:400; color:${BRAND.meta}; transition:all .15s; }
+    .itp-counter-btn:hover { border-color:${BRAND.primary}; color:${BRAND.primary}; }
+
+    /* Compare & modal */
+    .itp-modal-anim { animation:itp-modal-in .3s cubic-bezier(.4,0,.2,1) both; }
+    .itp-scope-btn { border:none; background:transparent; font-size:.78rem; font-weight:600; cursor:pointer; color:#888; border-radius:50px; padding:.38rem 1.1rem; }
+    .itp-scope-btn.active { background:#fff; color:${BRAND.charcoal}; box-shadow:0 2px 8px rgba(0,0,0,.1); }
+    .itp-cmp-pkg-chip { border:2px solid ${BRAND.border}; background:#fff; font-size:.77rem; font-weight:600; color:${BRAND.meta}; cursor:pointer; transition:all .2s; border-radius:50px; padding:.35rem .9rem; }
+    .itp-cmp-pkg-chip.selected { background:${BRAND.primary}; border-color:${BRAND.primary}; color:#fff; }
+    .itp-cmp-pkg-chip:hover:not(.selected):not(:disabled) { border-color:#c0c8f0; color:${BRAND.charcoal}; }
+    .itp-cmp-dur-tab { border:1.5px solid ${BRAND.border}; background:#fff; font-size:.75rem; font-weight:600; color:#888; cursor:pointer; transition:all .2s; border-radius:50px; padding:.3rem .9rem; }
+    .itp-cmp-dur-tab.active { background:${BRAND.primary}; border-color:${BRAND.primary}; color:#fff; }
+
+    /* Sticky mobile bar */
+    .itp-sticky-bar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid ${BRAND.border}; z-index:200; box-shadow:0 -6px 24px rgba(0,0,0,.10); display:none; }
+
+    /* Breadcrumb */
+    .itp-breadcrumb a { color:rgba(255,255,255,.6); text-decoration:none; }
+    .itp-breadcrumb a:hover { color:#FFD080; }
+
+    /* Typography helpers */
+    .font-serif { font-family:'Cormorant Garamond',serif; }
+    .navy { color:${BRAND.charcoal}; }
+
+    /* Inclusions */
+    .itp-incl-row { display:flex; align-items:flex-start; gap:8px; padding:.55rem 0; font-size:.84rem; color:${BRAND.bodyText}; border-bottom:1px solid ${BRAND.borderLight}; }
+    .itp-incl-row:last-child { border-bottom:none; }
+
+    @media(max-width:992px) {
+      .itp-sticky-bar { display:flex; }
+      body { padding-bottom:70px; }
+      .itp-hero-content { flex-direction:column; align-items:flex-start; gap:1rem; }
+    }
+    @media(max-width:576px) {
+      .itp-hero { height:52vh; }
+      .itp-hero-content { padding:1.5rem; }
+    }
+  `;
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) return (
     <>
-      <Header />
-      <style>{`@keyframes itp-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}`}</style>
-      <div style={{ padding: "2rem", maxWidth: 1200, margin: "0 auto" }}>
+      <style>{globalStyles}</style>
+      <div className="container py-4" style={{ maxWidth: 1200 }}>
         <Skel h={420} r={20} mb={24} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
-          <div><Skel h={32} w="55%" mb={12} /><Skel h={18} mb={8} /><Skel h={18} w="80%" mb={32} /><Skel h={220} r={16} /></div>
-          <Skel h={400} r={20} />
+        <div className="row g-4">
+          <div className="col-lg-8"><Skel h={32} w="55%" mb={12} /><Skel h={18} mb={8} /><Skel h={18} w="80%" mb={32} /><Skel h={220} r={16} /></div>
+          <div className="col-lg-4"><Skel h={400} r={20} /></div>
         </div>
       </div>
     </>
   );
 
-  // ── Error ──────────────────────────────────────────────────────────────────
+  // ── Error ─────────────────────────────────────────────────────────────────
   if (error) return (
     <>
-      <Header />
-      <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem", fontFamily: "'DM Sans', sans-serif", textAlign: "center" }}>
+      <style>{globalStyles}</style>
+      <div className="d-flex flex-column align-items-center justify-content-center text-center py-5" style={{ minHeight: "60vh" }}>
         <div style={{ fontSize: "3.5rem", marginBottom: "1rem" }}>😕</div>
-        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "2rem", fontWeight: 700, color: "#1a1a2e", marginBottom: ".5rem" }}>Package Not Found</h2>
-        <p style={{ color: "#888", marginBottom: "2rem", maxWidth: 420 }}>{error}</p>
-        <button onClick={() => navigate(`/tourcard/${type}`)} style={{ padding: "0.75rem 2rem", borderRadius: 50, border: "none", background: theme.grad, color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.95rem" }}>
+        <h2 className="font-serif fw-bold navy mb-2" style={{ fontSize: "2rem" }}>Package Not Found</h2>
+        <p style={{ color: BRAND.meta, marginBottom: "1.5rem", maxWidth: 420 }}>{error}</p>
+        <button onClick={() => navigate(`/tourcard/${type}`)}
+          className="itp-btn-primary"
+          style={{ width: "auto", padding: ".75rem 2rem" }}>
           ← Back to {typeTitle}
         </button>
       </div>
     </>
   );
 
-  // ── Main render ────────────────────────────────────────────────────────────
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
-        *{box-sizing:border-box}
-        html{scroll-padding-top:72px}
-        body{font-family:'DM Sans',sans-serif;margin:0}
-        :root{--navy:#1a1a2e;--ease:cubic-bezier(0.4,0,0.2,1)}
-        @keyframes itp-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-        @keyframes itp-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes itp-in{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes itp-modal-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
-        @keyframes itp-slide-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-        .itp-hero{position:relative;height:68vh;min-height:460px;overflow:hidden;margin-top:0}
-        .itp-hero-img{width:100%;height:100%;object-fit:cover;transition:transform 8s ease}
-        .itp-hero:hover .itp-hero-img{transform:scale(1.05)}
-        .itp-hero-grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,30,.2) 0%,rgba(10,10,30,.78) 100%)}
-        .itp-hero-content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:3rem 2.5rem;max-width:860px;animation:itp-up .7s var(--ease) both}
-        .itp-breadcrumb{display:flex;align-items:center;gap:6px;font-size:.77rem;color:rgba(255,255,255,.6);margin-bottom:.9rem;flex-wrap:wrap}
-        .itp-breadcrumb a{color:rgba(255,255,255,.6);text-decoration:none;transition:color .2s}
-        .itp-breadcrumb a:hover{color:#F0D080}
-        .itp-breadcrumb sep{opacity:.4}
-        .itp-type-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:white;font-size:.77rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:5px 14px;border-radius:50px;margin-bottom:.9rem}
-        .itp-hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,6vw,3.8rem);font-weight:700;color:white;line-height:1.08;margin-bottom:.75rem}
-        .itp-hero-meta{display:flex;flex-wrap:wrap;gap:1.25rem}
-        .itp-hero-meta-item{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);font-size:.87rem}
-        .itp-hero-actions{position:absolute;top:1.5rem;right:1.5rem;display:flex;gap:8px}
-        .itp-act-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:.9rem}
-        .itp-act-btn:hover{background:rgba(255,255,255,.28);transform:scale(1.08)}
-        .itp-thumbs{position:absolute;bottom:1.4rem;right:1.5rem;display:flex;gap:6px}
-        .itp-thumb{width:56px;height:40px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;opacity:.6;transition:all .2s}
-        .itp-thumb.active{border-color:white;opacity:1}
-        .itp-thumb:hover{opacity:.88}
-        .itp-layout{display:grid;grid-template-columns:1fr 360px;gap:2.5rem;max-width:1240px;margin:0 auto;padding:2.5rem 2rem;align-items:start}
-        .itp-dur-wrap{margin-bottom:1.75rem}
-        .itp-dur-title{font-size:.8rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#aaa;margin-bottom:.7rem}
-        .itp-dur-pills{display:flex;flex-wrap:wrap;gap:8px}
-        .itp-dur-pill{padding:.5rem 1.1rem;border-radius:50px;border:2px solid #e8eaf6;background:white;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:600;color:#666;cursor:pointer;transition:all .22s var(--ease);display:flex;flex-direction:column;align-items:center;gap:1px;min-width:80px}
-        .itp-dur-pill:hover{border-color:#c0c8f0;color:var(--navy)}
-        .itp-dur-pill.active{color:white;border-color:transparent;transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.15)}
-        .itp-dur-pill-price{font-size:.68rem;font-weight:400;opacity:.85}
-        .itp-qs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:2rem}
-        .itp-qs-item{display:flex;align-items:center;gap:8px;background:#fafbff;border:1px solid #eef0ff;border-radius:12px;padding:.6rem 1rem;font-size:.84rem;color:#555}
-        .itp-qs-val{font-weight:700;color:var(--navy);display:block}
-        .itp-qs-sub{font-size:.71rem;color:#aaa;display:block}
-        .itp-tabs{display:flex;border-bottom:2px solid #f0f0f8;margin-bottom:1.75rem;gap:0;overflow-x:auto}
-        .itp-tab{padding:.7rem 1.4rem;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;color:#999;cursor:pointer;position:relative;transition:color .2s;white-space:nowrap}
-        .itp-tab::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:transparent;transition:background .2s}
-        .itp-tab.active{color:var(--navy);font-weight:700}
-        .itp-day{border:1px solid #eef0ff;border-radius:14px;overflow:hidden;margin-bottom:.65rem;transition:box-shadow .2s}
-        .itp-day:hover{box-shadow:0 4px 18px rgba(61,82,160,.08)}
-        .itp-day-hdr{display:flex;align-items:center;gap:.9rem;padding:1rem 1.2rem;cursor:pointer;background:white;transition:background .2s}
-        .itp-day-hdr:hover,.itp-day.open .itp-day-hdr{background:#fafbff}
-        .itp-day.open .itp-day-hdr{border-bottom:1px solid #eef0ff}
-        .itp-day-num{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;color:white;flex-shrink:0}
-        .itp-day-title{font-weight:700;color:var(--navy);font-size:.95rem;flex:1}
-        .itp-day-meals{font-size:.73rem;color:#aaa;margin-right:.4rem;white-space:nowrap}
-        .itp-day-body{padding:1.1rem 1.2rem}
-        .itp-day-desc{font-size:.87rem;color:#555;line-height:1.72;margin-bottom:.9rem}
-        .itp-acts{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.65rem}
-        .itp-act{background:#f0f3ff;color:#3D52A0;font-size:.73rem;font-weight:500;padding:3px 10px;border-radius:50px}
-        .itp-day-stay{display:flex;align-items:center;gap:6px;font-size:.79rem;color:#888}
-        .itp-inc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
-        .itp-inc-col h4{font-size:.88rem;font-weight:700;margin-bottom:.85rem;display:flex;align-items:center;gap:6px}
-        .itp-inc-row{display:flex;align-items:flex-start;gap:8px;font-size:.84rem;color:#555;padding:.45rem 0;border-bottom:1px solid #f8f8fc;line-height:1.5}
-        .itp-inc-row:last-child{border-bottom:none}
-        .itp-inc-icon{flex-shrink:0;margin-top:2px}
-        .itp-gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .itp-gal-img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform .3s,opacity .2s}
-        .itp-gal-img:first-child{grid-column:span 2;aspect-ratio:16/7}
-        .itp-gal-img:hover{transform:scale(1.02);opacity:.92}
-        .itp-bc{background:white;border-radius:22px;border:1px solid #e8eaf6;box-shadow:0 20px 50px rgba(0,0,0,.08);position:sticky;top:80px;overflow:hidden}
-        .itp-bc-head{padding:1.5rem 1.5rem .75rem}
-        .itp-bc-price{font-family:'Cormorant Garamond',serif;font-size:2.3rem;font-weight:700;line-height:1;margin-bottom:3px}
-        .itp-bc-per{font-size:.78rem;color:#aaa;font-family:'DM Sans',sans-serif;margin-bottom:.5rem}
-        .itp-trend-pill{display:inline-flex;align-items:center;gap:5px;font-size:.73rem;font-weight:600;padding:3px 10px;border-radius:20px}
-        .itp-countdown{display:flex;align-items:center;gap:7px;background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.15);border-radius:9px;padding:7px 11px;margin:.7rem 0;font-size:.78rem}
-        .itp-cd-num{font-weight:800;color:#FF6B6B;font-variant-numeric:tabular-nums;font-size:.94rem}
-        .itp-bc-body{padding:0 1.5rem 1.5rem}
-        .itp-lbl{font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#aaa;margin-bottom:4px;display:block}
-        .itp-field{margin-bottom:.9rem}
-        .itp-inp{width:100%;padding:.65rem .95rem;border:1.5px solid #e8eaf6;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--navy);outline:none;transition:border-color .2s,box-shadow .2s;background:white}
-        .itp-inp:focus{border-color:#3D52A0;box-shadow:0 0 0 3px rgba(61,82,160,.1)}
-        .itp-trav{display:flex;align-items:center;justify-content:space-between;border:1.5px solid #e8eaf6;border-radius:9px;padding:.45rem .7rem}
-        .itp-trav-btn{width:30px;height:30px;border-radius:8px;border:1px solid #e8eaf6;background:white;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
-        .itp-trav-btn:hover{background:#f0f3ff}
-        .itp-trav-n{font-weight:700;font-size:.95rem;min-width:18px;text-align:center}
-        .itp-total-row{display:flex;justify-content:space-between;align-items:center;padding:.65rem 0;border-top:1px solid #f0f0f8;margin-bottom:.9rem}
-        .itp-total-lbl{font-size:.83rem;color:#888}
-        .itp-total-sub{font-size:.72rem;color:#bbb}
-        .itp-total-price{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:700}
-        .itp-enq-btn{width:100%;padding:.95rem;border-radius:50px;border:none;color:white;font-size:.97rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .3s var(--ease);letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:8px}
-        .itp-enq-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2)}
-        .itp-enq-btn:disabled{opacity:.6;cursor:not-allowed}
-        .itp-compare-btn{width:100%;padding:.65rem;border-radius:50px;border:2px dashed #c8ccee;background:transparent;color:#3D52A0;font-size:.84rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:.65rem;display:flex;align-items:center;justify-content:center;gap:7px}
-        .itp-compare-btn:hover{background:#f0f3ff;border-color:#3D52A0}
-        .itp-contact-row{display:flex;gap:8px;margin-top:.85rem}
-        .itp-chip{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:.55rem;border-radius:9px;border:1.5px solid #e8eaf6;text-decoration:none;color:#555;font-size:.77rem;font-weight:600;font-family:'DM Sans',sans-serif;transition:all .2s}
-        .itp-chip:hover{border-color:#3D52A0;color:#3D52A0;background:#f5f7ff}
-        .itp-bc-trust{padding:.9rem 1.5rem;background:#fafbff;border-top:1px solid #f0f0f8;display:flex;flex-direction:column;gap:5px}
-        .itp-trust-row{display:flex;align-items:center;gap:7px;font-size:.77rem;color:#777}
-        .itp-login-nudge{background:linear-gradient(135deg,#f0f4ff,#faf0ff);border:1px solid #d8deff;border-radius:12px;padding:.85rem 1rem;margin-bottom:.9rem;display:flex;align-items:center;gap:10px;font-size:.8rem;color:#555}
-        .itp-login-link{color:#3D52A0;font-weight:700;text-decoration:none;border-bottom:1px solid #3D52A0}
-        .itp-no-data{background:#fafbff;border:1px dashed #e0e4f8;border-radius:12px;padding:1.2rem 1.4rem;font-size:.85rem;color:#aaa;text-align:center}
-        .itp-modal-overlay{position:fixed;inset:0;background:rgba(10,10,30,.55);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto}
-        .itp-modal{background:white;border-radius:24px;width:100%;max-width:580px;box-shadow:0 32px 80px rgba(0,0,0,.22);animation:itp-modal-in .3s var(--ease) both;overflow:hidden;max-height:92vh;display:flex;flex-direction:column}
-        .itp-modal-head{padding:1.5rem 1.75rem 1rem;border-bottom:1px solid #f0f0f8;flex-shrink:0}
-        .itp-modal-title{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:var(--navy);margin-bottom:.2rem}
-        .itp-modal-sub{font-size:.82rem;color:#aaa}
-        .itp-modal-body{padding:1.25rem 1.75rem;overflow-y:auto;flex:1}
-        .itp-modal-footer{padding:1rem 1.75rem;border-top:1px solid #f0f0f8;flex-shrink:0}
-        .itp-modal-close{position:absolute;top:1.25rem;right:1.25rem;width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#777;transition:all .2s}
-        .itp-modal-close:hover{background:#ececf5;color:#333}
-        .itp-req{color:#FF6B6B;margin-left:2px}
-        .itp-enq-summary{background:linear-gradient(135deg,#f7f9ff,#fdf5ff);border:1px solid #e4e8ff;border-radius:14px;padding:1rem 1.1rem;margin-bottom:1.25rem}
-        .itp-enq-summary-title{font-weight:700;color:var(--navy);font-size:.92rem;margin-bottom:.4rem}
-        .itp-enq-summary-row{display:flex;justify-content:space-between;font-size:.8rem;color:#666;padding:.2rem 0}
-        .itp-enq-summary-row span:last-child{font-weight:600;color:var(--navy)}
-        .itp-enq-total{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0 0;border-top:1px dashed #d8deff;margin-top:.4rem}
-        .itp-enq-total-lbl{font-size:.82rem;font-weight:700;color:#555}
-        .itp-enq-total-price{font-family:'Cormorant Garamond',serif;font-size:1.45rem;font-weight:700}
-        .itp-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
-        .itp-form-col-full{grid-column:span 2}
-        .itp-modal-inp{width:100%;padding:.65rem .95rem;border:1.5px solid #e8eaf6;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--navy);outline:none;transition:border-color .2s,box-shadow .2s;background:white}
-        .itp-modal-inp:focus{border-color:#3D52A0;box-shadow:0 0 0 3px rgba(61,82,160,.1)}
-        .itp-modal-textarea{resize:vertical;min-height:72px}
-        .itp-inp-wrap{position:relative}
-        .itp-inp-icon{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:#bbb;font-size:.82rem;pointer-events:none}
-        .itp-inp-wrap .itp-modal-inp{padding-left:2.2rem}
-        .itp-submit-btn{width:100%;padding:1rem;border-radius:50px;border:none;color:white;font-size:.97rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .3s var(--ease);letter-spacing:.02em}
-        .itp-submit-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2)}
-        .itp-submit-btn:disabled{opacity:.5;cursor:not-allowed}
-        .itp-enq-error{background:#FFF0F0;border:1px solid #FFD0D0;border-radius:9px;padding:.65rem 1rem;font-size:.82rem;color:#c62828;margin-bottom:.85rem}
-        .itp-req-note{font-size:.72rem;color:#bbb;margin-bottom:.85rem}
-        .itp-req-note span{color:#FF6B6B}
-        .itp-enq-success{padding:2.5rem 1.75rem;text-align:center;animation:itp-up .4s var(--ease) both}
-        .itp-enq-success-icon{font-size:3.5rem;margin-bottom:.9rem}
-        .itp-enq-success-title{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:var(--navy);margin-bottom:.4rem}
-        .itp-enq-success-sub{font-size:.86rem;color:#777;line-height:1.7;margin-bottom:1.25rem;max-width:380px;margin-left:auto;margin-right:auto}
-        .itp-enq-ref{background:#f5f7ff;border-radius:10px;padding:.6rem 1rem;font-size:.79rem;color:#3D52A0;font-weight:600;margin-bottom:1rem;display:inline-block}
-        .itp-enq-print-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.76rem;color:#aaa;margin-top:.5rem}
-        @keyframes itp-cmp-in{from{opacity:0;transform:scale(.97) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
-        .itp-cmp-overlay{position:fixed;inset:0;background:rgba(10,10,30,.62);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto}
-        .itp-cmp-modal{background:white;border-radius:24px;width:100%;max-width:1000px;height:auto;max-height:min(88vh,800px);box-shadow:0 40px 100px rgba(0,0,0,.28);animation:itp-cmp-in .32s var(--ease) both;display:flex;flex-direction:column;overflow:hidden;margin:auto}
-        .itp-cmp-head{padding:1.2rem 1.5rem .9rem;border-bottom:1px solid #f0f0f8;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;gap:.75rem;flex-wrap:wrap}
-        .itp-cmp-head-left{flex:1;min-width:180px}
-        .itp-cmp-title{font-family:'Cormorant Garamond',serif;font-size:1.45rem;font-weight:700;color:var(--navy);margin-bottom:.2rem;line-height:1.2}
-        .itp-cmp-subtitle{font-size:.74rem;color:#aaa}
-        .itp-cmp-head-right{display:flex;align-items:center;gap:.5rem;flex-shrink:0;flex-wrap:wrap}
-        .itp-cmp-close{width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#777;transition:all .2s;flex-shrink:0}
-        .itp-cmp-close:hover{background:#ececf5;color:#333}
-        .itp-cmp-controls{padding:.85rem 1.75rem;border-bottom:1px solid #f0f0f8;display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;flex-shrink:0;background:#fafbff}
-        .itp-cmp-picker-wrap{padding:.85rem 1.75rem;border-bottom:1px solid #f0f0f8;flex-shrink:0}
-        .itp-cmp-picker-label{font-size:.73rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#aaa;margin-bottom:.55rem}
-        .itp-cmp-pkg-list{display:flex;flex-wrap:wrap;gap:6px}
-        .itp-cmp-pkg-chip{padding:.36rem .9rem;border-radius:50px;border:2px solid #e8eaf6;background:white;font-size:.77rem;font-weight:600;color:#666;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif}
-        .itp-cmp-pkg-chip.selected{color:white;border-color:transparent}
-        .itp-cmp-pkg-chip:hover:not(.selected):not(:disabled){border-color:#c0c8f0;color:var(--navy)}
-        .itp-cmp-pkg-chip:disabled{opacity:.4;cursor:not-allowed}
-        .itp-cmp-body{flex:1;overflow:auto;min-height:0}
-        .itp-cmp-table{border-collapse:collapse;table-layout:auto;min-width:100%}
-        .itp-cmp-table th{padding:.85rem 1.1rem;text-align:center;font-size:.82rem;font-weight:700;color:var(--navy);border-bottom:2px solid #f0f0f8;background:#fafbff;vertical-align:top;min-width:170px;white-space:nowrap}
-        .itp-cmp-table th:first-child{text-align:left;width:130px;min-width:130px;max-width:130px;background:#f2f3f8;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#bbb;vertical-align:middle;position:sticky;left:0;z-index:3;border-right:1px solid #eaeaf8}
-        .itp-cmp-table td{padding:.75rem 1.1rem;font-size:.84rem;color:#444;border-bottom:1px solid #f5f5fb;text-align:center;vertical-align:middle;min-width:170px}
-        .itp-cmp-table td:first-child{font-weight:600;color:#888;font-size:.78rem;text-align:left;background:#f7f8fc;position:sticky;left:0;z-index:2;border-right:1px solid #eaeaf8;white-space:nowrap}
-        .itp-cmp-table tr:last-child td{border-bottom:none}
-        .itp-cmp-table tr:hover td:not(:first-child){background:#fafbff}
-        .itp-cmp-price{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:700}
-        .itp-cmp-badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:.67rem;font-weight:700;background:#E8F5E9;color:#2E7D32;margin-top:3px}
-        .itp-cmp-check{color:#4CAF50;font-size:1rem}
-        .itp-cmp-cross{color:#FF6B6B;font-size:.9rem}
-        .itp-cmp-empty{text-align:center;padding:3rem 1rem;color:#aaa;font-size:.88rem}
-        .itp-cmp-th-pkg{font-size:.9rem;font-weight:700;color:var(--navy);display:block;margin-bottom:2px}
-        .itp-cmp-th-dur{font-size:.72rem;font-weight:500;color:#aaa;display:block}
-        .itp-cmp-action-link{color:var(--navy);font-weight:700;font-size:.78rem;text-decoration:none;padding:.38rem .85rem;border-radius:50px;border:1.5px solid currentColor;transition:all .2s;display:inline-block}
-        .itp-cmp-action-link:hover{opacity:.8}
-        .itp-cmp-scope{display:flex;gap:0;background:#f3f4f8;border-radius:50px;padding:3px;width:fit-content}
-        .itp-cmp-scope-btn{padding:.38rem 1.1rem;border-radius:50px;border:none;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .22s;background:transparent;color:#888}
-        .itp-cmp-scope-btn.active{background:white;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.1)}
-        .itp-cmp-dur-tabs{display:flex;gap:6px;flex-wrap:wrap}
-        .itp-cmp-dur-tab{padding:.34rem .95rem;border-radius:50px;border:1.5px solid #e8eaf6;background:white;font-size:.75rem;font-weight:600;color:#888;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
-        .itp-cmp-dur-tab:hover:not(.active){border-color:#c0c8f0;color:var(--navy)}
-        .itp-cmp-dur-tab.active{color:white;border-color:transparent}
-        .itp-sticky{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #e8eaf6;padding:.7rem 1.5rem;display:none;align-items:center;justify-content:space-between;z-index:200;box-shadow:0 -6px 24px rgba(0,0,0,.1)}
-        .itp-sticky-price{font-family:'Cormorant Garamond',serif;font-size:1.45rem;font-weight:700}
-        .itp-sticky-btn{padding:.65rem 1.75rem;border-radius:50px;border:none;color:white;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.92rem}
-        @media(max-width:768px){
-          .itp-cmp-overlay{padding:.5rem;align-items:flex-end}
-          .itp-cmp-modal{max-width:100%;max-height:92vh;border-radius:20px 20px 0 0;margin:0}
-          .itp-cmp-table th,.itp-cmp-table td{min-width:130px;padding:.6rem .75rem;font-size:.77rem}
-          .itp-cmp-table th:first-child,.itp-cmp-table td:first-child{width:100px;min-width:100px;max-width:100px;font-size:.7rem}
-          .itp-cmp-head-right{gap:.35rem}
-        }
-        @media(max-width:1024px){
-          .itp-layout{grid-template-columns:1fr}
-          .itp-bc{position:static}
-          .itp-sticky{display:flex}
-          body{padding-bottom:72px}
-        }
-        @media(max-width:640px){
-          .itp-hero{height:52vh}
-          .itp-hero-content{padding:1.75rem 1.25rem}
-          .itp-layout{padding:1.5rem 1rem}
-          .itp-inc-grid{grid-template-columns:1fr}
-          .itp-form-grid{grid-template-columns:1fr}
-          .itp-form-col-full{grid-column:span 1}
-          .itp-modal{border-radius:18px 18px 0 0;align-self:flex-end;max-height:95vh}
-          .itp-modal-overlay{align-items:flex-end;padding:0}
-        }
-      `}</style>
+      <style>{globalStyles}</style>
 
-      <Header />
-
-      {/* ── HERO ── */}
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="itp-hero">
         <img
           src={images[activeImg] || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80"}
@@ -642,433 +627,722 @@ export default function ItineraryPage() {
         />
         <div className="itp-hero-grad" />
 
-        <div className="itp-hero-actions">
-          <button className="itp-act-btn" title="Back" onClick={() => navigate(`/tourcard/${type}`)}><FaArrowLeft /></button>
-          <button className="itp-act-btn" title="Wishlist" onClick={() => setIsFav((v) => !v)}>
-            {isFav ? <FaHeart color="#FF6B6B" /> : <FaRegHeart />}
-          </button>
-          <button className="itp-act-btn" title="Compare packages" onClick={openCompare}><FaBalanceScale /></button>
-          <button className="itp-act-btn" title="Share"
-            onClick={() => navigator.share?.({ title: `${locationTitle} ${typeTitle}`, url: window.location.href })}>
-            <FaShare />
-          </button>
+        {/* Action buttons — top right */}
+        <div className="position-absolute d-flex gap-2" style={{ top: "1.4rem", right: "1.5rem", zIndex: 10 }}>
+          {[
+            { icon: <FaArrowLeft size={14} />, title: "Back", onClick: () => navigate(`/tourcard/${type}`) },
+            {
+              icon: isFav ? <FaHeart size={14} style={{ color: BRAND.primary }} /> : <FaRegHeart size={14} />,
+              title: "Wishlist", onClick: () => setIsFav(v => !v),
+            },
+            { icon: <FaBalanceScale size={14} />, title: "Compare", onClick: openCompare },
+            {
+              icon: <FaShare size={14} />, title: "Share",
+              onClick: () => navigator.share?.({ title: `${locationTitle} ${typeTitle}`, url: window.location.href }),
+            },
+          ].map((btn, i) => (
+            <button key={i} title={btn.title} onClick={btn.onClick}
+              className="d-flex align-items-center justify-content-center border-0 text-white"
+              style={{
+                width: 40, height: 40, borderRadius: "50%",
+                background: "rgba(255,255,255,.14)", backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,.2)", cursor: "pointer", transition: "all .2s",
+              }}
+              onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,.28)"}
+              onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,.14)"}
+            >{btn.icon}</button>
+          ))}
         </div>
 
+        {/* Thumbnail strip */}
         {images.length > 1 && (
-          <div className="itp-thumbs">
+          <div className="position-absolute d-flex gap-2" style={{ bottom: "1.4rem", right: "1.5rem", zIndex: 10 }}>
             {images.slice(0, 4).map((img, i) => (
-              <img
-                key={i}
-                src={getCloudinaryUrl(img, 120)}
-                alt=""
+              <img key={i} src={getCloudinaryUrl(img, 120)} alt=""
                 className={`itp-thumb ${i === activeImg ? "active" : ""}`}
                 onClick={() => setActiveImg(i)}
-                onError={(e) => { e.target.style.display = "none"; }}
-              />
+                onError={(e) => { e.target.style.display = "none"; }} />
             ))}
           </div>
         )}
 
+        {/* Hero content — left text + right weather card */}
         <div className="itp-hero-content">
-          <nav className="itp-breadcrumb">
-            <Link to="/">Home</Link><sep>›</sep>
-            <Link to="/services">Tours</Link><sep>›</sep>
-            <Link to={`/tourcard/${type}`}>{typeTitle}</Link><sep>›</sep>
-            <span style={{ color: "white" }}>{locationTitle}</span>
-          </nav>
-          <div className="itp-type-chip"><span>{theme.icon}</span><span>{typeTitle}</span></div>
-          <h1 className="itp-hero-title">{pkg?.title || `${locationTitle} ${typeTitle}`}</h1>
-          <div className="itp-hero-meta">
-            {pkg?.location && <div className="itp-hero-meta-item"><FaMapMarkerAlt size={12} /> {pkg.location}</div>}
-            {selDur?.label && <div className="itp-hero-meta-item"><FaClock size={12} /> {selDur.label}</div>}
-            {pkg?.groupSize && <div className="itp-hero-meta-item"><FaUsers size={12} /> {pkg.groupSize}</div>}
-            {pkg?.rating && (
-              <div className="itp-hero-meta-item">
-                <FaStar size={12} color="#FFD700" /> {pkg.rating}
-                {pkg?.reviews && <span style={{ opacity: 0.65 }}>&nbsp;({pkg.reviews} reviews)</span>}
-              </div>
-            )}
+          {/* LEFT */}
+          <div className="itp-hero-left">
+            <nav className="itp-breadcrumb d-flex align-items-center gap-1 flex-wrap mb-2"
+              style={{ fontSize: ".77rem", color: "rgba(255,255,255,.6)" }}>
+              <Link to="/">Home</Link><span style={{ opacity: .4 }}>›</span>
+              <Link to="/services">Tours</Link><span style={{ opacity: .4 }}>›</span>
+              <Link to={`/tourcard/${type}`}>{typeTitle}</Link><span style={{ opacity: .4 }}>›</span>
+              <span className="text-white">{locationTitle}</span>
+            </nav>
+
+            <div className="d-inline-flex align-items-center gap-2 mb-2 px-3 py-1 rounded-pill"
+              style={{
+                background: "rgba(255,255,255,.12)", backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,.2)", color: "#fff",
+                fontSize: ".75rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
+              }}>
+              <span>✈️</span><span>{typeTitle}</span>
+            </div>
+
+            <h1 className="itp-hero-title">{pkg?.title || `${locationTitle} ${typeTitle}`}</h1>
+
+            <div className="d-flex flex-wrap gap-3">
+              {[
+                pkg?.location && { icon: <FaMapMarkerAlt size={11} />, text: pkg.location },
+                selDur?.label && { icon: <FaClock size={11} />, text: selDur.label },
+                pkg?.groupSize && { icon: <FaUsers size={11} />, text: pkg.groupSize },
+                pkg?.rating && {
+                  icon: <FaStar size={11} style={{ color: BRAND.amber }} />,
+                  text: `${pkg.rating}${pkg?.reviews ? ` (${pkg.reviews} reviews)` : ""}`,
+                },
+              ].filter(Boolean).map((item, i) => (
+                <div key={i} className="d-flex align-items-center gap-1"
+                  style={{ color: "rgba(255,255,255,.85)", fontSize: ".87rem" }}>
+                  {item.icon} {item.text}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT: Weather card */}
+          <div className="d-none d-md-block" style={{ minWidth: 200, flexShrink: 0 }}>
+            <div className="rounded-4 p-3" style={{
+              background: "rgba(10,10,30,.52)", backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,.18)", color: "#fff", minWidth: 200,
+            }}>
+              {weather ? (
+                <>
+                  <div style={{ fontSize: "0.85rem", opacity: .65, marginBottom: 8 }}>
+                    📍 {locationTitle} · Weather
+                  </div>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <span style={{ fontSize: "1.9rem", lineHeight: 1 }}>{weather.icon}</span>
+                    <div>
+                      <div className="font-serif fw-bold" style={{ fontSize: "1.6rem", lineHeight: 1 }}>{weather.temp}°C</div>
+                      <div style={{ fontSize: ".7rem", opacity: .75, textTransform: "uppercase", letterSpacing: ".05em", marginTop: 2 }}>{weather.desc}</div>
+                    </div>
+                  </div>
+                  <div className="d-flex gap-2 mb-1 flex-wrap" style={{ fontSize: ".7rem", opacity: .8 }}>
+                    <span>💧 {weather.humidity}%</span>
+                    <span>🌬️ {weather.wind} km/h</span>
+                    <span>☀️ UV {weather.uv}</span>
+                  </div>
+                  <div style={{ fontSize: ".68rem", opacity: .65, borderTop: "1px solid rgba(255,255,255,.15)", paddingTop: 5, marginTop: 6 }}>
+                    🗓️ Best time: {weather.best}
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <div style={{ fontSize: ".73rem", opacity: .6, marginBottom: 8 }}>Loading weather…</div>
+                  {[70, 50, 80].map((w, i) => <Skel key={i} h={10} w={`${w}%`} mb={6} r={5} />)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── BODY ── */}
-      <div className="itp-layout">
-        <main>
+      {/* ── BODY ─────────────────────────────────────────────────────────── */}
+      <div className="container py-4" style={{ maxWidth: 1280 }}>
+        <div className="row g-4 align-items-start">
 
-          {durationOptions.length > 0 && (
-            <div className="itp-dur-wrap">
-              <div className="itp-dur-title">Select Package Duration</div>
-              <div className="itp-dur-pills">
-                {durationOptions.map((dur, idx) => (
-                  <button
-                    key={idx}
-                    className={`itp-dur-pill ${selectedDurationIdx === idx ? "active" : ""}`}
-                    style={selectedDurationIdx === idx ? { background: theme.grad } : {}}
-                    onClick={() => { setSelectedDurationIdx(idx); setOpenDay(1); }}
-                  >
-                    <span>{dur.label}</span>
-                    {(dur.discountedPrice || dur.price) > 0 && (
-                      <span className="itp-dur-pill-price">
-                        ₹{(dur.discountedPrice || dur.price).toLocaleString()}
-                      </span>
-                    )}
+          {/* ── MAIN COLUMN ─────────────────────────────────────────────── */}
+          <div className="col-lg-8">
+
+            {/* Duration pills */}
+            {durationOptions.length > 0 && (
+              <div className="mb-4">
+                <div className="text-uppercase fw-bold mb-2"
+                  style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".07em" }}>
+                  Select Package Duration
+                </div>
+                <div className="d-flex flex-wrap gap-2">
+                  {durationOptions.map((dur, idx) => (
+                    <button key={idx}
+                      className={`itp-dur-pill ${selectedDurationIdx === idx ? "active" : ""}`}
+                      onClick={() => { setSelectedDurationIdx(idx); setOpenDay(1); }}>
+                      <span>{dur.label}</span>
+                      {(dur.discountedPrice || dur.price) > 0 && (
+                        <span style={{ fontSize: ".67rem", fontWeight: 400, opacity: selectedDurationIdx === idx ? .85 : .7 }}>
+                          ₹{(dur.discountedPrice || dur.price).toLocaleString()}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick-stats row */}
+            <div className="d-flex flex-wrap gap-2 mb-4">
+              {[
+                selDur?.label && { emoji: "📅", val: selDur.label, sub: "Duration" },
+                pkg?.hotelRating && { emoji: "🏨", val: pkg.hotelRating, sub: "Hotels" },
+                pkg?.groupSize && { emoji: "👥", val: pkg.groupSize, sub: "Group Size" },
+                pkg?.destination && { emoji: "📍", val: pkg.destination, sub: "Region" },
+              ].filter(Boolean).map((item, i) => (
+                <div key={i} className="itp-stat-chip">
+                  <span style={{ fontSize: "1.2rem" }}>{item.emoji}</span>
+                  <div>
+                    <div className="fw-bold" style={{ fontSize: ".84rem", color: BRAND.charcoal }}>{item.val}</div>
+                    <div style={{ fontSize: ".7rem", color: BRAND.placeholder }}>{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* About */}
+            {(pkg?.description || pkg?.about) && (
+              <div className="mb-4">
+                <h2 className="font-serif fw-bold mb-2" style={{ fontSize: "1.6rem", color: BRAND.charcoal }}>About This Package</h2>
+                <p style={{ fontSize: ".9rem", color: BRAND.bodyText, lineHeight: 1.8, marginBottom: 0 }}>
+                  {pkg.description || pkg.about}
+                </p>
+              </div>
+            )}
+
+            {/* Highlights */}
+            {pkg?.highlights?.length > 0 && (
+              <div className="mb-4">
+                <h2 className="font-serif fw-bold mb-2" style={{ fontSize: "1.4rem", color: BRAND.charcoal }}>Highlights</h2>
+                <div className="d-flex flex-wrap gap-2">
+                  {pkg.highlights.map((h, i) => (
+                    <span key={i} className="itp-highlight-pill">✦ {h}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tabs */}
+            <div style={{ borderBottom: `1px solid ${BRAND.border}`, marginBottom: "1.5rem" }}>
+              <div className="d-flex gap-1 overflow-auto">
+                {[
+                  { key: "itinerary", label: "🗺️ Day-by-Day" },
+                  { key: "inclusions", label: "✅ What's Included" },
+                  { key: "gallery", label: "📸 Gallery" },
+                ].map((t) => (
+                  <button key={t.key}
+                    className={`itp-tab-btn ${activeTab === t.key ? "active" : ""}`}
+                    onClick={() => setActiveTab(t.key)}>
+                    {t.label}
                   </button>
                 ))}
               </div>
             </div>
-          )}
 
-          <div className="itp-qs">
-            {selDur?.label && <div className="itp-qs-item"><span style={{ fontSize: "1.2rem" }}>📅</span><div><span className="itp-qs-val">{selDur.label}</span><span className="itp-qs-sub">Duration</span></div></div>}
-            {pkg?.hotelRating && <div className="itp-qs-item"><span style={{ fontSize: "1.2rem" }}>🏨</span><div><span className="itp-qs-val">{pkg.hotelRating}</span><span className="itp-qs-sub">Hotels</span></div></div>}
-            {pkg?.groupSize && <div className="itp-qs-item"><span style={{ fontSize: "1.2rem" }}>👥</span><div><span className="itp-qs-val">{pkg.groupSize}</span><span className="itp-qs-sub">Group Size</span></div></div>}
-            {pkg?.destination && <div className="itp-qs-item"><span style={{ fontSize: "1.2rem" }}>📍</span><div><span className="itp-qs-val">{pkg.destination}</span><span className="itp-qs-sub">Region</span></div></div>}
-          </div>
-
-          {(pkg?.description || pkg?.about) && (
-            <div style={{ marginBottom: "2rem" }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.65rem", fontWeight: 700, color: "var(--navy)", marginBottom: ".6rem" }}>About This Package</h2>
-              <p style={{ fontSize: ".9rem", color: "#555", lineHeight: 1.8 }}>{pkg.description || pkg.about}</p>
-            </div>
-          )}
-
-          {pkg?.highlights?.length > 0 && (
-            <div style={{ marginBottom: "2rem" }}>
-              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.45rem", fontWeight: 700, color: "var(--navy)", marginBottom: ".75rem" }}>Highlights</h2>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {pkg.highlights.map((h, i) => (
-                  <span key={i} style={{ background: theme.light, color: theme.primary, fontWeight: 600, fontSize: ".8rem", padding: "5px 14px", borderRadius: 50, border: `1px solid ${theme.primary}22` }}>
-                    ✦ {h}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="itp-tabs">
-            {[
-              { key: "itinerary", label: "🗺️ Day-by-Day" },
-              { key: "inclusions", label: "✅ What's Included" },
-              { key: "gallery", label: "📸 Gallery" },
-            ].map((t) => (
-              <button key={t.key} className={`itp-tab ${activeTab === t.key ? "active" : ""}`}
-                onClick={() => setActiveTab(t.key)}>{t.label}</button>
-            ))}
-            <style>{`.itp-tab.active::after{background:${theme.primary}}`}</style>
-          </div>
-
-          {activeTab === "itinerary" && (
-            <div>
-              {itinerary.length > 0 ? itinerary.map((day, i) => (
-                <div key={i} className={`itp-day ${openDay === day.day ? "open" : ""}`}>
-                  <div className="itp-day-hdr" onClick={() => setOpenDay(openDay === day.day ? null : day.day)}>
-                    <div className="itp-day-num" style={{ background: theme.grad }}>D{day.day}</div>
-                    <span className="itp-day-title">{day.title}</span>
-                    {day.meals?.length > 0 && (
-                      <span className="itp-day-meals">🍽 {day.meals.join(" · ")}</span>
-                    )}
-                    {openDay === day.day ? <FaChevronUp size={12} color="#aaa" /> : <FaChevronDown size={12} color="#aaa" />}
-                  </div>
-                  {openDay === day.day && (
-                    <div className="itp-day-body">
-                      {day.description && <p className="itp-day-desc">{day.description}</p>}
+            {/* ── ITINERARY tab ─────────────────────────────────────────── */}
+            {activeTab === "itinerary" && (
+              <div className="itp-timeline">
+                {itinerary.length > 0 ? itinerary.map((day, i) => (
+                  <div key={i} className={`itp-day-card ${openDay === day.day ? "open" : ""}`}
+                    style={{ marginLeft: 20 }}>
+                    <div className="itp-day-header"
+                      onClick={() => setOpenDay(openDay === day.day ? null : day.day)}>
+                      {/* Amber day badge — styled per context */}
+                      <div className="itp-day-badge">D{day.day}</div>
+                      <span className="fw-bold flex-grow-1" style={{ fontSize: ".95rem", color: BRAND.charcoal }}>
+                        {day.title}
+                      </span>
+                      {day.meals?.length > 0 && (
+                        <span className="me-2 d-none d-sm-inline" style={{ fontSize: ".72rem", color: BRAND.placeholder, whiteSpace: "nowrap" }}>
+                          🍽 {day.meals.join(" · ")}
+                        </span>
+                      )}
+                      {openDay === day.day
+                        ? <FaChevronUp size={12} color={BRAND.placeholder} />
+                        : <FaChevronDown size={12} color={BRAND.placeholder} />}
+                    </div>
+                    <div className={`itp-day-body ${openDay === day.day ? "open" : ""}`}>
+                      {day.description && (
+                        <p style={{ fontSize: ".87rem", color: BRAND.bodyText, lineHeight: 1.72, marginBottom: ".9rem" }}>
+                          {day.description}
+                        </p>
+                      )}
                       {day.activities?.length > 0 && (
-                        <div className="itp-acts">
-                          {day.activities.map((a, j) => <span key={j} className="itp-act">✦ {a}</span>)}
+                        <div className="d-flex flex-wrap gap-1 mb-2">
+                          {day.activities.map((a, j) => (
+                            <span key={j} className="itp-activity-pill">✦ {a}</span>
+                          ))}
                         </div>
                       )}
                       {day.accommodation && (
-                        <div className="itp-day-stay"><span>🏨</span><span>{day.accommodation}</span></div>
+                        <div className="d-flex align-items-center gap-2"
+                          style={{ fontSize: ".79rem", color: BRAND.meta, marginTop: 4 }}>
+                          <span>🏨</span><span>{day.accommodation}</span>
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )) : (
-                <div className="itp-no-data">No itinerary details available for this package.</div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "inclusions" && (
-            <div className="itp-inc-grid">
-              <div className="itp-inc-col">
-                <h4 style={{ color: "#2e7d32" }}><FaCheck color="#4CAF50" /> Included</h4>
-                {inclusions.length > 0 ? inclusions.map((item, i) => (
-                  <div key={i} className="itp-inc-row">
-                    <FaCheck size={11} color="#4CAF50" className="itp-inc-icon" /> {item}
                   </div>
-                )) : <div className="itp-no-data">No inclusions listed.</div>}
-              </div>
-              <div className="itp-inc-col">
-                <h4 style={{ color: "#c62828" }}><FaTimes color="#FF6B6B" /> Not Included</h4>
-                {exclusions.length > 0 ? exclusions.map((item, i) => (
-                  <div key={i} className="itp-inc-row">
-                    <FaTimes size={11} color="#FF6B6B" className="itp-inc-icon" /> {item}
+                )) : (
+                  <div className="text-center p-4 rounded-3"
+                    style={{ background: BRAND.bgCard, border: `1px dashed ${BRAND.border}`, color: BRAND.placeholder, marginLeft: 20 }}>
+                    No itinerary details available for this package.
                   </div>
-                )) : <div className="itp-no-data">No exclusions listed.</div>}
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === "gallery" && (
-            images.length > 0 ? (
-              <div className="itp-gallery">
-                {images.map((img, i) => (
-                  <img
-                    key={i}
-                    src={getCloudinaryUrl(img, 800)}
-                    alt={`${locationTitle} ${i + 1}`}
-                    className="itp-gal-img"
-                    onClick={() => setActiveImg(i)}
-                    onError={(e) => { e.target.style.display = "none"; }}
-                  />
+            {/* ── INCLUSIONS tab ────────────────────────────────────────── */}
+            {activeTab === "inclusions" && (
+              <div className="row g-4">
+                {[
+                  {
+                    title: "Included", items: inclusions,
+                    icon: <FaCheck size={11} color={BRAND.success} />,
+                    titleColor: "#2e7d32",
+                  },
+                  {
+                    title: "Not Included", items: exclusions,
+                    icon: <FaTimes size={11} color={BRAND.primary} />,
+                    titleColor: "#c62828",
+                  },
+                ].map((col, ci) => (
+                  <div key={ci} className="col-md-6">
+                    <h4 className="d-flex align-items-center gap-2 mb-3"
+                      style={{ color: col.titleColor, fontSize: ".9rem", fontWeight: 700 }}>
+                      {col.icon} {col.title}
+                    </h4>
+                    {col.items.length > 0 ? col.items.map((item, i) => (
+                      <div key={i} className="itp-incl-row">
+                        <span style={{ flexShrink: 0, marginTop: 2 }}>{col.icon}</span>
+                        {item}
+                      </div>
+                    )) : (
+                      <div className="text-center p-3 rounded-3"
+                        style={{ background: BRAND.bgCard, border: `1px dashed ${BRAND.border}`, color: BRAND.placeholder, fontSize: ".85rem" }}>
+                        No {col.title.toLowerCase()} listed.
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
-            ) : (
-              <div className="itp-no-data">No gallery images available.</div>
-            )
-          )}
-        </main>
+            )}
 
-        {/* ── RIGHT: Booking / Enquiry card ── */}
-        <aside>
-          <div className="itp-bc" ref={bookingRef}>
-            <div className="itp-bc-head">
-              <div className="itp-bc-price" style={{ color: theme.primary }}>
-                {livePrice > 0 ? `₹${livePrice.toLocaleString()}` : "Price on request"}
-              </div>
-              <div className="itp-bc-per">
-                per person{selDur?.label ? ` · ${selDur.label}` : ""} · all inclusive
-              </div>
-              {livePrice > 0 && (
-                <>
-                  <div className="itp-trend-pill" style={{
-                    background: trend === "rising" ? "#FFF3E0" : trend === "falling" ? "#E8F5E9" : "#F3F4F6",
-                    color: trend === "rising" ? "#E65100" : trend === "falling" ? "#2E7D32" : "#666",
-                  }}>
-                    {trend === "rising" ? "📈 Price rising" : trend === "falling" ? "📉 Price dropping" : "📊 Price stable"}
+            {/* ── GALLERY tab ───────────────────────────────────────────── */}
+            {activeTab === "gallery" && (
+              images.length > 0 ? (
+                <div className="row g-2">
+                  {images.map((img, i) => (
+                    <div key={i} className={i === 0 ? "col-12" : "col-6"}>
+                      <img
+                        src={getCloudinaryUrl(img, 800)} alt={`${locationTitle} ${i + 1}`}
+                        className={`itp-gal-img w-100 ${i === 0 ? "itp-gal-first" : ""}`}
+                        onClick={() => setActiveImg(i)}
+                        onError={(e) => { e.target.style.display = "none"; }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-4 rounded-3"
+                  style={{ background: BRAND.bgCard, border: `1px dashed ${BRAND.border}`, color: BRAND.placeholder }}>
+                  No gallery images available.
+                </div>
+              )
+            )}
+          </div>
+
+          {/* ── RIGHT: Booking / Enquiry card ────────────────────────────── */}
+          <div className="col-lg-4">
+            <div ref={bookingRef} className="itp-booking-card" style={{ position: "sticky", top: 80 }}>
+
+              {/* ── Navy head — price + checklist ─────────────────────── */}
+              <div className="itp-booking-head">
+                {/* Price display */}
+                <div style={{ marginBottom: "1rem" }}>
+                  <div style={{ fontSize: ".75rem", color: "rgba(255,255,255,.55)", textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 4 }}>
+                    Starting from
                   </div>
-                  <div className="itp-countdown">
-                    <FaBolt color="#FF6B6B" size={11} />
-                    <span style={{ color: "#aaa" }}>Offer ends in</span>
-                    <span className="itp-cd-num">
-                      {String(countdown.h).padStart(2, "0")}:{String(countdown.m).padStart(2, "0")}:{String(countdown.s).padStart(2, "0")}
+                  <div className="font-serif fw-bold" style={{ fontSize: "2.6rem", color: "#fff", lineHeight: 1 }}>
+                    {livePrice > 0 ? `₹${livePrice.toLocaleString()}` : "Price on request"}
+                  </div>
+                  <div style={{ fontSize: ".78rem", color: "rgba(255,255,255,.55)", marginTop: 4 }}>
+                    per person{selDur?.label ? ` · ${selDur.label}` : ""} · all inclusive
+                  </div>
+                </div>
+
+                {/* Inclusions checklist */}
+                {inclusions.slice(0, 6).map((item, i) => (
+                  <div key={i} className="itp-checklist-item">
+                    <FaCheck size={10} color={BRAND.success} style={{ flexShrink: 0 }} />
+                    <span>{item}</span>
+                  </div>
+                ))}
+                {inclusions.length === 0 && (
+                  <>
+                    {["Accommodation included", "Daily breakfast", "Airport transfers", "All sightseeing", "Expert guide"].map((item, i) => (
+                      <div key={i} className="itp-checklist-item">
+                        <FaCheck size={10} color={BRAND.success} style={{ flexShrink: 0 }} />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* ── White body — form ──────────────────────────────────── */}
+              <div className="itp-booking-body">
+                {/* Live price trend + countdown */}
+                {livePrice > 0 && (
+                  <div className="mb-3">
+                    <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
+                      <span className="d-inline-flex align-items-center gap-1 rounded-pill px-2 py-1"
+                        style={{
+                          fontSize: ".72rem", fontWeight: 600,
+                          background: trend === "rising" ? "#FFF3E0" : trend === "falling" ? "#E8F5E9" : BRAND.borderLight,
+                          color: trend === "rising" ? "#E65100" : trend === "falling" ? "#2E7D32" : BRAND.meta,
+                        }}>
+                        {trend === "rising" ? "📈 Price rising" : trend === "falling" ? "📉 Price dropping" : "📊 Price stable"}
+                      </span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 rounded-3 px-3 py-2"
+                      style={{ background: "rgba(240,75,90,.06)", border: `1px solid rgba(240,75,90,.15)`, fontSize: ".78rem" }}>
+                      <FaBolt color={BRAND.primary} size={11} />
+                      <span style={{ color: BRAND.meta }}>Offer ends in</span>
+                      <span className="fw-bold" style={{ color: BRAND.primary, fontVariantNumeric: "tabular-nums", fontSize: ".94rem" }}>
+                        {String(countdown.h).padStart(2, "0")}:{String(countdown.m).padStart(2, "0")}:{String(countdown.s).padStart(2, "0")}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Login prompt */}
+                {!user && (
+                  <div className="d-flex align-items-center gap-2 rounded-3 p-3 mb-3"
+                    style={{ background: "linear-gradient(135deg,#f0f4ff,#faf0ff)", border: "1px solid #d8deff", fontSize: ".8rem", color: BRAND.bodyText }}>
+                    <FaLock color="#3D52A0" size={13} />
+                    <span>
+                      <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`}
+                        style={{ color: "#3D52A0", fontWeight: 700, borderBottom: "1px solid #3D52A0", textDecoration: "none" }}>
+                        Login
+                      </Link>{" "}to submit an enquiry and get personalised quotes
                     </span>
                   </div>
-                </>
-              )}
-            </div>
+                )}
 
-            <div className="itp-bc-body">
-              {!user && (
-                <div className="itp-login-nudge">
-                  <FaLock color="#3D52A0" size={13} />
-                  <span>
-                    <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="itp-login-link">Login</Link> to submit an enquiry and get personalised quotes
-                  </span>
+                {/* Travel date */}
+                <div className="mb-3">
+                  <label className="d-block text-uppercase fw-bold mb-1"
+                    style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                    Travel Date
+                  </label>
+                  <input type="date" className="itp-input"
+                    value={travelDate} min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => setTravelDate(e.target.value)} />
                 </div>
-              )}
 
-              <div className="itp-field">
-                <label className="itp-lbl">Travel Date</label>
-                <input type="date" className="itp-inp" value={travelDate}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setTravelDate(e.target.value)} />
-              </div>
-
-              <div className="itp-field">
-                <label className="itp-lbl">Travelers</label>
-                <div className="itp-trav">
-                  <button type="button" className="itp-trav-btn" onClick={() => setTravelers((t) => Math.max(1, t - 1))}>−</button>
-                  <span className="itp-trav-n">{travelers}</span>
-                  <button type="button" className="itp-trav-btn" onClick={() => setTravelers((t) => Math.min(20, t + 1))}>+</button>
-                </div>
-              </div>
-
-              {livePrice > 0 && (
-                <div className="itp-total-row">
-                  <div>
-                    <div className="itp-total-lbl">Estimated Total</div>
-                    <div className="itp-total-sub">₹{livePrice.toLocaleString()} × {travelers} {travelers === 1 ? "person" : "people"}</div>
+                {/* Travelers counter */}
+                <div className="mb-3">
+                  <label className="d-block text-uppercase fw-bold mb-1"
+                    style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                    Travelers
+                  </label>
+                  <div className="itp-counter">
+                    <button type="button" className="itp-counter-btn"
+                      onClick={() => setTravelers(t => Math.max(1, t - 1))}>−</button>
+                    <span className="fw-bold" style={{ color: BRAND.charcoal }}>{travelers}</span>
+                    <button type="button" className="itp-counter-btn"
+                      onClick={() => setTravelers(t => Math.min(20, t + 1))}>+</button>
                   </div>
-                  <div className="itp-total-price" style={{ color: theme.primary }}>₹{totalPrice.toLocaleString()}</div>
                 </div>
-              )}
 
-              <button className="itp-enq-btn" style={{ background: theme.grad }} onClick={openEnquiry}>
-                <FaEnvelope size={14} />
-                {user ? "Submit Enquiry" : "Login & Enquire"}
-              </button>
+                {/* Total */}
+                {livePrice > 0 && (
+                  <div className="d-flex justify-content-between align-items-center py-3 mb-3"
+                    style={{ borderTop: `1px solid ${BRAND.borderLight}` }}>
+                    <div>
+                      <div style={{ fontSize: ".83rem", color: BRAND.meta }}>Estimated Total</div>
+                      <div style={{ fontSize: ".72rem", color: BRAND.placeholder }}>
+                        ₹{livePrice.toLocaleString()} × {travelers} {travelers === 1 ? "person" : "people"}
+                      </div>
+                    </div>
+                    <div className="font-serif fw-bold" style={{ fontSize: "1.55rem", color: BRAND.primary }}>
+                      ₹{totalPrice.toLocaleString()}
+                    </div>
+                  </div>
+                )}
 
-              <button className="itp-compare-btn" onClick={openCompare}>
-                <FaBalanceScale size={13} /> Compare Durations &amp; Packages
-              </button>
+                {/* Primary CTA */}
+                <button className="itp-btn-primary mb-2" onClick={openEnquiry}>
+                  <FaEnvelope size={14} />
+                  {user ? "Submit Enquiry" : "Login & Enquire"}
+                </button>
 
-              <TripPlannerModal
-                prefillDestination={locationTitle}
-                prefillTripType={typeTitle}
-              />
+                {/* Compare */}
+                <button className="itp-btn-outline mb-2" onClick={openCompare}>
+                  <FaBalanceScale size={13} /> Compare Durations &amp; Packages
+                </button>
 
-              <div className="itp-contact-row">
-                <a href="tel:+917888251550" className="itp-chip"><FaPhone size={11} /> Call Us</a>
-                <a href="https://wa.me/917888251550" target="_blank" rel="noreferrer" className="itp-chip"><FaWhatsapp size={11} /> WhatsApp</a>
+                {/* Trip planner */}
+                <TripPlannerModal prefillDestination={locationTitle} prefillTripType={typeTitle} />
+
+                {/* Contact chips */}
+                <div className="d-flex gap-2 mt-3">
+                  <a href="tel:+917888251550" className="itp-contact-chip">
+                    <FaPhone size={11} /> Call Us
+                  </a>
+                  <a href="https://wa.me/917888251550" target="_blank" rel="noreferrer" className="itp-contact-chip">
+                    <FaWhatsapp size={11} /> WhatsApp
+                  </a>
+                </div>
               </div>
-            </div>
 
-            <div className="itp-bc-trust">
-              <div className="itp-trust-row"><FaShieldAlt size={10} color="#4CAF50" /> 100% Secure Enquiry</div>
-              <div className="itp-trust-row"><span>🔄</span> Free cancellation up to 48 hours</div>
-              <div className="itp-trust-row"><span>✅</span> Expert will respond within 30 mins</div>
+              {/* ── Trust bar ─────────────────────────────────────────── */}
+              <div className="itp-booking-trust">
+                {[
+                  { icon: <FaShieldAlt size={10} color={BRAND.success} />, text: "100% secure enquiry" },
+                  { icon: "🔄", text: "Free cancellation up to 48 hours" },
+                  { icon: "✅", text: "Expert responds within 30 minutes" },
+                ].map((r, i) => (
+                  <div key={i} className="itp-trust-row d-flex align-items-center gap-2"
+                    style={{ fontSize: ".77rem", color: BRAND.meta }}>
+                    <span>{r.icon}</span> {r.text}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
 
-      {/* ── Sticky mobile bar ── */}
-      <div className="itp-sticky">
+      {/* ── Sticky mobile bar ─────────────────────────────────────────────── */}
+      <div className="itp-sticky-bar px-4 py-2 align-items-center justify-content-between">
         <div>
-          <div className="itp-sticky-price" style={{ color: theme.primary }}>
+          <div className="font-serif fw-bold" style={{ fontSize: "1.45rem", color: BRAND.primary }}>
             {livePrice > 0 ? `₹${livePrice.toLocaleString()}` : "Price on request"}
           </div>
-          <div style={{ fontSize: ".72rem", color: "#aaa" }}>{selDur?.label || ""} · per person</div>
+          <div style={{ fontSize: ".72rem", color: BRAND.meta }}>{selDur?.label || ""} · per person</div>
         </div>
-        <button className="itp-sticky-btn" style={{ background: theme.grad }}
+        <button className="itp-btn-primary" style={{ width: "auto", padding: ".6rem 1.5rem", fontSize: ".88rem" }}
           onClick={() => bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}>
           Enquire Now →
         </button>
       </div>
 
-      {/* ══ ENQUIRY MODAL ══ */}
+      {/* ══ ENQUIRY MODAL ═══════════════════════════════════════════════════ */}
       {enquiryOpen && (
-        <div className="itp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setEnquiryOpen(false); }}>
-          <div className="itp-modal" style={{ position: "relative" }}>
-            <button className="itp-modal-close" onClick={() => setEnquiryOpen(false)}><FaTimes /></button>
+        <div className="position-fixed d-flex align-items-end align-items-sm-center justify-content-center p-0 p-sm-3"
+          style={{ inset: 0, background: "rgba(10,10,30,.55)", backdropFilter: "blur(6px)", zIndex: 1050 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEnquiryOpen(false); }}>
+          <div className="itp-modal-anim bg-white overflow-hidden d-flex flex-column"
+            style={{ borderRadius: "20px", width: "100%", maxWidth: 580, maxHeight: "92vh", boxShadow: "0 32px 80px rgba(0,0,0,.22)" }}>
 
-            {enquiryDone ? (
-              <div className="itp-enq-success">
-                <div className="itp-enq-success-icon">🎉</div>
-                <div className="itp-enq-success-title">Enquiry Submitted!</div>
-                <p className="itp-enq-success-sub">
-                  Our travel expert will call you within 30 minutes. A confirmation has been sent to <strong>{enquiryForm.email}</strong>.
-                </p>
-                <div className="itp-enq-ref">📋 Ref: ENQ-{Date.now().toString(36).toUpperCase()}</div>
-                <div className="itp-enq-print-hint"><FaPrint size={11} /> Your full itinerary is saved — print option coming soon</div>
-                <button style={{ marginTop: "1.5rem", padding: ".7rem 2rem", borderRadius: 50, border: "none", background: theme.grad, color: "white", fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}
-                  onClick={() => setEnquiryOpen(false)}>Close</button>
-              </div>
-            ) : (
+            {!enquiryDone ? (
               <>
-                <div className="itp-modal-head">
-                  <div className="itp-modal-title">Submit Enquiry</div>
-                  <div className="itp-modal-sub">{pkg?.title || `${locationTitle} ${typeTitle}`}{selDur?.label ? ` · ${selDur.label}` : ""}</div>
+                {/* Modal head — navy stripe */}
+                <div className="shrink-0 p-4 pb-3"
+                  style={{ borderBottom: `1px solid ${BRAND.borderLight}`, background: BRAND.navy }}>
+                  <button onClick={() => setEnquiryOpen(false)}
+                    className="position-absolute border-0 d-flex align-items-center justify-content-center"
+                    style={{
+                      top: "1.1rem", right: "1.1rem", width: 32, height: 32,
+                      background: "rgba(255,255,255,.12)", borderRadius: "50%", cursor: "pointer", color: "#fff", zIndex: 1,
+                    }}>
+                    <FaTimes />
+                  </button>
+                  <div className="font-serif fw-bold" style={{ fontSize: "1.5rem", color: "#fff" }}>Submit Enquiry</div>
+                  <div style={{ fontSize: ".82rem", color: "rgba(255,255,255,.55)" }}>
+                    {pkg?.title || `${locationTitle} ${typeTitle}`}{selDur?.label ? ` · ${selDur.label}` : ""}
+                  </div>
                 </div>
 
-                <div className="itp-modal-body">
-                  <div className="itp-enq-summary">
-                    <div className="itp-enq-summary-title">📦 Package Summary</div>
-                    <div className="itp-enq-summary-row"><span>Destination</span><span>{enquiryForm.destination || locationTitle}</span></div>
-                    <div className="itp-enq-summary-row"><span>Tour Type</span><span>{typeTitle}</span></div>
-                    {selDur?.label && <div className="itp-enq-summary-row"><span>Duration</span><span>{selDur.label}</span></div>}
-                    {livePrice > 0 && <div className="itp-enq-summary-row"><span>Price / person</span><span>₹{livePrice.toLocaleString()}</span></div>}
-                    <div className="itp-enq-summary-row"><span>Adults</span><span>{enquiryForm.adults}</span></div>
+                {/* Modal body */}
+                <div className="p-4 overflow-auto flex-grow-1">
+                  {/* Package summary */}
+                  <div className="rounded-3 p-3 mb-4"
+                    style={{ background: "linear-gradient(135deg,#f7f9ff,#fdf5ff)", border: "1px solid #e4e8ff" }}>
+                    <div className="fw-bold mb-2" style={{ fontSize: ".92rem", color: BRAND.charcoal }}>📦 Package Summary</div>
+                    {[
+                      ["Destination", enquiryForm.destination || locationTitle],
+                      ["Tour Type", typeTitle],
+                      selDur?.label && ["Duration", selDur.label],
+                      livePrice > 0 && ["Price / person", `₹${livePrice.toLocaleString()}`],
+                      ["Adults", enquiryForm.adults],
+                    ].filter(Boolean).map(([k, v], i) => (
+                      <div key={i} className="d-flex justify-content-between"
+                        style={{ fontSize: ".8rem", color: BRAND.meta, padding: ".2rem 0" }}>
+                        <span>{k}</span>
+                        <span className="fw-semibold" style={{ color: BRAND.charcoal }}>{v}</span>
+                      </div>
+                    ))}
                     {livePrice > 0 && (
-                      <div className="itp-enq-total">
-                        <span className="itp-enq-total-lbl">Quoted Total</span>
-                        <span className="itp-enq-total-price" style={{ color: theme.primary }}>
+                      <div className="d-flex justify-content-between align-items-center pt-2 mt-1"
+                        style={{ borderTop: "1px dashed #d8deff" }}>
+                        <span className="fw-bold" style={{ fontSize: ".82rem", color: BRAND.bodyText }}>Quoted Total</span>
+                        <span className="font-serif fw-bold" style={{ fontSize: "1.45rem", color: BRAND.primary }}>
                           ₹{(livePrice * enquiryForm.adults).toLocaleString()}
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {enquiryError && <div className="itp-enq-error">⚠️ {enquiryError}</div>}
-                  <p className="itp-req-note"><span>*</span> Required fields</p>
+                  {enquiryError && (
+                    <div className="rounded-3 p-3 mb-3"
+                      style={{ background: "#FFF0F0", border: "1px solid #FFD0D0", fontSize: ".82rem", color: "#c62828" }}>
+                      ⚠️ {enquiryError}
+                    </div>
+                  )}
+                  <p style={{ fontSize: ".72rem", color: BRAND.placeholder, marginBottom: ".85rem" }}>
+                    <span style={{ color: BRAND.primary }}>*</span> Required fields
+                  </p>
 
                   <form id="enquiry-form" onSubmit={handleEnquirySubmit}>
-                    <div className="itp-form-grid">
-                      <div>
-                        <label className="itp-lbl">Full Name <span className="itp-req">*</span></label>
-                        <div className="itp-inp-wrap"><FaUser className="itp-inp-icon" />
-                          <input className="itp-modal-inp" type="text" placeholder="Your full name" required
-                            value={enquiryForm.fullName} onChange={(e) => setEnquiryForm((f) => ({ ...f, fullName: e.target.value }))} />
+                    <div className="row g-3">
+                      {/* Full name */}
+                      <div className="col-6">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Full Name <span style={{ color: BRAND.primary }}>*</span>
+                        </label>
+                        <div className="itp-input-group">
+                          <FaUser size={11} className="itp-input-icon" />
+                          <input type="text" className="itp-input" placeholder="Your full name" required
+                            value={enquiryForm.fullName}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, fullName: e.target.value }))} />
                         </div>
                       </div>
-                      <div>
-                        <label className="itp-lbl">Mobile <span className="itp-req">*</span></label>
-                        <div className="itp-inp-wrap"><FaMobileAlt className="itp-inp-icon" />
-                          <input className="itp-modal-inp" type="tel" placeholder="10-digit number" required
-                            pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number"
-                            value={enquiryForm.mobile} onChange={(e) => setEnquiryForm((f) => ({ ...f, mobile: e.target.value }))} />
+                      {/* Mobile */}
+                      <div className="col-6">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Mobile <span style={{ color: BRAND.primary }}>*</span>
+                        </label>
+                        <div className="itp-input-group">
+                          <FaMobileAlt size={11} className="itp-input-icon" />
+                          <input type="tel" className="itp-input" placeholder="10-digit number" required
+                            pattern="[0-9]{10}"
+                            value={enquiryForm.mobile}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, mobile: e.target.value }))} />
                         </div>
                       </div>
-                      <div>
-                        <label className="itp-lbl">Email <span className="itp-req">*</span></label>
-                        <div className="itp-inp-wrap"><FaEnvelope className="itp-inp-icon" />
-                          <input className="itp-modal-inp" type="email" placeholder="you@email.com" required
-                            value={enquiryForm.email} onChange={(e) => setEnquiryForm((f) => ({ ...f, email: e.target.value }))} />
+                      {/* Email */}
+                      <div className="col-6">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Email <span style={{ color: BRAND.primary }}>*</span>
+                        </label>
+                        <div className="itp-input-group">
+                          <FaEnvelope size={11} className="itp-input-icon" />
+                          <input type="email" className="itp-input" placeholder="you@email.com" required
+                            value={enquiryForm.email}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, email: e.target.value }))} />
                         </div>
                       </div>
-                      <div>
-                        <label className="itp-lbl">Your City</label>
-                        <div className="itp-inp-wrap"><FaCity className="itp-inp-icon" />
-                          <input className="itp-modal-inp" type="text" placeholder="City you're travelling from"
-                            value={enquiryForm.city} onChange={(e) => setEnquiryForm((f) => ({ ...f, city: e.target.value }))} />
+                      {/* City */}
+                      <div className="col-6">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Your City
+                        </label>
+                        <div className="itp-input-group">
+                          <FaCity size={11} className="itp-input-icon" />
+                          <input type="text" className="itp-input" placeholder="Travelling from"
+                            value={enquiryForm.city}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, city: e.target.value }))} />
                         </div>
                       </div>
-                      <div className="itp-form-col-full">
-                        <label className="itp-lbl">Destination <span className="itp-req">*</span></label>
-                        <div className="itp-inp-wrap"><FaMapMarkerAlt className="itp-inp-icon" />
-                          <input className="itp-modal-inp" type="text" placeholder="Travel destination" required
-                            value={enquiryForm.destination} onChange={(e) => setEnquiryForm((f) => ({ ...f, destination: e.target.value }))} />
+                      {/* Destination */}
+                      <div className="col-12">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Destination <span style={{ color: BRAND.primary }}>*</span>
+                        </label>
+                        <div className="itp-input-group">
+                          <FaMapMarkerAlt size={11} className="itp-input-icon" />
+                          <input type="text" className="itp-input" placeholder="Travel destination" required
+                            value={enquiryForm.destination}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, destination: e.target.value }))} />
                         </div>
                       </div>
-                      <div>
-                        <label className="itp-lbl">Travel Date</label>
-                        <div className="itp-inp-wrap"><FaCalendarAlt className="itp-inp-icon" />
-                          <input className="itp-modal-inp" type="date" min={new Date().toISOString().split("T")[0]}
-                            value={enquiryForm.travelDate} onChange={(e) => setEnquiryForm((f) => ({ ...f, travelDate: e.target.value }))} />
+                      {/* Travel date */}
+                      <div className="col-6">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Travel Date
+                        </label>
+                        <div className="itp-input-group">
+                          <FaCalendarAlt size={11} className="itp-input-icon" />
+                          <input type="date" className="itp-input"
+                            min={new Date().toISOString().split("T")[0]}
+                            value={enquiryForm.travelDate}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, travelDate: e.target.value }))} />
                         </div>
                       </div>
-                      <div>
-                        <label className="itp-lbl">Adults <span className="itp-req">*</span></label>
-                        <div className="itp-trav" style={{ border: "1.5px solid #e8eaf6", borderRadius: 9 }}>
-                          <button type="button" className="itp-trav-btn"
-                            onClick={() => setEnquiryForm((f) => { const n = Math.max(1, f.adults - 1); return { ...f, adults: n, travelers: n }; })}>−</button>
-                          <span className="itp-trav-n">{enquiryForm.adults}</span>
-                          <button type="button" className="itp-trav-btn"
-                            onClick={() => setEnquiryForm((f) => { const n = Math.min(20, f.adults + 1); return { ...f, adults: n, travelers: n }; })}>+</button>
+                      {/* Adults counter */}
+                      <div className="col-6">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Adults <span style={{ color: BRAND.primary }}>*</span>
+                        </label>
+                        <div className="itp-counter">
+                          <button type="button" className="itp-counter-btn"
+                            onClick={() => setEnquiryForm(f => { const n = Math.max(1, f.adults - 1); return { ...f, adults: n, travelers: n }; })}>−</button>
+                          <span className="fw-bold" style={{ color: BRAND.charcoal }}>{enquiryForm.adults}</span>
+                          <button type="button" className="itp-counter-btn"
+                            onClick={() => setEnquiryForm(f => { const n = Math.min(20, f.adults + 1); return { ...f, adults: n, travelers: n }; })}>+</button>
                         </div>
                       </div>
-                      <div className="itp-form-col-full">
-                        <label className="itp-lbl">Special Requests / Notes</label>
-                        <div className="itp-inp-wrap">
-                          <FaStickyNote className="itp-inp-icon" style={{ top: "0.85rem", transform: "none" }} />
-                          <textarea className="itp-modal-inp itp-modal-textarea"
-                            placeholder="Any special requirements, dietary restrictions, preferred hotels…"
-                            value={enquiryForm.notes} onChange={(e) => setEnquiryForm((f) => ({ ...f, notes: e.target.value }))} />
+                      {/* Notes */}
+                      <div className="col-12">
+                        <label className="d-block text-uppercase fw-bold mb-1"
+                          style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".06em" }}>
+                          Special Requests / Notes
+                        </label>
+                        <div className="itp-input-group" style={{ alignItems: "flex-start" }}>
+                          <FaStickyNote size={11} className="itp-input-icon" style={{ top: 14, transform: "none" }} />
+                          <textarea className="itp-input" rows={3}
+                            placeholder="Dietary requirements, preferred hotels, special occasions…"
+                            value={enquiryForm.notes}
+                            onChange={(e) => setEnquiryForm(f => ({ ...f, notes: e.target.value }))} />
                         </div>
                       </div>
                     </div>
                   </form>
                 </div>
 
-                <div className="itp-modal-footer">
-                  <button type="submit" form="enquiry-form" className="itp-submit-btn"
-                    style={{ background: theme.grad }} disabled={enquiryLoading}>
+                {/* Modal footer */}
+                <div className="px-4 py-3 shrink-0" style={{ borderTop: `1px solid ${BRAND.borderLight}` }}>
+                  <button type="submit" form="enquiry-form"
+                    className="itp-btn-primary"
+                    disabled={enquiryLoading}>
                     {enquiryLoading ? "Submitting…" : "✉️  Submit Enquiry"}
                   </button>
-                  <p style={{ textAlign: "center", fontSize: ".73rem", color: "#bbb", marginTop: ".65rem" }}>
+                  <p className="text-center mt-2 mb-0" style={{ fontSize: ".73rem", color: BRAND.placeholder }}>
                     Your details are safe with us · No spam, ever
                   </p>
                 </div>
               </>
+            ) : (
+              /* Success state */
+              <div className="text-center p-5">
+                <div style={{ fontSize: "3.5rem", marginBottom: "1rem" }}>🎉</div>
+                <div className="font-serif fw-bold mb-2" style={{ fontSize: "1.7rem", color: BRAND.charcoal }}>Enquiry Submitted!</div>
+                <p style={{ fontSize: ".86rem", color: BRAND.meta, lineHeight: 1.7, maxWidth: 380, margin: "0 auto 1.25rem" }}>
+                  Our travel expert will call you within 30 minutes. A confirmation has been sent to{" "}
+                  <strong style={{ color: BRAND.charcoal }}>{enquiryForm.email}</strong>.
+                </p>
+                <div className="d-inline-block rounded-3 px-4 py-2 mb-3"
+                  style={{ background: BRAND.bgCard, fontSize: ".79rem", color: "#3D52A0", fontWeight: 600 }}>
+                  📋 Ref: ENQ-{Date.now().toString(36).toUpperCase()}
+                </div>
+                <div className="d-flex align-items-center justify-content-center gap-2 mb-4"
+                  style={{ fontSize: ".76rem", color: BRAND.placeholder }}>
+                  <FaPrint size={11} /> Your full itinerary is saved — print option coming soon
+                </div>
+                <button className="itp-btn-primary" style={{ width: "auto", padding: ".75rem 2.5rem" }}
+                  onClick={() => setEnquiryOpen(false)}>
+                  Close
+                </button>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ══ COMPARE MODAL ══ */}
+      {/* ══ COMPARE MODAL ════════════════════════════════════════════════════ */}
       {compareOpen && (() => {
         const getPkgDur = (p, idx) => {
           const durs = Array.isArray(p.durations) && p.durations.length ? p.durations : null;
@@ -1076,18 +1350,24 @@ export default function ItineraryPage() {
           return { price: p.price, discountedPrice: null, label: p.duration || "—", days: p.durationDays, nights: null };
         };
 
+        // ── Duration-compare mode ────────────────────────────────────────
         if (compareScope === "duration") {
           const cols = durationOptions;
           const rows = [
-            { label: "Duration", render: (_p, d) => <strong style={{ color: "var(--navy)" }}>{d?.label || "—"}</strong> },
+            { label: "Duration", render: (_p, d) => <strong style={{ color: BRAND.charcoal }}>{d?.label || "—"}</strong> },
             {
               label: "Price / person", render: (_p, d) => {
                 const price = d?.discountedPrice || d?.price || 0;
-                const orig = d?.price;
                 return (
                   <div>
-                    <span className="itp-cmp-price" style={{ color: theme.primary }}>₹{price.toLocaleString()}</span>
-                    {d?.discountedPrice && orig && <div style={{ fontSize: ".68rem", color: "#bbb", textDecoration: "line-through" }}>₹{orig.toLocaleString()}</div>}
+                    <span className="font-serif fw-bold" style={{ fontSize: "1.3rem", color: BRAND.primary }}>
+                      ₹{price.toLocaleString()}
+                    </span>
+                    {d?.discountedPrice && d?.price && (
+                      <div style={{ fontSize: ".67rem", color: BRAND.placeholder, textDecoration: "line-through" }}>
+                        ₹{d.price.toLocaleString()}
+                      </div>
+                    )}
                   </div>
                 );
               }
@@ -1101,38 +1381,67 @@ export default function ItineraryPage() {
           ];
 
           return (
-            <div className="itp-cmp-overlay" onClick={(e) => { if (e.target === e.currentTarget) setCompareOpen(false); }}>
-              <div className="itp-cmp-modal">
-                <div className="itp-cmp-head">
-                  <div className="itp-cmp-head-left">
-                    <div className="itp-cmp-title">⚖️ Compare Durations</div>
-                    <div className="itp-cmp-subtitle">{pkg?.title || `${locationTitle} ${typeTitle}`} — all available duration options</div>
+            <div className="position-fixed d-flex align-items-center justify-content-center p-3"
+              style={{ inset: 0, background: "rgba(10,10,30,.62)", backdropFilter: "blur(6px)", zIndex: 1060, overflowY: "auto" }}
+              onClick={(e) => { if (e.target === e.currentTarget) setCompareOpen(false); }}>
+              <div className="bg-white rounded-4 itp-modal-anim d-flex flex-column"
+                style={{ width: "100%", maxWidth: 1000, maxHeight: "88vh", boxShadow: "0 40px 100px rgba(0,0,0,.28)", overflow: "hidden" }}>
+
+                {/* Modal head — navy */}
+                <div className="d-flex align-items-start justify-content-between p-4 pb-3 shrink-0 flex-wrap gap-2"
+                  style={{ borderBottom: `1px solid ${BRAND.borderLight}`, background: BRAND.navy }}>
+                  <div>
+                    <div className="font-serif fw-bold" style={{ fontSize: "1.45rem", color: "#fff" }}>⚖️ Compare Durations</div>
+                    <div style={{ fontSize: ".74rem", color: "rgba(255,255,255,.5)" }}>
+                      {pkg?.title || `${locationTitle} ${typeTitle}`} — all available options
+                    </div>
                   </div>
-                  <div className="itp-cmp-head-right">
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
                     <button onClick={() => { setCompareScope("city"); setCompareSelected(pkg?._id ? [pkg._id] : []); }}
-                      style={{ padding: ".42rem 1rem", borderRadius: 50, border: "none", background: theme.light, color: theme.primary, fontWeight: 700, fontSize: ".78rem", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
-                      📍 Compare {locationTitle} Packages
+                      className="btn btn-sm rounded-pill fw-bold"
+                      style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", fontSize: ".78rem" }}>
+                      📍 {locationTitle} Packages
                     </button>
                     <button onClick={() => { setCompareScope("all"); setCompareSelected(pkg?._id ? [pkg._id] : []); }}
-                      style={{ padding: ".42rem 1rem", borderRadius: 50, border: "none", background: "#f3f4f8", color: "#555", fontWeight: 700, fontSize: ".78rem", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
+                      className="btn btn-sm rounded-pill"
+                      style={{ background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.15)", fontSize: ".78rem" }}>
                       🌏 All Cities
                     </button>
-                    <button className="itp-cmp-close" onClick={() => setCompareOpen(false)}><FaTimes /></button>
+                    <button onClick={() => setCompareOpen(false)}
+                      className="d-flex align-items-center justify-content-center border-0"
+                      style={{ width: 32, height: 32, background: "rgba(255,255,255,.12)", borderRadius: "50%", cursor: "pointer", color: "#fff" }}>
+                      <FaTimes />
+                    </button>
                   </div>
                 </div>
-                <div className="itp-cmp-body">
+
+                {/* Compare table */}
+                <div className="flex-grow-1 overflow-auto">
                   {cols.length === 0 ? (
-                    <div className="itp-cmp-empty">Only one duration available for this package.</div>
+                    <div className="text-center p-5" style={{ color: BRAND.meta }}>Only one duration available.</div>
                   ) : (
-                    <table className="itp-cmp-table">
+                    <table className="table table-bordered mb-0" style={{ minWidth: "100%", tableLayout: "auto" }}>
                       <thead>
-                        <tr>
-                          <th>Feature</th>
+                        <tr style={{ background: BRAND.bgCard }}>
+                          <th style={{
+                            width: 130, fontSize: ".7rem", fontWeight: 700, color: BRAND.placeholder,
+                            textTransform: "uppercase", letterSpacing: ".06em", textAlign: "left",
+                            background: BRAND.borderLight, position: "sticky", left: 0, zIndex: 3,
+                          }}>Feature</th>
                           {cols.map((d, i) => (
-                            <th key={i} style={_safeIdx === i ? { background: theme.light } : {}}>
-                              <span className="itp-cmp-th-pkg">{d.label}</span>
-                              <span className="itp-cmp-th-dur">₹{(d.discountedPrice || d.price || 0).toLocaleString()} / person</span>
-                              {_safeIdx === i && <div className="itp-cmp-badge">Selected</div>}
+                            <th key={i} className="text-center" style={{
+                              minWidth: 170,
+                              background: _safeIdx === i ? "rgba(240,75,90,.06)" : BRAND.bgCard,
+                              fontSize: ".82rem", fontWeight: 700, color: BRAND.charcoal,
+                            }}>
+                              <span className="d-block">{d.label}</span>
+                              <span className="d-block fw-normal" style={{ fontSize: ".72rem", color: BRAND.placeholder }}>
+                                ₹{(d.discountedPrice || d.price || 0).toLocaleString()} / person
+                              </span>
+                              {_safeIdx === i && (
+                                <span className="badge mt-1"
+                                  style={{ background: "#E8F5E9", color: "#2E7D32", fontSize: ".67rem" }}>Selected</span>
+                              )}
                             </th>
                           ))}
                         </tr>
@@ -1140,20 +1449,38 @@ export default function ItineraryPage() {
                       <tbody>
                         {rows.map((row) => (
                           <tr key={row.label}>
-                            <td>{row.label}</td>
+                            <td className="fw-semibold" style={{
+                              fontSize: ".78rem", color: BRAND.meta,
+                              background: BRAND.bgCard, position: "sticky", left: 0, zIndex: 2, whiteSpace: "nowrap",
+                            }}>{row.label}</td>
                             {cols.map((d, i) => (
-                              <td key={i} style={_safeIdx === i ? { background: theme.light, fontWeight: 600 } : {}}>{row.render(pkg, d)}</td>
+                              <td key={i} className="text-center" style={{
+                                background: _safeIdx === i ? "rgba(240,75,90,.04)" : "transparent",
+                                fontWeight: _safeIdx === i ? 600 : 400,
+                                fontSize: ".84rem", color: BRAND.bodyText,
+                              }}>
+                                {row.render(pkg, d)}
+                              </td>
                             ))}
                           </tr>
                         ))}
                         <tr>
-                          <td>Select</td>
+                          <td className="fw-semibold" style={{
+                            fontSize: ".78rem", color: BRAND.meta,
+                            background: BRAND.bgCard, position: "sticky", left: 0,
+                          }}>Select</td>
                           {cols.map((d, i) => (
-                            <td key={i} style={_safeIdx === i ? { background: theme.light } : {}}>
+                            <td key={i} className="text-center" style={{ background: _safeIdx === i ? "rgba(240,75,90,.04)" : "transparent" }}>
                               <button
-                                onClick={() => { setSelectedDurationIdx(i); setCompareOpen(false); bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }}
-                                style={{ padding: ".42rem 1.1rem", borderRadius: 50, border: "none", background: _safeIdx === i ? theme.grad : "#f3f4f8", color: _safeIdx === i ? "white" : "#555", fontWeight: 700, fontSize: ".76rem", cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}
-                              >{_safeIdx === i ? "✓ Selected" : "Choose"}</button>
+                                onClick={() => { setSelectedDurationIdx(i); setCompareOpen(false); bookingRef.current?.scrollIntoView({ behavior: "smooth" }); }}
+                                className="btn btn-sm rounded-pill fw-bold"
+                                style={{
+                                  background: _safeIdx === i ? BRAND.primary : BRAND.borderLight,
+                                  color: _safeIdx === i ? "#fff" : BRAND.meta,
+                                  border: "none", fontSize: ".76rem",
+                                }}>
+                                {_safeIdx === i ? "✓ Selected" : "Choose"}
+                              </button>
                             </td>
                           ))}
                         </tr>
@@ -1166,12 +1493,9 @@ export default function ItineraryPage() {
           );
         }
 
+        // ── City / All-compare mode ──────────────────────────────────────
         const visibleList = compareScope === "city"
-          ? compareAllPkgs.filter((p) => {
-            const pLoc = (p.location || "").toLowerCase().replace(/\s+/g, "-");
-            const curLoc = (location || "").toLowerCase();
-            return pLoc === curLoc;
-          })
+          ? compareAllPkgs.filter((p) => (p.location || "").toLowerCase().replace(/\s+/g, "-") === (location || "").toLowerCase())
           : compareAllPkgs;
 
         const effectiveSelected = compareSelected.length === 0 && pkg?._id ? [pkg._id] : compareSelected;
@@ -1194,11 +1518,16 @@ export default function ItineraryPage() {
             label: "Price / person", render: (p) => {
               const d = getPkgDur(p, safeCmpDurIdx);
               const price = d?.discountedPrice || d?.price || p.price || 0;
-              const orig = d?.price;
               return (
                 <div>
-                  <span className="itp-cmp-price" style={{ color: theme.primary }}>₹{price.toLocaleString()}</span>
-                  {d?.discountedPrice && orig && <div style={{ fontSize: ".68rem", color: "#bbb", textDecoration: "line-through" }}>₹{orig.toLocaleString()}</div>}
+                  <span className="font-serif fw-bold" style={{ fontSize: "1.3rem", color: BRAND.primary }}>
+                    ₹{price.toLocaleString()}
+                  </span>
+                  {d?.discountedPrice && d?.price && (
+                    <div style={{ fontSize: ".67rem", color: BRAND.placeholder, textDecoration: "line-through" }}>
+                      ₹{d.price.toLocaleString()}
+                    </div>
+                  )}
                 </div>
               );
             }
@@ -1215,39 +1544,50 @@ export default function ItineraryPage() {
         ];
 
         return (
-          <div className="itp-cmp-overlay" onClick={(e) => { if (e.target === e.currentTarget) setCompareOpen(false); }}>
-            <div className="itp-cmp-modal">
-              <div className="itp-cmp-head">
-                <div className="itp-cmp-head-left">
-                  <div className="itp-cmp-title">⚖️ Compare {typeTitle} Packages</div>
-                  <div className="itp-cmp-subtitle">
+          <div className="position-fixed d-flex align-items-end align-items-md-center justify-content-center"
+            style={{ inset: 0, background: "rgba(10,10,30,.62)", backdropFilter: "blur(6px)", zIndex: 1060, overflowY: "auto", padding: "1rem" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setCompareOpen(false); }}>
+            <div className="bg-white rounded-4 itp-modal-anim d-flex flex-column"
+              style={{ width: "100%", maxWidth: 1000, maxHeight: "88vh", boxShadow: "0 40px 100px rgba(0,0,0,.28)", overflow: "hidden" }}>
+
+              {/* Head — navy */}
+              <div className="d-flex align-items-start justify-content-between p-4 pb-3 shrink-0 flex-wrap gap-2"
+                style={{ borderBottom: `1px solid ${BRAND.borderLight}`, background: BRAND.navy }}>
+                <div>
+                  <div className="font-serif fw-bold" style={{ fontSize: "1.45rem", color: "#fff" }}>⚖️ Compare {typeTitle} Packages</div>
+                  <div style={{ fontSize: ".74rem", color: "rgba(255,255,255,.5)" }}>
                     {compareScope === "city"
                       ? `${visibleList.length} package${visibleList.length !== 1 ? "s" : ""} in ${locationTitle}`
                       : `${visibleList.length} package${visibleList.length !== 1 ? "s" : ""} across all cities`}
                     {" · tap to select up to 3"}
                   </div>
                 </div>
-                <div className="itp-cmp-head-right">
+                <div className="d-flex align-items-center gap-2 flex-wrap">
                   <button onClick={() => setCompareScope("duration")}
-                    style={{ padding: ".42rem 1rem", borderRadius: 50, border: "1.5px solid #e8eaf6", background: "white", color: "#555", fontWeight: 700, fontSize: ".78rem", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
+                    className="btn btn-sm rounded-pill"
+                    style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", fontSize: ".78rem" }}>
                     ← Duration Compare
                   </button>
-                  <div className="itp-cmp-scope">
-                    <button className={`itp-cmp-scope-btn ${compareScope === "city" ? "active" : ""}`}
-                      onClick={() => { setCompareScope("city"); setCompareSelected(pkg?._id ? [pkg._id] : []); }}>
-                      📍 {locationTitle}
-                    </button>
-                    <button className={`itp-cmp-scope-btn ${compareScope === "all" ? "active" : ""}`}
-                      onClick={() => { setCompareScope("all"); setCompareSelected(pkg?._id ? [pkg._id] : []); }}>
-                      🌏 All Cities
-                    </button>
+                  <div className="d-flex rounded-pill p-1" style={{ background: "rgba(255,255,255,.08)" }}>
+                    {[{ key: "city", label: `📍 ${locationTitle}` }, { key: "all", label: "🌏 All Cities" }].map(s => (
+                      <button key={s.key}
+                        className={`itp-scope-btn ${compareScope === s.key ? "active" : ""}`}
+                        style={compareScope === s.key ? { background: "#fff", color: BRAND.charcoal } : { color: "rgba(255,255,255,.65)" }}
+                        onClick={() => { setCompareScope(s.key); setCompareSelected(pkg?._id ? [pkg._id] : []); }}>
+                        {s.label}
+                      </button>
+                    ))}
                   </div>
-                  <button className="itp-cmp-close" onClick={() => setCompareOpen(false)}><FaTimes /></button>
+                  <button onClick={() => setCompareOpen(false)}
+                    className="d-flex align-items-center justify-content-center border-0"
+                    style={{ width: 32, height: 32, background: "rgba(255,255,255,.12)", borderRadius: "50%", cursor: "pointer", color: "#fff" }}>
+                    <FaTimes />
+                  </button>
                 </div>
               </div>
 
               {compareLoading ? (
-                <div style={{ padding: "2rem 1.75rem" }}>
+                <div className="p-4">
                   <Skel h={38} mb={10} r={50} w="280px" />
                   <Skel h={48} mb={8} r={10} />
                   <Skel h={48} mb={8} r={10} />
@@ -1255,38 +1595,40 @@ export default function ItineraryPage() {
                 </div>
               ) : (
                 <>
-                  <div className="itp-cmp-picker-wrap">
-                    <div className="itp-cmp-picker-label">Choose packages to compare (up to 3)</div>
+                  {/* Package picker */}
+                  <div className="px-4 py-3 shrink-0" style={{ borderBottom: `1px solid ${BRAND.borderLight}` }}>
+                    <div className="text-uppercase fw-bold mb-2"
+                      style={{ fontSize: ".72rem", color: BRAND.placeholder, letterSpacing: ".07em" }}>
+                      Choose packages to compare (up to 3)
+                    </div>
                     {visibleList.length === 0 ? (
-                      <div style={{ fontSize: ".82rem", color: "#aaa" }}>
+                      <div style={{ fontSize: ".82rem", color: BRAND.placeholder }}>
                         {compareScope === "city"
                           ? `No packages found for ${locationTitle}. Switch to "🌏 All Cities".`
                           : "No packages found for this tour type."}
                       </div>
                     ) : (
-                      <div className="itp-cmp-pkg-list">
+                      <div className="d-flex flex-wrap gap-2">
                         {visibleList.map((p) => {
                           const isSelected = effectiveSelected.includes(p._id);
                           const isCurrent = p._id === pkg?._id;
-                          const chipLabel = compareScope === "all"
+                          const label = compareScope === "all"
                             ? (p.location || p.title || "Package")
                             : (p.duration || p.durations?.[0]?.label || p.title || p.location || "Package");
                           return (
                             <button key={p._id}
                               className={`itp-cmp-pkg-chip ${isSelected ? "selected" : ""}`}
-                              style={isSelected ? { background: theme.grad } : {}}
                               onClick={() => {
                                 setCompareSelected((prev) => {
                                   const cur = prev.length === 0 && pkg?._id ? [pkg._id] : prev;
-                                  if (cur.includes(p._id)) return cur.filter((x) => x !== p._id);
+                                  if (cur.includes(p._id)) return cur.filter(x => x !== p._id);
                                   if (cur.length >= 3) return cur;
                                   return [...cur, p._id];
                                 });
                               }}
-                              disabled={!isSelected && effectiveSelected.length >= 3}
-                            >
-                              {isSelected && <FaCheck size={9} />}
-                              {chipLabel}
+                              disabled={!isSelected && effectiveSelected.length >= 3}>
+                              {isSelected && <FaCheck size={9} style={{ marginRight: 4 }} />}
+                              {label}
                               {isCurrent && <span style={{ fontSize: ".64rem", opacity: .65 }}> (current)</span>}
                             </button>
                           );
@@ -1295,33 +1637,52 @@ export default function ItineraryPage() {
                     )}
                   </div>
 
+                  {/* Duration tabs */}
                   {displayPkgs.length > 0 && allDurLabels.length > 1 && (
-                    <div style={{ padding: ".55rem 1.5rem", borderBottom: "1px solid #f0f0f8", display: "flex", alignItems: "center", gap: ".75rem", flexWrap: "wrap", background: "#fafbff", flexShrink: 0 }}>
-                      <span style={{ fontSize: ".7rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#bbb", whiteSpace: "nowrap" }}>By Duration:</span>
-                      <div className="itp-cmp-dur-tabs">
-                        {allDurLabels.map((lbl, i) => (
-                          <button key={lbl}
-                            className={`itp-cmp-dur-tab ${safeCmpDurIdx === i ? "active" : ""}`}
-                            style={safeCmpDurIdx === i ? { background: theme.grad } : {}}
-                            onClick={() => setCompareDurIdx(i)}>{lbl}</button>
-                        ))}
-                      </div>
+                    <div className="px-4 py-2 d-flex align-items-center gap-2 flex-wrap shrink-0"
+                      style={{ borderBottom: `1px solid ${BRAND.borderLight}`, background: BRAND.bgCard }}>
+                      <span className="text-uppercase fw-bold"
+                        style={{ fontSize: ".7rem", color: BRAND.placeholder, letterSpacing: ".06em", whiteSpace: "nowrap" }}>
+                        By Duration:
+                      </span>
+                      {allDurLabels.map((lbl, i) => (
+                        <button key={lbl}
+                          className={`itp-cmp-dur-tab ${safeCmpDurIdx === i ? "active" : ""}`}
+                          onClick={() => setCompareDurIdx(i)}>{lbl}</button>
+                      ))}
                     </div>
                   )}
 
-                  <div className="itp-cmp-body">
+                  {/* Compare table */}
+                  <div className="flex-grow-1 overflow-auto">
                     {displayPkgs.length < 1 ? (
-                      <div className="itp-cmp-empty">Select packages above to compare them side by side.</div>
+                      <div className="text-center p-5" style={{ color: BRAND.meta }}>
+                        Select packages above to compare them side by side.
+                      </div>
                     ) : (
-                      <table className="itp-cmp-table">
+                      <table className="table table-bordered mb-0" style={{ minWidth: "100%", tableLayout: "auto" }}>
                         <thead>
                           <tr>
-                            <th>Feature</th>
+                            <th style={{
+                              width: 130, fontSize: ".7rem", fontWeight: 700, color: BRAND.placeholder,
+                              textTransform: "uppercase", letterSpacing: ".06em", textAlign: "left",
+                              background: BRAND.borderLight, position: "sticky", left: 0, zIndex: 3,
+                            }}>Feature</th>
                             {displayPkgs.map((p) => (
-                              <th key={p._id} style={p._id === pkg?._id ? { background: theme.light } : {}}>
-                                <span className="itp-cmp-th-pkg">{p.location || p.title || "Package"}</span>
-                                <span className="itp-cmp-th-dur">{getPkgDur(p, safeCmpDurIdx)?.label || p.duration || "—"}</span>
-                                {p._id === pkg?._id && <div className="itp-cmp-badge">Viewing</div>}
+                              <th key={p._id} className="text-center" style={{
+                                minWidth: 170,
+                                background: p._id === pkg?._id ? "rgba(240,75,90,.06)" : BRAND.bgCard,
+                                fontSize: ".82rem", fontWeight: 700, color: BRAND.charcoal,
+                              }}>
+                                <span className="d-block">{p.location || p.title || "Package"}</span>
+                                <span className="d-block fw-normal" style={{ fontSize: ".72rem", color: BRAND.placeholder }}>
+                                  {getPkgDur(p, safeCmpDurIdx)?.label || p.duration || "—"}
+                                </span>
+                                {p._id === pkg?._id && (
+                                  <span className="badge mt-1" style={{ background: "#E8F5E9", color: "#2E7D32", fontSize: ".67rem" }}>
+                                    Viewing
+                                  </span>
+                                )}
                               </th>
                             ))}
                           </tr>
@@ -1329,27 +1690,38 @@ export default function ItineraryPage() {
                         <tbody>
                           {pkgRows.map((row) => (
                             <tr key={row.label}>
-                              <td>{row.label}</td>
+                              <td className="fw-semibold" style={{
+                                fontSize: ".78rem", color: BRAND.meta,
+                                background: BRAND.bgCard, position: "sticky", left: 0, zIndex: 2, whiteSpace: "nowrap",
+                              }}>{row.label}</td>
                               {displayPkgs.map((p) => (
-                                <td key={p._id} style={p._id === pkg?._id ? { background: theme.light } : {}}>
+                                <td key={p._id} className="text-center" style={{
+                                  background: p._id === pkg?._id ? "rgba(240,75,90,.04)" : "transparent",
+                                  fontSize: ".84rem", color: BRAND.bodyText,
+                                }}>
                                   {row.render(p)}
                                 </td>
                               ))}
                             </tr>
                           ))}
                           <tr>
-                            <td>Action</td>
+                            <td className="fw-semibold" style={{
+                              fontSize: ".78rem", color: BRAND.meta,
+                              background: BRAND.bgCard, position: "sticky", left: 0,
+                            }}>Action</td>
                             {displayPkgs.map((p) => (
-                              <td key={p._id} style={p._id === pkg?._id ? { background: theme.light } : {}}>
+                              <td key={p._id} className="text-center"
+                                style={{ background: p._id === pkg?._id ? "rgba(240,75,90,.04)" : "transparent" }}>
                                 {p._id === pkg?._id ? (
-                                  <span style={{ color: theme.primary, fontWeight: 700, fontSize: ".78rem" }}>✓ Current</span>
+                                  <span className="fw-bold" style={{ color: BRAND.primary, fontSize: ".78rem" }}>✓ Current</span>
                                 ) : (
                                   <Link
                                     to={`/package/${type}/${(p.location || "").toLowerCase().replace(/\s+/g, "-") || p._id}`}
-                                    className="itp-cmp-action-link"
-                                    style={{ color: theme.primary, borderColor: theme.primary }}
-                                    onClick={() => setCompareOpen(false)}
-                                  >View →</Link>
+                                    className="btn btn-sm rounded-pill fw-bold"
+                                    style={{ color: BRAND.primary, border: `1.5px solid ${BRAND.primary}`, background: "transparent", fontSize: ".78rem" }}
+                                    onClick={() => setCompareOpen(false)}>
+                                    View →
+                                  </Link>
                                 )}
                               </td>
                             ))}
@@ -1364,8 +1736,6 @@ export default function ItineraryPage() {
           </div>
         );
       })()}
-
-      <Footer />
     </>
   );
 }

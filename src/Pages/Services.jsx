@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, useContext } 
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../Components/Header/Header';
 import PackageContext from '../Context/PackageContext';
+import NewsletterSubscribe from '../Components/Newslettersubscribe';
 
 const useCountUp = (target, duration = 2000) => {
   const [count, setCount] = useState(0);
@@ -52,8 +53,8 @@ const TOUR_PACKAGES = [
 ];
 
 const DESTINATIONS = [
-  { img: "https://images.unsplash.com/photo-1544015759-237f43ca3d53?w=800&q=85", title: "Goa", tag: "Beach Paradise", price: "₹8,999" },
-  { img: "https://images.unsplash.com/photo-1477587458883-47145ed31d27?w=800&q=85", title: "Kerala", tag: "God's Own Country", price: "₹12,499" },
+  { img: "https://i.pinimg.com/1200x/7d/0b/43/7d0b4327f28e9796765b0fa1bf92e5f5.jpg", title: "Goa", tag: "Beach Paradise", price: "₹8,999" },
+  { img: "https://i.pinimg.com/236x/61/fb/b4/61fbb417b4c8588df03d393d6efe9d89.jpg", title: "Kerala", tag: "God's Own Country", price: "₹12,499" },
   { img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&q=85", title: "Rajasthan", tag: "Land of Kings", price: "₹14,999" },
   { img: "https://images.unsplash.com/photo-1506038634487-60a69ae4b7b1?w=800&q=85", title: "Manali", tag: "Snow Adventure", price: "₹11,999" },
   { img: "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=800&q=85", title: "Dubai", tag: "Ultra Luxury", price: "₹42,999" },
@@ -89,10 +90,10 @@ export default function Services() {
   const cardRefs = useRef({});
 
   const liveBookings = useLiveBookings();
-  const [happyCount, happyRef] = useCountUp(10482, 2200);
-  const [destCount, destRef] = useCountUp(500, 1800);
-  const [yearsCount, yearsRef] = useCountUp(15, 1200);
-  const [toursCount, toursRef] = useCountUp(2840, 2000);
+  const [happyCount, happyRef] = useCountUp(800, 2200);
+  const [destCount, destRef] = useCountUp(512, 1800);
+  const [yearsCount, yearsRef] = useCountUp(2, 1200);
+  const [toursCount, toursRef] = useCountUp(795, 2000);
 
   useEffect(() => {
     const handleMove = (e) => {
@@ -298,8 +299,9 @@ export default function Services() {
         }
         .hero-pill:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
         .hero-scroll {
-          position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          position: absolute; bottom: 0.1rem; left: 50%; transform: translateX(-50%);
+          display: flex; flex-direction: column; align-items: center; gap: 6px; 
+          margin-top: 2rem;
           color: rgba(255,255,255,0.35); font-size: 0.65rem; letter-spacing: 0.15em;
           text-transform: uppercase; animation: fadeUp 0.9s 0.8s var(--ease-smooth) both;
         }
@@ -389,7 +391,7 @@ export default function Services() {
           content: '';
           position: absolute;
           inset: 0;
-          background-image: url('https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&q=85');
+          background-image: url('https://i.pinimg.com/1200x/83/b0/2c/83b02c8947864f6cb7265ccb23cc0dcb.jpg');
           background-size: cover;
           background-position: center;
           background-attachment: fixed;
@@ -512,14 +514,34 @@ export default function Services() {
         }
         .pkg-author span { color: rgba(255,255,255,0.4); }
         .pkg-cta {
-          display: flex; align-items: center; gap: 7px;
-          font-size: 0.78rem; font-weight: 500;
-          color: rgba(255,255,255,0.4);
-          cursor: pointer; border: none; background: none;
-          font-family: var(--sans); padding: 0;
-          letter-spacing: 0.03em; transition: color 0.2s; margin-top: auto;
-        }
-        .pkg-cta:hover { color: rgba(255,255,255,0.8); }
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  border: none;
+  background: var(--gold);
+  font-family: var(--sans);
+  padding: 0.55rem 1.2rem;
+  letter-spacing: 0.04em;
+  transition: all 0.25s ease;
+  margin-top: auto;
+  border-radius: 50px;
+  box-shadow: 0 4px 18px rgba(212, 168, 83, 0.3);
+  align-self: flex-start;
+}
+        .pkg-cta:hover {
+  background: #e8ba50;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(212, 168, 83, 0.45);
+  color: var(--ink);
+}
+  .pkg-cta:active {
+  transform: translateY(0px);
+  box-shadow: 0 3px 10px rgba(212, 168, 83, 0.3);
+}
         .pkg-cta svg { flex-shrink: 0; transition: transform 0.2s; }
         .pkg-cta:hover svg { transform: translateX(2px); }
 
@@ -645,52 +667,149 @@ export default function Services() {
         .mini-tour { font-size: 0.72rem; color: #aaa; font-weight: 300; margin-top: 1px; }
         .mini-stars { color: #F5A623; font-size: 0.7rem; margin-top: 2px; }
 
-        /* ── CTA ────────────────────────────────── */
-        .cta-section {
-          position: relative; background: var(--ink);
-          text-align: center; padding: 8rem 2rem; overflow: hidden;
-        }
-        .cta-noise {
-          position: absolute; inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-          pointer-events: none;
-        }
-        .cta-orb { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
-        .cta-orb-1 { width: 500px; height: 500px; background: rgba(61,82,160,0.2); top: -200px; left: -100px; }
-        .cta-orb-2 { width: 350px; height: 350px; background: rgba(212,168,83,0.12); bottom: -120px; right: 5%; }
-        .cta-kicker {
-          display: inline-block; font-size: 0.72rem; font-weight: 600;
-          letter-spacing: 0.18em; text-transform: uppercase;
-          color: var(--gold); margin-bottom: 1.25rem; position: relative;
-        }
-        .cta-title {
-          font-family: var(--serif); font-size: clamp(2.5rem, 6vw, 4.5rem);
-          font-weight: 700; color: white; line-height: 1; margin-bottom: 1rem; position: relative;
-        }
-        .cta-title em { font-style: italic; color: var(--gold); }
-        .cta-sub {
-          font-size: 1rem; font-weight: 300; color: rgba(255,255,255,0.5);
-          margin-bottom: 3rem; max-width: 480px; margin-left: auto; margin-right: auto;
-          line-height: 1.8; position: relative;
-        }
-        .cta-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; position: relative; }
-        .cta-btn-gold {
-          padding: 0.9rem 2.5rem; background: var(--gold); color: var(--ink);
-          border: none; border-radius: 50px; font-size: 0.9rem; font-weight: 600;
-          font-family: var(--sans); cursor: pointer; letter-spacing: 0.04em;
-          box-shadow: 0 12px 40px rgba(212,168,83,0.35);
-          transition: all 0.3s var(--ease-spring); text-decoration: none; display: inline-block;
-        }
-        .cta-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 20px 50px rgba(212,168,83,0.45); }
-        .cta-btn-outline {
-          padding: 0.9rem 2.5rem; background: transparent; color: rgba(255,255,255,0.8);
-          border: 1px solid rgba(255,255,255,0.2); border-radius: 50px;
-          font-size: 0.9rem; font-weight: 500; font-family: var(--sans);
-          cursor: pointer; letter-spacing: 0.04em; transition: all 0.3s;
-          text-decoration: none; display: inline-block;
-        }
-        .cta-btn-outline:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.4); color: white; }
 
+        // -------news---------
+        // .newsletter-section {
+        // margin-Top: -25px;
+        // }
+
+        /* ── CTA ────────────────────────────────── */
+       .cta-section {
+  position: relative;
+  background: var(--ink);
+  text-align: center;
+  padding: 8rem 2rem;
+  overflow: hidden;
+}
+
+/* ── Background image ── */
+// .cta-bg-image {
+//   position: absolute;
+//   inset: 0;
+//   background-image: url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80");
+//   background-size: cover;
+//   background-position: center 40%;
+//   background-repeat: no-repeat;
+//   pointer-events: none;
+// }
+
+.cta-bg-image {
+  position: absolute;
+  inset: 0;
+  background-image: url("https://i.pinimg.com/1200x/49/bf/fe/49bffe617cd6ce8438b198af06828ad9.jpg");
+  background-size: cover;
+  background-position: center 50%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* ── Dark overlay for text legibility ── */
+.cta-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 10, 20, 0.55) 0%,
+    rgba(8, 10, 20, 0.72) 50%,
+    rgba(8, 10, 20, 0.85) 100%
+  );
+  pointer-events: none;
+}
+
+/* ── Noise texture ── */
+.cta-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ── Orbs ── */
+.cta-orb { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
+.cta-orb-1 { width: 500px; height: 500px; background: rgba(61,82,160,0.18); top: -200px; left: -100px; }
+.cta-orb-2 { width: 350px; height: 350px; background: rgba(212,168,83,0.14); bottom: -120px; right: 5%; }
+
+/* ── All content above overlays ── */
+.cta-kicker,
+.cta-title,
+.cta-sub,
+.cta-actions {
+  position: relative;
+  z-index: 2;
+}
+
+.cta-kicker {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1.25rem;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+}
+
+.cta-title {
+  font-family: var(--serif);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.6);
+}
+.cta-title em { font-style: italic; color: var(--gold); }
+
+.cta-sub {
+  font-size: 1rem;
+  font-weight: 300;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 3rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.8;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.4);
+}
+
+/* ── Buttons (unchanged) ── */
+.cta-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+.cta-btn-gold {
+  padding: 0.9rem 2.5rem;
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--sans);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 12px 40px rgba(212,168,83,0.4);
+  transition: all 0.3s var(--ease-spring);
+  text-decoration: none;
+  display: inline-block;
+}
+.cta-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 20px 50px rgba(212,168,83,0.5); }
+
+.cta-btn-outline {
+  padding: 0.9rem 2.5rem;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.9);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: all 0.3s;
+  text-decoration: none;
+  display: inline-block;
+  backdrop-filter: blur(6px);
+}
+.cta-btn-outline:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.5); color: white; }
         /* ── ANIMATIONS ─────────────────────────── */
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(22px); }
@@ -721,7 +840,6 @@ export default function Services() {
         }
       `}</style>
 
-      <Header />
 
       {/* ── HERO ── */}
       <section className="hero" ref={heroRef}>
@@ -761,8 +879,8 @@ export default function Services() {
           </div>
         </div>
 
-        <div className="hero-scroll">
-          <div className="scroll-chevron" />
+        <div className="hero-scroll mt-5">
+          <div className="scroll-chevron " />
           <span>Scroll</span>
         </div>
       </section>
@@ -792,7 +910,7 @@ export default function Services() {
           data-section="packages"
         >
           <div className="section-header center" style={{ maxWidth: 1300, margin: '0 auto 3.5rem' }}>
-            <div className="section-kicker">Our Offerings</div>
+            <div className="section-kicker">We Offerings</div>
             <h2 className="section-title">Nine Ways to <em>Explore</em></h2>
             <p className="section-sub">From weekend escapes to once-in-a-lifetime expeditions — find the journey that calls to you.</p>
           </div>
@@ -809,7 +927,7 @@ export default function Services() {
             </div>
             <div className="pkg-search">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
               </svg>
               <input
                 type="text"
@@ -822,7 +940,7 @@ export default function Services() {
 
           <div className="pkg-grid">
             {filteredPackages.map((pkg) => {
-              const isListen = ['custom-tour','adventure-tour','honeymoon-tour','weekend-getaway','pilgrimage-tour'].includes(pkg.type);
+              const isListen = ['custom-tour', 'adventure-tour', 'honeymoon-tour', 'weekend-getaway', 'pilgrimage-tour'].includes(pkg.type);
               const ctaLabel = isListen ? 'Book Now' : 'Explore Package';
               return (
                 <div
@@ -848,8 +966,8 @@ export default function Services() {
                   <button className="pkg-cta" onClick={() => handleBook(pkg.type)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       {isListen
-                        ? <><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></>
-                        : <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>
+                        ? <><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" /></>
+                        : <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></>
                       }
                     </svg>
                     {ctaLabel}
@@ -917,7 +1035,7 @@ export default function Services() {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section
+      {/* <section
         className={`section testi-bg ${visibleSections['testimonials'] ? 'visible' : ''}`}
         data-section="testimonials"
       >
@@ -966,10 +1084,16 @@ export default function Services() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
+
+      <div className='newsletter-section'>
+        <NewsletterSubscribe/>
+      </div>
 
       {/* ── CTA ── */}
       <section className="cta-section">
+        <div className="cta-bg-image" />
+        <div className="cta-overlay" />
         <div className="cta-noise" />
         <div className="cta-orb cta-orb-1" />
         <div className="cta-orb cta-orb-2" />

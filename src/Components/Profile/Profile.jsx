@@ -41,7 +41,7 @@ const ProfilePopup = ({ user, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-md animate-fade-in">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 relative">
+        <div className="bg-linear-to-r from-blue-500 to-indigo-600 p-6 relative">
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors"

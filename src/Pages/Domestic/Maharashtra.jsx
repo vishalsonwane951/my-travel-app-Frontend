@@ -68,10 +68,10 @@ const CATEGORIES = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: 'Hotels', icon: '🏨', color: '#3D52A0' },
-  { label: 'Things To Do', icon: '🎯', color: '#FF6B6B' },
-  { label: 'Restaurants', icon: '🍽️', color: '#FFB347' },
-  { label: 'Holiday Homes', icon: '🏡', color: '#4ECDC4' },
+  { label: 'Hotels', icon: '🏨', color: '#3D52A0', bg: 'rgba(61,82,160,0.08)' },
+  { label: 'Things To Do', icon: '🎯', color: '#FF6B35', bg: 'rgba(255,107,53,0.08)' },
+  { label: 'Restaurants', icon: '🍽️', color: '#E6900A', bg: 'rgba(230,144,10,0.08)' },
+  { label: 'Holiday Homes', icon: '🏡', color: '#0A9A90', bg: 'rgba(10,154,144,0.08)' },
 ];
 
 const DESTINATIONS = [
@@ -102,12 +102,12 @@ const DESTINATIONS = [
 ];
 
 const EXPERIENCES = [
-  { icon: '🏰', title: 'Fort Trails', desc: '360+ Maratha forts including Raigad, Sinhagad & Pratapgad — each a stone chapter of epic history.', color: '#3D52A0' },
-  { icon: '🍛', title: 'Culinary Journey', desc: 'Vada pav, Misal, Puran Poli & Kolhapuri — a food odyssey across Maharashtra\'s distinct regional cuisines.', color: '#FF6B6B' },
-  { icon: '🎭', title: 'Lavani & Folk Arts', desc: 'Witness the vibrant Lavani dance, Tamasha performances & Warli art that pulse with cultural pride.', color: '#FFB347' },
-  { icon: '🌊', title: 'Konkan Coast', desc: '720 km of pristine coastline with fishing villages, coconut groves & some of India\'s cleanest beaches.', color: '#4ECDC4' },
-  { icon: '🦋', title: 'Wildlife Sanctuaries', desc: 'Tadoba Tiger Reserve, Navegaon & Melghat — where the wild roams free across Maharashtra\'s forests.', color: '#7BAE7F' },
-  { icon: '🍇', title: 'Winery Tours', desc: 'Nashik\'s wine valley offers vineyard walks, wine tasting & boutique stays amidst rolling green hills.', color: '#A37BFF' },
+  { icon: '🏰', title: 'Fort Trails', desc: '360+ Maratha forts including Raigad, Sinhagad & Pratapgad — each a stone chapter of epic history.', color: '#3D52A0', light: 'rgba(61,82,160,0.12)' },
+  { icon: '🍛', title: 'Culinary Journey', desc: "Vada pav, Misal, Puran Poli & Kolhapuri — a food odyssey across Maharashtra's distinct regional cuisines.", color: '#FF6B35', light: 'rgba(255,107,53,0.12)' },
+  { icon: '🎭', title: 'Lavani & Folk Arts', desc: 'Witness the vibrant Lavani dance, Tamasha performances & Warli art that pulse with cultural pride.', color: '#E6900A', light: 'rgba(230,144,10,0.12)' },
+  { icon: '🌊', title: 'Konkan Coast', desc: "720 km of pristine coastline with fishing villages, coconut groves & some of India's cleanest beaches.", color: '#0A9A90', light: 'rgba(10,154,144,0.12)' },
+  { icon: '🦋', title: 'Wildlife Sanctuaries', desc: "Tadoba Tiger Reserve, Navegaon & Melghat — where the wild roams free across Maharashtra's forests.", color: '#5BA85A', light: 'rgba(91,168,90,0.12)' },
+  { icon: '🍇', title: 'Winery Tours', desc: "Nashik's wine valley offers vineyard walks, wine tasting & boutique stays amidst rolling green hills.", color: '#8B5CF6', light: 'rgba(139,92,246,0.12)' },
 ];
 
 const TRAVEL_TIPS = [
@@ -126,7 +126,7 @@ function ImageCarousel({ images }) {
   }, [images.length]);
 
   return (
-    <div className="relative w-full" style={{ paddingTop: '70%' }}>
+    <div className="relative w-full" style={{ paddingTop: '68%', overflow: 'hidden' }}>
       <img
         src={images[index]}
         alt={`slide-${index}`}
@@ -135,18 +135,25 @@ function ImageCarousel({ images }) {
       />
       <button
         onClick={() => setIndex(i => (i - 1 + images.length) % images.length)}
-        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center z-10 hover:bg-black/70 transition-colors"
+        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full w-7 h-7 flex items-center justify-center z-10"
+        style={{ backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.9rem' }}
       >‹</button>
       <button
         onClick={() => setIndex(i => (i + 1) % images.length)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center z-10 hover:bg-black/70 transition-colors"
+        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full w-7 h-7 flex items-center justify-center z-10"
+        style={{ backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.9rem' }}
       >›</button>
-      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10">
+      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
         {images.map((_, i) => (
           <button
             key={i}
             onClick={() => setIndex(i)}
-            className={`w-2 h-2 rounded-full border border-white transition-all ${i === index ? 'bg-white w-5' : 'bg-white/50'}`}
+            style={{
+              width: i === index ? 20 : 6, height: 6,
+              borderRadius: 50, border: '1px solid rgba(255,255,255,0.6)',
+              background: i === index ? 'white' : 'rgba(255,255,255,0.4)',
+              transition: 'all 0.3s', cursor: 'pointer', padding: 0,
+            }}
           />
         ))}
       </div>
@@ -170,28 +177,51 @@ function HeroSlider() {
           className="absolute inset-0 transition-opacity duration-1000"
           style={{ opacity: i === current ? 1 : 0 }}
         >
-          <img src={slide.img} alt={slide.place} className="w-full h-full object-cover" />
+          <img src={slide.img} alt={slide.place} className="w-full h-full object-cover" style={{ transform: i === current ? 'scale(1.03)' : 'scale(1)', transition: 'transform 6s ease' }} />
         </div>
       ))}
-      {/* Slide indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-2.5 z-20">
         {HERO_SLIDES.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`transition-all rounded-full border border-white/60 ${i === current ? 'w-8 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`}
+            style={{
+              width: i === current ? 32 : 8, height: 8,
+              borderRadius: 50, border: '1.5px solid rgba(255,255,255,0.7)',
+              background: i === current ? 'white' : 'rgba(255,255,255,0.35)',
+              transition: 'all 0.4s', cursor: 'pointer', padding: 0,
+            }}
           />
         ))}
       </div>
-      {/* Current place label */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-center z-20">
-        <span className="text-xs tracking-widest uppercase text-amber-300 font-semibold block mb-1">
+      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 text-center z-20" style={{ whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '0.68rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#F0D080', fontWeight: 700, display: 'block', marginBottom: 4, textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
           {HERO_SLIDES[current].tag}
         </span>
-        <span className="text-white font-light text-lg tracking-wide">
+        <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1rem', fontWeight: 300, letterSpacing: '0.06em', textShadow: '0 1px 10px rgba(0,0,0,0.6)' }}>
           {HERO_SLIDES[current].place}
         </span>
       </div>
+    </div>
+  );
+}
+
+// ── Section Header ─────────────────────────────────────────────────────────────
+function SectionHeader({ eyebrow, eyebrowColor = 'var(--saffron)', eyebrowBg = 'rgba(255,107,53,0.08)', title, subtitle, light = false }) {
+  return (
+    <div className="text-center" style={{ marginBottom: '3.5rem' }}>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase',
+        color: eyebrowColor, background: eyebrowBg,
+        padding: '5px 16px', borderRadius: '50px', marginBottom: '1rem',
+        fontFamily: 'var(--font-body)', border: `1px solid ${eyebrowColor}25`,
+      }}>{eyebrow}</span>
+      <h2 style={{
+        fontFamily: 'var(--font-display)', fontWeight: 700, color: light ? 'white' : 'var(--navy)',
+        fontSize: 'clamp(2rem,5vw,3rem)', marginBottom: subtitle ? '0.75rem' : 0, lineHeight: 1.15,
+      }}>{title}</h2>
+      {subtitle && <p style={{ fontSize: '1.05rem', color: light ? 'rgba(255,255,255,0.6)' : '#777', lineHeight: 1.75, maxWidth: 560, margin: '0 auto', fontFamily: 'var(--font-body)' }}>{subtitle}</p>}
     </div>
   );
 }
@@ -204,7 +234,6 @@ function Maharashtra() {
   const initialCategory = searchParams.get('category') || localStorage.getItem('mh_category') || 'essential';
   const [selected, setSelected] = useState(initialCategory);
   const [cardData, setCardData] = useState([]);
-  const [cardSearchQuery, setCardSearchQuery] = useState([]);
   const [loading, setLoading] = useState(true);
   const [allCards, setAllCards] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,27 +241,18 @@ function Maharashtra() {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [weatherData] = useState({ temp: '28°C', condition: 'Partly Cloudy', icon: '⛅' });
 
-  // Count up stats
   const [fortsCount, fortsRef] = useCountUp(360, 2000);
   const [beachCount, beachRef] = useCountUp(720, 2200);
   const [heritageCount, heritageRef] = useCountUp(5, 1500);
   const [districtCount, districtRef] = useCountUp(36, 1800);
 
-  useEffect(() => {
-    setTimeout(() => setHeroVisible(true), 100);
-  }, []);
+  useEffect(() => { setTimeout(() => setHeroVisible(true), 100); }, []);
 
   const fetchData = useCallback(async (type) => {
     setLoading(true);
     try {
       const res = await api.get(`/maharashtra-cards/${type}`);
-
-      const categoryData = Array.isArray(res.data.data)
-        ? res.data.data
-        : [];
-
-      setCardData(categoryData);
-
+      setCardData(Array.isArray(res.data.data) ? res.data.data : []);
     } catch (err) {
       console.error("Category error:", err);
       setCardData([]);
@@ -241,10 +261,7 @@ function Maharashtra() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData(selected);
-  }, [selected, fetchData]);
-
+  useEffect(() => { fetchData(selected); }, [selected, fetchData]);
 
   useEffect(() => {
     const fetchAllCards = async () => {
@@ -252,11 +269,9 @@ function Maharashtra() {
         const res = await api.get(`/maharashtra-cards/getall`);
         setAllCards(Array.isArray(res.data.data) ? res.data.data : []);
       } catch (err) {
-        console.error("All cards error:", err);
         setAllCards([]);
       }
     };
-
     fetchAllCards();
   }, []);
 
@@ -270,447 +285,463 @@ function Maharashtra() {
 
   const filteredCards = (searchQuery ? allCards : cardData).filter(card => {
     const query = searchQuery.toLowerCase();
-
-    return (
-      !searchQuery ||
-      card.title?.toLowerCase().includes(query) ||
-      card.location?.toLowerCase().includes(query) ||
-      card.tags?.some(tag => tag.toLowerCase().includes(query))
-    );
+    return !searchQuery || card.title?.toLowerCase().includes(query) || card.location?.toLowerCase().includes(query) || card.tags?.some(tag => tag.toLowerCase().includes(query));
   });
+
+  const revealRef = useCallback(el => {
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add('mh-revealed'); obs.disconnect(); } }, { threshold: 0.08 });
+    obs.observe(el);
+  }, []);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
         :root {
           --gold: #C9A84C;
           --gold-light: #F0D080;
-          --navy: #1a1a2e;
+          --navy: #0F1628;
           --indigo: #3D52A0;
           --indigo-light: #7091E6;
           --saffron: #FF6B35;
           --saffron-light: #FFB347;
-          --teal: #4ECDC4;
-          --cream: #FDFAF4;
+          --teal: #0A9A90;
+          --cream: #F8F6F1;
           --font-display: 'Cormorant Garamond', serif;
           --font-body: 'DM Sans', sans-serif;
           --ease: cubic-bezier(0.4,0,0.2,1);
+          --shadow-sm: 0 2px 10px rgba(0,0,0,0.06);
+          --shadow-md: 0 8px 28px rgba(0,0,0,0.10);
+          --shadow-lg: 0 20px 60px rgba(0,0,0,0.14);
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: var(--font-body); overflow-x: hidden; }
 
-        /* Hero animations */
+        /* ── Hero ── */
         .mh-hero-content { transition: all 1s var(--ease); }
         .mh-hero-content.hidden-state { opacity: 0; transform: translateY(40px); }
         .mh-hero-content.visible-state { opacity: 1; transform: translateY(0); }
 
-        .mh-eyebrow-delay-1 { animation: mhFadeUp 0.8s 0.1s var(--ease) both; }
-        .mh-eyebrow-delay-2 { animation: mhFadeUp 0.8s 0.25s var(--ease) both; }
-        .mh-eyebrow-delay-3 { animation: mhFadeUp 0.8s 0.4s var(--ease) both; }
-        .mh-eyebrow-delay-4 { animation: mhFadeUp 0.8s 0.55s var(--ease) both; }
-        .mh-eyebrow-delay-5 { animation: mhFadeUp 0.8s 0.7s var(--ease) both; }
+        .mh-d1 { animation: mhFadeUp 0.9s 0.1s var(--ease) both; }
+        .mh-d2 { animation: mhFadeUp 0.9s 0.25s var(--ease) both; }
+        .mh-d3 { animation: mhFadeUp 0.9s 0.4s var(--ease) both; }
+        .mh-d4 { animation: mhFadeUp 0.9s 0.55s var(--ease) both; }
+        .mh-d5 { animation: mhFadeUp 0.9s 0.7s var(--ease) both; }
 
         @keyframes mhFadeUp {
-          from { opacity: 0; transform: translateY(25px); }
+          from { opacity: 0; transform: translateY(28px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Pulse dot */
-        .live-dot {
-          width: 8px; height: 8px;
-          background: #4CAF50;
-          border-radius: 50%;
-          animation: pulseDot 2s infinite;
-        }
+        /* ── Pulse dot ── */
+        .live-dot { width: 8px; height: 8px; background: #4ADE80; border-radius: 50%; flex-shrink: 0; animation: pulseDot 2s infinite; }
         @keyframes pulseDot {
-          0%,100%{box-shadow:0 0 0 3px rgba(76,175,80,0.25)}
-          50%{box-shadow:0 0 0 7px rgba(76,175,80,0.08)}
+          0%,100% { box-shadow: 0 0 0 3px rgba(74,222,128,0.25); }
+          50%      { box-shadow: 0 0 0 7px rgba(74,222,128,0.06); }
         }
 
-        /* Section reveal */
-        .mh-reveal {
-          opacity: 0;
-          transform: translateY(28px);
-          transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
-        }
-        .mh-reveal.revealed {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        /* ── Scroll indicator ── */
+        .scroll-line { width: 1px; height: 44px; background: linear-gradient(to bottom, rgba(255,255,255,0.55), transparent); animation: scrollPulse 1.8s ease-in-out infinite; }
+        @keyframes scrollPulse { 0%,100%{transform:scaleY(1);opacity:1} 50%{transform:scaleY(0.4);opacity:0.3} }
 
-        /* Destination card hover */
-        .dest-card:hover .dest-img { transform: scale(1.07); }
-        .dest-card:hover .dest-arrow { opacity: 1; transform: translate(0,0); }
+        /* ── Reveal ── */
+        .mh-reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+        .mh-revealed { opacity: 1; transform: translateY(0); }
 
-        /* Category pill */
+        /* ── Stats ── */
+        .stat-card { transition: all 0.3s var(--ease); }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+        /* ── Category pills ── */
         .cat-pill {
           transition: all 0.25s var(--ease);
           font-family: var(--font-body);
           cursor: pointer;
+          white-space: nowrap;
         }
         .cat-pill.active {
-          background: linear-gradient(135deg, var(--saffron), var(--saffron-light));
-          color: white;
-          border-color: transparent;
-          box-shadow: 0 6px 18px rgba(255,107,53,0.35);
-        }
-        .cat-pill:not(.active):hover {
-          border-color: var(--saffron);
-          color: var(--saffron);
+          background: linear-gradient(135deg, var(--saffron) 0%, var(--saffron-light) 100%);
+          color: white !important;
+          border-color: transparent !important;
+          box-shadow: 0 6px 20px rgba(255,107,53,0.38);
           transform: translateY(-2px);
         }
-
-        /* Card hover */
-        .mh-card {
-          transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
-        }
-        .mh-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 24px 50px rgba(0,0,0,0.13);
+        .cat-pill:not(.active):hover {
+          border-color: var(--saffron) !important;
+          color: var(--saffron) !important;
+          transform: translateY(-2px);
+          background: rgba(255,107,53,0.05) !important;
         }
 
-        /* Experience card */
-        .exp-card {
-          transition: all 0.3s var(--ease);
-          border: 1px solid rgba(200,200,230,0.2);
-        }
-        .exp-card:hover {
-          transform: translateY(-5px);
-          border-color: rgba(255,107,53,0.25);
-          box-shadow: 0 16px 36px rgba(0,0,0,0.09);
-        }
+        /* ── Destination cards ── */
+        .dest-card { transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease); }
+        .dest-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+        .dest-card:hover .dest-img { transform: scale(1.06); }
+        .dest-card:hover .dest-arrow { opacity: 1 !important; transform: translate(0,0) !important; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: var(--saffron); border-radius: 3px; }
+        /* ── Place cards ── */
+        .mh-card { transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+        .mh-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-lg); }
 
-        /* Skeleton */
+        /* ── Experience cards ── */
+        .exp-card { transition: all 0.3s var(--ease); }
+        .exp-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(0,0,0,0.18); }
+
+        /* ── Quick action ── */
+        .qa-btn { transition: all 0.3s var(--ease); }
+        .qa-btn:hover { transform: translateY(-5px); }
+
+        /* ── Travel tip cards ── */
+        .tip-card { transition: all 0.3s var(--ease); }
+        .tip-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+        /* ── Skeleton ── */
         .skeleton {
-          background: linear-gradient(90deg, #f0f0f8 25%, #e8e8f0 50%, #f0f0f8 75%);
+          background: linear-gradient(90deg, #eff0f7 25%, #e8e9f3 50%, #eff0f7 75%);
           background-size: 200% 100%;
-          animation: shimmer 1.4s infinite;
+          animation: shimmer 1.5s infinite;
           border-radius: 8px;
         }
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-        /* CTA gradient */
+        /* ── CTA ── */
         .mh-cta-bg {
-          background: linear-gradient(135deg, #1a1a2e 0%, #3D52A0 55%, #1a1a2e 100%);
-          background-size: 200% 100%;
-          animation: ctaShimmer 9s linear infinite;
+          background: linear-gradient(135deg, #0F1628 0%, #1e2d5a 40%, #3D52A0 70%, #0F1628 100%);
+          background-size: 300% 100%;
+          animation: ctaFlow 10s linear infinite;
+          position: relative;
+          overflow: hidden;
         }
-        @keyframes ctaShimmer { 0%{background-position:0%} 100%{background-position:200%} }
-
-        /* Scroll line */
-        .scroll-line {
-          width: 1px; height: 44px;
-          background: linear-gradient(to bottom, rgba(255,255,255,0.6), transparent);
-          animation: scrollLine 1.6s ease-in-out infinite;
+        .mh-cta-bg::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,107,53,0.12) 0%, transparent 70%);
+          pointer-events: none;
         }
-        @keyframes scrollLine { 0%,100%{transform:scaleY(1);opacity:1} 50%{transform:scaleY(0.4);opacity:0.3} }
+        @keyframes ctaFlow { 0%{background-position:0%} 100%{background-position:300%} }
 
-        @media(max-width:640px){
+        /* ── Divider ── */
+        .mh-divider {
+          display: flex; align-items: center; gap: 16px;
+          margin: 0 auto 2rem; max-width: 300px;
+        }
+        .mh-divider::before, .mh-divider::after {
+          content: ''; flex: 1; height: 1px;
+          background: linear-gradient(to right, transparent, rgba(201,168,76,0.4), transparent);
+        }
+
+        /* ── Search ── */
+        .hero-search { transition: box-shadow 0.3s; }
+        .hero-search:focus-within { box-shadow: 0 0 0 3px rgba(255,107,53,0.25), 0 24px 60px rgba(0,0,0,0.25); }
+
+        /* ── Quick pill ── */
+        .quick-pill { transition: all 0.25s var(--ease); }
+        .quick-pill:hover { background: rgba(255,180,55,0.2) !important; border-color: var(--gold-light) !important; color: var(--gold-light) !important; transform: translateY(-2px); }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #f4f4fa; }
+        ::-webkit-scrollbar-thumb { background: var(--saffron); border-radius: 3px; }
+
+        /* ── Responsive ── */
+        @media(max-width:768px){
           .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
           .dest-grid  { grid-template-columns: 1fr !important; }
+          .dest-grid > *:first-child { height: 280px !important; grid-row: auto !important; }
           .exp-grid   { grid-template-columns: 1fr !important; }
           .tip-grid   { grid-template-columns: 1fr !important; }
+          .qa-grid    { grid-template-columns: repeat(2,1fr) !important; }
+          .cards-grid { grid-template-columns: 1fr !important; }
+        }
+        @media(max-width:480px){
+          .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
           .qa-grid    { grid-template-columns: repeat(2,1fr) !important; }
         }
       `}</style>
 
-      {/* ── HERO ──────────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ background: 'var(--navy)' }}>
-        {/* Background slider */}
-        <div className="absolute inset-0">
-          <HeroSlider />
-        </div>
-        {/* Overlays */}
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(255,107,53,0.2) 0%, transparent 70%), linear-gradient(180deg, rgba(26,26,46,0.25) 0%, rgba(26,26,46,0.88) 100%)'
-        }} />
+      {/* ══════════════════════ HERO ══════════════════════════════════════════ */}
+      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'var(--navy)' }}>
+        {/* Slider bg */}
+        <div style={{ position: 'absolute', inset: 0 }}><HeroSlider /></div>
 
-        {/* Content */}
-        <div className={`relative z-10 text-center px-6 max-w-4xl mx-auto mh-hero-content ${heroVisible ? 'visible-state' : 'hidden-state'}`}
-          style={{ paddingBottom: '7rem' }}>
+        {/* Gradient overlays */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(15,22,40,0.18) 0%, rgba(15,22,40,0.55) 55%, rgba(15,22,40,0.92) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 38%, rgba(255,107,53,0.16) 0%, transparent 65%)' }} />
+
+        {/* Hero content */}
+        <div className={`mh-hero-content ${heroVisible ? 'visible-state' : 'hidden-state'}`}
+          style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 1.5rem 9rem', maxWidth: 680, margin: '0 auto' }}>
+
           {/* Eyebrow badge */}
-          <div className="mh-eyebrow-delay-1 inline-flex items-center gap-2 mb-7"
-            style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', color: 'var(--gold-light)', padding: '6px 20px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          <div className="mh-d1" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(201,168,76,0.14)', border: '1px solid rgba(201,168,76,0.42)', color: 'var(--gold-light)', padding: '7px 22px', borderRadius: '50px', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '1.75rem', backdropFilter: 'blur(8px)', fontFamily: 'var(--font-body)' }}>
             <span className="live-dot" />
             Incredible Maharashtra
           </div>
 
           {/* Title */}
-          <h1 className="mh-eyebrow-delay-2 font-display text-white mb-5 leading-none"
-            style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem,9vw,7rem)', fontWeight: 700, lineHeight: 1.04 }}>
+          <h1 className="mh-d2" style={{ fontFamily: 'var(--font-display)', color: 'white', fontSize: 'clamp(3.2rem,9vw,6.5rem)', fontWeight: 700, lineHeight: 1.05, marginBottom: '1.25rem', textShadow: '0 2px 30px rgba(0,0,0,0.3)' }}>
             Discover the<br />
             <span style={{ color: 'var(--gold-light)', fontStyle: 'italic' }}>Soul</span> of Maharashtra
           </h1>
 
-          <p className="mh-eyebrow-delay-3 mx-auto mb-8" style={{ fontSize: 'clamp(1rem,2.5vw,1.2rem)', color: 'rgba(255,255,255,0.8)', maxWidth: 580, lineHeight: 1.75, fontFamily: 'var(--font-body)' }}>
+          <p className="mh-d3" style={{ fontSize: 'clamp(0.95rem,2vw,1.15rem)', color: 'rgba(255,255,255,0.78)', maxWidth: 520, margin: '0 auto 2rem', lineHeight: 1.8, fontFamily: 'var(--font-body)', fontWeight: 300 }}>
             360+ forts, UNESCO caves, Konkan shores & vibrant cities — India's most multifaceted state awaits your footsteps.
           </p>
 
-          {/* Search */}
-          <div className="mh-eyebrow-delay-4 mx-auto mb-6 flex overflow-hidden rounded-2xl shadow-2xl"
-            style={{ maxWidth: 560, background: 'white' }}>
+          {/* Search bar */}
+          <div className="mh-d4 hero-search" style={{ display: 'flex', overflow: 'hidden', borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.22)', maxWidth: 560, margin: '0 auto 1.5rem', background: 'white' }}>
             <input
               type="text"
               placeholder="Search places, forts, beaches, experiences..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ flex: 1, padding: '1rem 1.5rem', border: 'none', outline: 'none', fontSize: '1rem', fontFamily: 'var(--font-body)', color: 'var(--navy)' }}
+              style={{ flex: 1, padding: '1rem 1.5rem', border: 'none', outline: 'none', fontSize: '0.95rem', fontFamily: 'var(--font-body)', color: 'var(--navy)', background: 'transparent' }}
             />
-            <button style={{ padding: '0 1.75rem', background: 'linear-gradient(135deg, var(--saffron), var(--saffron-light))', border: 'none', color: 'white', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            <button style={{ padding: '0 1.75rem', background: 'linear-gradient(135deg, var(--saffron), var(--saffron-light))', border: 'none', color: 'white', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'var(--font-body)', flexShrink: 0, letterSpacing: '0.03em' }}>
               Search
             </button>
           </div>
 
-          {/* Quick pills */}
-          <div className="mh-eyebrow-delay-5 flex flex-wrap gap-2 justify-center">
+          {/* Quick filter pills */}
+          <div className="mh-d5" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
             {['🏰 Forts', '🌊 Beaches', '🍛 Food Tours', '💎 Hidden Gems', '🌿 Eco Trails', '🏛️ Heritage'].map(p => (
-              <span key={p}
-                onClick={() => setSearchQuery(p.split(' ')[1])}
-                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)', padding: '6px 15px', borderRadius: '50px', fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.25s', fontFamily: 'var(--font-body)' }}
-                className="hover:bg-amber-400/20 hover:border-amber-400 hover:text-amber-300 transition-all"
+              <span
+                key={p}
+                className="quick-pill"
+                onClick={() => setSearchQuery(p.split(' ').slice(1).join(' '))}
+                style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.88)', padding: '7px 16px', borderRadius: '50px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-body)', backdropFilter: 'blur(4px)' }}
               >{p}</span>
             ))}
           </div>
         </div>
 
-        {/* Live badge bottom */}
+        {/* Bottom info bar */}
         <div style={{
-          position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '10px 24px', borderRadius: 50,
-          background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          color: 'white', fontSize: '0.83rem', whiteSpace: 'nowrap',
+          position: 'absolute', bottom: '2.35rem', left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 26px', borderRadius: 50,
+          background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(14px)',
+          border: '1px solid rgba(255,255,255,0.14)',
+          color: 'rgba(255,255,255,0.9)', fontSize: '0.82rem', whiteSpace: 'nowrap',
           fontFamily: 'var(--font-body)', zIndex: 20,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
         }}>
           <span className="live-dot" />
           <span><strong>{weatherData.icon} {weatherData.temp}</strong> in Maharashtra · <strong>36</strong> districts · <strong>Best time:</strong> Oct–Mar</span>
         </div>
 
-
         {searchQuery && (
-          <p style={{ textAlign: "center", marginBottom: "1rem" }}>
-            Showing results for "<strong>{searchQuery}</strong>" across all categories
-          </p>
+          <div style={{ position: 'absolute', bottom: '7.7rem', left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.75)', fontSize: '0.78rem', fontFamily: 'var(--font-body)', zIndex: 20 }}>
+            Showing results for "<strong style={{ color: 'var(--gold-light)' }}>{searchQuery}</strong>" across all categories
+          </div>
         )}
 
         {/* Scroll indicator */}
-        <div style={{
-          position: 'absolute', bottom: '2.5rem', right: '2.5rem',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-          color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem',
-          letterSpacing: '0.1em', textTransform: 'uppercase',
-          fontFamily: 'var(--font-body)', zIndex: 20,
-        }}>
+        <div style={{ position: 'absolute', bottom: '2.75rem', right: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.38)', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'var(--font-body)', zIndex: 20 }}>
           <div className="scroll-line" />
           <span>Scroll</span>
         </div>
       </section>
 
-      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
-      <section style={{ background: 'white', padding: '3.5rem 2rem', borderBottom: '1px solid #f0f0f8' }}>
-        <div className="stats-grid mx-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1.5rem', maxWidth: 1100 }}>
+      {/* ══════════════════════ STATS ══════════════════════════════════════════ */}
+      <section style={{ background: 'white', padding: '4rem 2rem', borderBottom: '1px solid #f0f0f8', position: 'relative' }}>
+        {/* Decorative top line */}
+        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 60, height: 3, borderRadius: 2, background: 'linear-gradient(90deg, var(--saffron), var(--saffron-light))' }} />
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1.25rem', maxWidth: 1000, margin: '0 auto' }}>
           {[
-            { num: fortsCount, suffix: '+', label: 'Historic Forts', ref: fortsRef, icon: '🏰' },
-            { num: beachCount, suffix: ' km', label: 'Coastline', ref: beachRef, icon: '🌊' },
-            { num: heritageCount, suffix: '', label: 'UNESCO Sites', ref: heritageRef, icon: '🏛️' },
-            { num: districtCount, suffix: '', label: 'Districts', ref: districtRef, icon: '🗺️' },
+            { num: fortsCount, suffix: '+', label: 'Historic Forts', ref: fortsRef, icon: '🏰', color: '#3D52A0' },
+            { num: beachCount, suffix: ' km', label: 'Coastline', ref: beachRef, icon: '🌊', color: '#0A9A90' },
+            { num: heritageCount, suffix: '', label: 'UNESCO Sites', ref: heritageRef, icon: '🏛️', color: 'var(--gold)' },
+            { num: districtCount, suffix: '', label: 'Districts', ref: districtRef, icon: '🗺️', color: 'var(--saffron)' },
           ].map((s, i) => (
-            <div key={i} ref={s.ref}
-              className="text-center p-6 rounded-2xl cursor-default transition-all duration-300 hover:-translate-y-1"
-              style={{ background: '#fafbff', border: '1px solid #eef0ff' }}>
-              <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{s.icon}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem', fontWeight: 700, color: 'var(--saffron)', lineHeight: 1 }}>
+            <div key={i} ref={s.ref} className="stat-card"
+              style={{ textAlign: 'center', padding: '2rem 1rem', borderRadius: 20, background: 'linear-gradient(145deg, #fafbff, #f5f6ff)', border: '1px solid #eeeffa', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${s.color}80, ${s.color})`, borderRadius: '20px 20px 0 0' }} />
+              <div style={{ fontSize: '1.6rem', marginBottom: '0.6rem' }}>{s.icon}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.4rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>
                 {s.num.toLocaleString()}{s.suffix}
               </div>
-              <div style={{ fontSize: '0.88rem', color: '#666', fontWeight: 500, marginTop: '0.4rem', fontFamily: 'var(--font-body)' }}>{s.label}</div>
+              <div style={{ fontSize: '0.82rem', color: '#888', fontWeight: 600, marginTop: '0.5rem', fontFamily: 'var(--font-body)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── QUICK ACTIONS ─────────────────────────────────────────────────────── */}
-      <section style={{ padding: '4rem 2rem', background: 'var(--cream)' }}>
-        <div className="mx-auto text-center" style={{ maxWidth: 900 }}>
-          <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--indigo)', background: 'rgba(61,82,160,0.08)', padding: '5px 14px', borderRadius: '50px', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}>
-            Quick Browse
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem,4vw,2.6rem)', fontWeight: 700, color: 'var(--navy)', marginBottom: '2.5rem' }}>
-            What Are You Looking For?
-          </h2>
-          <div className="qa-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', maxWidth: 860, margin: '0 auto' }}>
+      {/* ══════════════════════ QUICK ACTIONS ═════════════════════════════════ */}
+      <section style={{ padding: '5rem 2rem', background: 'var(--cream)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+          <SectionHeader
+            eyebrow="Quick Browse"
+            eyebrowColor="var(--indigo)"
+            eyebrowBg="rgba(61,82,160,0.08)"
+            title="What Are You Looking For?"
+          />
+          <div className="qa-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1.25rem', maxWidth: 820, margin: '0 auto' }}>
             {QUICK_ACTIONS.map((a, i) => (
-              <button key={i}
+              <button key={i} className="qa-btn"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 12, padding: '2rem 1rem', borderRadius: 16,
-                  background: 'white', border: `2px solid ${a.color}18`,
+                  gap: 14, padding: '2.25rem 1rem 2rem', borderRadius: 20,
+                  background: 'white', border: `1.5px solid ${a.color}20`,
                   color: a.color, fontFamily: 'var(--font-body)',
-                  fontSize: '0.95rem', fontWeight: 600,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
-                  cursor: 'pointer', transition: 'all 0.3s var(--ease)',
-                  minHeight: 130,
+                  fontSize: '0.92rem', fontWeight: 600,
+                  boxShadow: '0 4px 18px rgba(0,0,0,0.06)',
+                  cursor: 'pointer', minHeight: 140,
+                  position: 'relative', overflow: 'hidden',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = a.color;
                   e.currentTarget.style.color = 'white';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = `0 16px 36px ${a.color}40`;
+                  e.currentTarget.style.boxShadow = `0 16px 40px ${a.color}40`;
+                  e.currentTarget.style.borderColor = 'transparent';
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = 'white';
                   e.currentTarget.style.color = a.color;
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07)';
+                  e.currentTarget.style.boxShadow = '0 4px 18px rgba(0,0,0,0.06)';
+                  e.currentTarget.style.borderColor = `${a.color}20`;
                 }}
               >
-                <span style={{ fontSize: '2rem', lineHeight: 1 }}>{a.icon}</span>
-                <span>{a.label}</span>
+                <div style={{ width: 54, height: 54, borderRadius: 14, background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.7rem', transition: 'all 0.3s' }}>
+                  {a.icon}
+                </div>
+                <span style={{ letterSpacing: '0.01em' }}>{a.label}</span>
               </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── DESTINATIONS GRID ─────────────────────────────────────────────────── */}
-      <section className="mh-reveal" style={{ padding: '5rem 2rem', background: 'white' }}
-        ref={el => { if (el) { const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.classList.add('revealed'); }, { threshold: 0.1 }); obs.observe(el); } }}>
-        <div className="text-center mb-14" style={{ maxWidth: 700, margin: '0 auto 3.5rem' }}>
-          <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--saffron)', background: 'rgba(255,107,53,0.08)', padding: '5px 14px', borderRadius: '50px', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}>
-            Top Picks
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3rem)', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.75rem' }}>
-            Iconic Maharashtra Destinations
-          </h2>
-          <p style={{ fontSize: '1.05rem', color: '#666', lineHeight: 1.7, fontFamily: 'var(--font-body)' }}>
-            Hand-picked places that capture the diverse magic of Maharashtra.
-          </p>
-        </div>
-
-        <div className="dest-grid mx-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem', maxWidth: 1200 }}>
+      {/* ══════════════════════ DESTINATIONS ══════════════════════════════════ */}
+      <section className="mh-reveal" ref={revealRef} style={{ padding: '5rem 2rem', background: 'white' }}>
+        <SectionHeader
+          eyebrow="Top Picks"
+          title="Iconic Maharashtra Destinations"
+          subtitle="Hand-picked places that capture the diverse magic of Maharashtra."
+        />
+        <div className="dest-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', maxWidth: 1200, margin: '0 auto' }}>
           {DESTINATIONS.map((d, i) => (
-            <div key={i} className="dest-card relative rounded-2xl overflow-hidden cursor-pointer" style={{ height: i === 0 ? 480 : 220, gridRow: i === 0 ? 'span 2' : 'auto' }}>
-              <img src={d.img} alt={d.name} className="dest-img w-full h-full object-cover transition-transform duration-700" loading="lazy" />
-              <div className="absolute inset-0 flex flex-col justify-end p-5"
-                style={{ background: 'linear-gradient(180deg, transparent 30%, rgba(10,10,30,0.83) 100%)' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold-light)', marginBottom: 3 }}>{d.tag}</span>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: i === 0 ? '2.2rem' : '1.5rem', fontWeight: 700, color: 'white', lineHeight: 1.1, marginBottom: 4 }}>{d.name}</div>
-                <div style={{ fontSize: '0.83rem', color: 'rgba(255,255,255,0.7)', marginBottom: 6, fontFamily: 'var(--font-body)' }}>{d.desc}</div>
-                <div style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-body)' }}>✈️ From {d.price}</div>
+            <div key={i} className="dest-card"
+              style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', height: i === 0 ? 500 : 236, gridRow: i === 0 ? 'span 2' : 'auto', boxShadow: 'var(--shadow-sm)' }}>
+              <img src={d.img} alt={d.name} className="dest-img" style={{ width: '100%', height: '100%', objectCover: 'cover', objectFit: 'cover', transition: 'transform 0.7s var(--ease)' }} loading="lazy" />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 25%, rgba(8,10,28,0.85) 100%)' }} />
+              <div style={{ position: 'absolute', inset: 0, padding: i === 0 ? '1.75rem' : '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--gold-light)', marginBottom: 4, fontFamily: 'var(--font-body)' }}>{d.tag}</span>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: i === 0 ? '2.4rem' : '1.6rem', fontWeight: 700, color: 'white', lineHeight: 1.1, marginBottom: 5 }}>{d.name}</div>
+                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.68)', marginBottom: 8, fontFamily: 'var(--font-body)' }}>{d.desc}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.84rem', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-body)', fontWeight: 500 }}>✈️ From {d.price}</span>
+                  <span className="dest-arrow" style={{ background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', opacity: 0, transform: 'translate(-6px,6px)', transition: 'all 0.3s var(--ease)' }}>→</span>
+                </div>
               </div>
-              <div className="dest-arrow absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-white text-sm"
-                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', opacity: 0, transform: 'translate(-5px,5px)', transition: 'all 0.3s var(--ease)' }}>→</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── CATEGORY FILTER + CARDS ───────────────────────────────────────────── */}
-      <section className="mh-reveal" style={{ padding: '5rem 2rem', background: 'var(--cream)' }}
-        ref={el => { if (el) { const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.classList.add('revealed'); }, { threshold: 0.08 }); obs.observe(el); } }}>
-        <div className="text-center" style={{ marginBottom: '3rem' }}>
-          <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--indigo)', background: 'rgba(61,82,160,0.08)', padding: '5px 14px', borderRadius: '50px', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}>
-            Explore by Category
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3rem)', fontWeight: 700, color: 'var(--navy)' }}>
-            Maharashtra, India
-          </h2>
-          <p style={{ fontSize: '1rem', color: '#777', marginTop: '0.5rem', fontFamily: 'var(--font-body)' }}>
-            Pick a category to filter your recommendations
-          </p>
-        </div>
+      {/* ══════════════════════ CATEGORY FILTER + CARDS ═══════════════════════ */}
+      <section className="mh-reveal" ref={revealRef} style={{ padding: '5rem 2rem 6rem', background: 'var(--cream)' }}>
+        <SectionHeader
+          eyebrow="Explore by Category"
+          eyebrowColor="var(--indigo)"
+          eyebrowBg="rgba(61,82,160,0.08)"
+          title="Maharashtra, India"
+          subtitle="Pick a category to filter your recommendations"
+        />
 
         {/* Category pills */}
-        <div className="flex flex-wrap gap-3 justify-center mb-10">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', justifyContent: 'center', marginBottom: '2.5rem' }}>
           {CATEGORIES.map(cat => (
             <button
               key={cat.key}
               onClick={() => handleCategoryChange(cat.key)}
-              className={`cat-pill flex items-center gap-2 px-5 py-3 rounded-full border-2 font-semibold text-sm ${selected === cat.key ? 'active' : ''}`}
+              className={`cat-pill ${selected === cat.key ? 'active' : ''}`}
               style={{
-                borderColor: selected === cat.key ? 'transparent' : '#e0e3f0',
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '0.65rem 1.35rem', borderRadius: '50px',
+                border: '1.5px solid', fontSize: '0.84rem', fontWeight: 600,
+                borderColor: selected === cat.key ? 'transparent' : '#dde0ee',
                 color: selected === cat.key ? 'white' : '#555',
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.85rem',
                 background: selected === cat.key ? '' : 'white',
+                fontFamily: 'var(--font-body)',
               }}
             >
-              <span>{cat.icon}</span>
+              <span style={{ fontSize: '1rem' }}>{cat.icon}</span>
               {cat.label}
             </button>
           ))}
         </div>
 
-        {/* Search within category */}
-        <div className="flex justify-center mb-10 m-3">
-          <div className="flex rounded-full overflow-hidden"
-            style={{ border: '1.5px solid #e0e3f0', width: 340, background: 'white', transition: 'border-color 0.2s' }}
-            onFocus={e => e.currentTarget.style.borderColor = 'var(--saffron)'}
-            onBlur={e => e.currentTarget.style.borderColor = '#e0e3f0'}>
+        {/* Search filter */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', borderRadius: '50px', border: '1.5px solid #dde0ee', width: 320, background: 'white', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', transition: 'border-color 0.25s, box-shadow 0.25s' }}
+            onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--saffron)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,107,53,0.12)'; }}
+            onBlurCapture={e => { e.currentTarget.style.borderColor = '#dde0ee'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.05)'; }}>
+            <span style={{ paddingLeft: '1.1rem', color: '#bbb', fontSize: '1rem', flexShrink: 0 }}>🔍</span>
             <input
               type="text"
               placeholder="Filter places..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ flex: 1, padding: '0.7rem 1.25rem', border: 'none', outline: 'none', fontSize: '0.9rem', fontFamily: 'var(--font-body)' }}
+              style={{ flex: 1, padding: '0.75rem 1rem', border: 'none', outline: 'none', fontSize: '0.88rem', fontFamily: 'var(--font-body)', background: 'transparent', color: 'var(--navy)' }}
             />
-            <span style={{ padding: '0 1rem', display: 'flex', alignItems: 'center', color: '#999' }}>🔍</span>
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}
+                style={{ paddingRight: '1rem', background: 'none', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}>×</button>
+            )}
           </div>
         </div>
 
         {/* Cards */}
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', maxWidth: 1200, margin: '0 auto' }}>
+          <div className="cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', maxWidth: 1200, margin: '0 auto' }}>
             {[...Array(6)].map((_, i) => (
-              <div key={i} style={{ borderRadius: 16, overflow: 'hidden', background: 'white' }}>
-                <div className="skeleton" style={{ height: 200 }} />
-                <div style={{ padding: '1rem' }}>
-                  <div className="skeleton" style={{ height: 20, marginBottom: 8, width: '70%' }} />
-                  <div className="skeleton" style={{ height: 14, width: '50%' }} />
+              <div key={i} style={{ borderRadius: 20, overflow: 'hidden', background: 'white', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="skeleton" style={{ height: 210 }} />
+                <div style={{ padding: '1.25rem' }}>
+                  <div className="skeleton" style={{ height: 18, marginBottom: 10, width: '68%' }} />
+                  <div className="skeleton" style={{ height: 13, width: '48%' }} />
                 </div>
               </div>
             ))}
           </div>
         ) : filteredCards.length === 0 ? (
-          <div className="text-center py-16" style={{ color: '#999' }}>
+          <div style={{ textAlign: 'center', padding: '5rem 2rem', color: '#aaa' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '1rem' }}>No places found. Try a different keyword.</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', color: '#999' }}>No places found. Try a different keyword.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.75rem', maxWidth: 1200, margin: '0 auto' }}>
+          <div className="cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.75rem', maxWidth: 1200, margin: '0 auto' }}>
             {filteredCards.map((card, i) => (
-              <div key={i} className="mh-card rounded-2xl overflow-hidden"
-                style={{ background: 'white', border: '1px solid rgba(200,200,230,0.25)' }}
+              <div key={i} className="mh-card"
+                style={{ background: 'white', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(200,205,235,0.28)', boxShadow: 'var(--shadow-sm)' }}
                 onMouseEnter={() => setHoveredCard(i)}
                 onMouseLeave={() => setHoveredCard(null)}>
-                {card.images && (
-                  <ImageCarousel images={[card.images]} />
-                )}
+                {card.images && <ImageCarousel images={[card.images]} />}
                 <div style={{ padding: '1.25rem 1.5rem 1.5rem' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.35rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.35rem' }}>
-                    <Link to={card.link} style={{ color: 'inherit', textDecoration: 'none' }}
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.3rem' }}>
+                    <Link to={`/locations/${card._id}`}
+                      style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }}
                       onMouseEnter={e => e.currentTarget.style.color = 'var(--saffron)'}
                       onMouseLeave={e => e.currentTarget.style.color = 'var(--navy)'}>
                       {card.title}
                     </Link>
                   </h3>
                   {card.subtitle && (
-                    <p style={{ fontSize: '0.85rem', color: '#888', fontFamily: 'var(--font-body)', lineHeight: 1.55 }}>{card.subtitle}</p>
+                    <p style={{ fontSize: '0.84rem', color: '#8a8fa8', fontFamily: 'var(--font-body)', lineHeight: 1.6 }}>{card.subtitle}</p>
                   )}
-                  <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--saffron)', fontFamily: 'var(--font-body)' }}>
-                      {CATEGORIES.find(c => c.key === selected)?.label}
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f0f1f8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--saffron)', fontFamily: 'var(--font-body)', background: 'rgba(255,107,53,0.08)', padding: '3px 10px', borderRadius: '50px' }}>
+                      {CATEGORIES.find(c => c.key === selected)?.icon} {CATEGORIES.find(c => c.key === selected)?.label}
                     </span>
-                    <Link to={card.link}
-                      style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--indigo)', textDecoration: 'none', fontFamily: 'var(--font-body)' }}>
+                    <Link to={`/locations/${card._id}`}
+                      style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--indigo)', textDecoration: 'none', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 4, transition: 'gap 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.gap = '8px'}
+                      onMouseLeave={e => e.currentTarget.style.gap = '4px'}>
                       View Details →
                     </Link>
                   </div>
@@ -719,84 +750,92 @@ function Maharashtra() {
             ))}
           </div>
         )}
-
         <Outlet />
       </section>
 
-      {/* ── UNIQUE EXPERIENCES ────────────────────────────────────────────────── */}
-      <section className="mh-reveal" style={{ padding: '5rem 2rem', background: 'var(--navy)' }}
-        ref={el => { if (el) { const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.classList.add('revealed'); }, { threshold: 0.08 }); obs.observe(el); } }}>
-        <div className="text-center mb-14">
-          <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--gold-light)', background: 'rgba(201,168,76,0.15)', padding: '5px 14px', borderRadius: '50px', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}>
-            Only in Maharashtra
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3rem)', fontWeight: 700, color: 'white', marginBottom: '0.75rem' }}>
-            Unique Experiences
-          </h2>
-          <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto', fontFamily: 'var(--font-body)' }}>
-            Beyond the ordinary — moments that only Maharashtra can offer.
-          </p>
-        </div>
+      {/* ══════════════════════ UNIQUE EXPERIENCES ════════════════════════════ */}
+      <section className="mh-reveal" ref={revealRef} style={{ padding: '6rem 2rem', background: 'var(--navy)', position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative blobs */}
+        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,53,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(61,82,160,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div className="exp-grid mx-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.5rem', maxWidth: 1100 }}>
-          {EXPERIENCES.map((exp, i) => (
-            <div key={i} className="exp-card rounded-2xl"
-              style={{ background: 'rgba(255,255,255,0.05)', padding: '2rem 2rem 2rem 2rem', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '2.2rem', marginBottom: '1rem', lineHeight: 1 }}>{exp.icon}</div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'white', marginBottom: '0.6rem', fontFamily: 'var(--font-body)' }}>{exp.title}</h3>
-              <p style={{ fontSize: '0.87rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.65, fontFamily: 'var(--font-body)', flex: 1 }}>{exp.desc}</p>
-              <div style={{ marginTop: '1.5rem', width: 36, height: 4, borderRadius: 4, background: exp.color, flexShrink: 0 }} />
-            </div>
-          ))}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <SectionHeader
+            eyebrow="Only in Maharashtra"
+            eyebrowColor="var(--gold-light)"
+            eyebrowBg="rgba(201,168,76,0.14)"
+            title="Unique Experiences"
+            subtitle="Beyond the ordinary — moments that only Maharashtra can offer."
+            light
+          />
+          <div className="exp-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem', maxWidth: 1100, margin: '0 auto' }}>
+            {EXPERIENCES.map((exp, i) => (
+              <div key={i} className="exp-card"
+                style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)', borderRadius: 20, padding: '2rem', border: `1px solid rgba(255,255,255,0.08)`, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${exp.color}00, ${exp.color}, ${exp.color}00)` }} />
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: exp.light, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', marginBottom: '1.2rem', flexShrink: 0 }}>
+                  {exp.icon}
+                </div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', marginBottom: '0.6rem', fontFamily: 'var(--font-body)' }}>{exp.title}</h3>
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, fontFamily: 'var(--font-body)', flex: 1 }}>{exp.desc}</p>
+                <div style={{ marginTop: '1.5rem', height: 3, borderRadius: 3, background: exp.color, width: 32, flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── TRAVEL TIPS ───────────────────────────────────────────────────────── */}
-      <section className="mh-reveal" style={{ padding: '5rem 2rem', background: 'white' }}
-        ref={el => { if (el) { const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) el.classList.add('revealed'); }, { threshold: 0.1 }); obs.observe(el); } }}>
-        <div className="text-center mb-14">
-          <span style={{ display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--indigo)', background: 'rgba(61,82,160,0.08)', padding: '5px 14px', borderRadius: '50px', marginBottom: '1rem', fontFamily: 'var(--font-body)' }}>
-            Insider Knowledge
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3rem)', fontWeight: 700, color: 'var(--navy)' }}>
-            Travel Tips for Maharashtra
-          </h2>
-        </div>
-        <div className="tip-grid mx-auto" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1.5rem', maxWidth: 960 }}>
+      {/* ══════════════════════ TRAVEL TIPS ══════════════════════════════════ */}
+      <section className="mh-reveal" ref={revealRef} style={{ padding: '5rem 2rem', background: 'white' }}>
+        <SectionHeader
+          eyebrow="Insider Knowledge"
+          eyebrowColor="var(--indigo)"
+          eyebrowBg="rgba(61,82,160,0.08)"
+          title="Travel Tips for Maharashtra"
+        />
+        <div className="tip-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1.25rem', maxWidth: 960, margin: '0 auto' }}>
           {TRAVEL_TIPS.map((tip, i) => (
-            <div key={i} className="flex gap-5 p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1"
-              style={{ background: '#fafbff', border: '1px solid #eef0ff' }}>
-              <div style={{ fontSize: '2rem', flexShrink: 0 }}>{tip.icon}</div>
+            <div key={i} className="tip-card" style={{ display: 'flex', gap: '1.25rem', padding: '1.75rem', borderRadius: 20, background: 'linear-gradient(145deg, #fafbff, #f5f6ff)', border: '1px solid #eeeffa' }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(61,82,160,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
+                {tip.icon}
+              </div>
               <div>
-                <h4 style={{ fontWeight: 700, color: 'var(--navy)', marginBottom: '0.4rem', fontFamily: 'var(--font-body)', fontSize: '1rem' }}>{tip.title}</h4>
-                <p style={{ fontSize: '0.87rem', color: '#666', lineHeight: 1.65, fontFamily: 'var(--font-body)' }}>{tip.tip}</p>
+                <h4 style={{ fontWeight: 700, color: 'var(--navy)', marginBottom: '0.45rem', fontFamily: 'var(--font-body)', fontSize: '0.97rem' }}>{tip.title}</h4>
+                <p style={{ fontSize: '0.85rem', color: '#777', lineHeight: 1.7, fontFamily: 'var(--font-body)' }}>{tip.tip}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────────────── */}
-      <section className="mh-cta-bg text-center" style={{ padding: '6rem 2rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3.2rem)', fontWeight: 700, color: 'white', marginBottom: '1rem' }}>
-          Ready to Explore Maharashtra?
-        </h2>
-        <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.75)', marginBottom: '2.5rem', maxWidth: 540, marginLeft: 'auto', marginRight: 'auto', fontFamily: 'var(--font-body)', lineHeight: 1.7 }}>
-          From misty forts to sun-drenched coasts — let us craft your perfect Maharashtra journey.
-        </p>
-        <div className="flex gap-4 justify-center flex-wrap">
-          <Link to="/contact"
-            style={{ padding: '1rem 2.5rem', background: 'var(--gold)', color: 'var(--navy)', border: 'none', borderRadius: '50px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', boxShadow: '0 10px 30px rgba(201,168,76,0.4)', textDecoration: 'none', display: 'inline-block', transition: 'all 0.3s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(201,168,76,0.55)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(201,168,76,0.4)'; }}>
-            Plan My Maharashtra Trip 🗺️
-          </Link>
-          <a href="tel:+917888251550"
-            style={{ padding: '1rem 2.5rem', background: 'transparent', color: 'white', border: '1.5px solid rgba(255,255,255,0.35)', borderRadius: '50px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', textDecoration: 'none', display: 'inline-block', transition: 'all 0.3s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}>
-            📞 Call Us Now
-          </a>
+      {/* ══════════════════════ CTA ═══════════════════════════════════════════ */}
+      <section className="mh-cta-bg" style={{ padding: '7rem 2rem', textAlign: 'center', position: 'relative' }}>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Divider ornament */}
+          <div className="mh-divider" style={{ marginBottom: '2.5rem' }}>
+            <span style={{ color: 'var(--gold)', fontSize: '1rem' }}>✦</span>
+          </div>
+
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem,5vw,3.2rem)', fontWeight: 700, color: 'white', marginBottom: '1rem', lineHeight: 1.2 }}>
+            Ready to Explore Maharashtra?
+          </h2>
+          <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.68)', marginBottom: '2.75rem', maxWidth: 500, marginLeft: 'auto', marginRight: 'auto', fontFamily: 'var(--font-body)', lineHeight: 1.75, fontWeight: 300 }}>
+            From misty forts to sun-drenched coasts — let us craft your perfect Maharashtra journey.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/contact"
+              style={{ padding: '1rem 2.5rem', background: 'linear-gradient(135deg, var(--gold), #e8bf60)', color: 'var(--navy)', borderRadius: '50px', fontSize: '0.97rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)', boxShadow: '0 10px 32px rgba(201,168,76,0.45)', textDecoration: 'none', display: 'inline-block', transition: 'all 0.3s', letterSpacing: '0.01em' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 18px 44px rgba(201,168,76,0.55)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 32px rgba(201,168,76,0.45)'; }}>
+              Plan My Maharashtra Trip 🗺️
+            </Link>
+            <a href="tel:+917888251550"
+              style={{ padding: '1rem 2.5rem', background: 'rgba(255,255,255,0.07)', color: 'white', border: '1.5px solid rgba(255,255,255,0.25)', borderRadius: '50px', fontSize: '0.97rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-body)', textDecoration: 'none', display: 'inline-block', transition: 'all 0.3s', backdropFilter: 'blur(8px)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+              📞 Call Us Now
+            </a>
+          </div>
         </div>
       </section>
     </>

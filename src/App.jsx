@@ -30,7 +30,14 @@ import Login from "./Pages/Login.jsx";
 import { PackageProvider } from "./Context/PackageContext.jsx";
 import Profile, { BookingsTab, EnquiriesTab, OverviewTab, SavedTab, SettingsTab } from "./Components/ProfileDropdown/Profile.jsx";
 import ProfilePopup from "./Components/Profile/Profile.jsx";
-
+import AdminInquiries from "./Pages/Admin/AdminInquiries.jsx";
+import { GiOak } from "react-icons/gi";
+import Goa from "./Pages/Domestic/Goa.jsx";
+import GoaStay from "./Pages/Domestic/Goa/Goastay.jsx";
+import GoaBeachShacks from "./Pages/Domestic/Goa/Goabeachshacks.jsx";
+import LocationDetail from "./Pages/Domestic/Maharashtra/Locationdetail.jsx";
+import GoaWaterSports from "./Pages/Domestic/Goa/Goawatersports.jsx";
+import GoaVillasHomestays from "./Pages/Domestic/Goa/Goavillashomestays.jsx";
 /* Lazy Pages */
 const Start = lazy(() => import("./Pages/Start"));
 const CustomTourP = lazy(() => import("./Pages/Packages/CustomTourP"));
@@ -40,7 +47,7 @@ const GroupTourP = lazy(() => import("./Pages/Packages/GroupTourP"));
 const CityTourP = lazy(() => import("./Pages/Packages/CityTourP"));
 
 const Manali = lazy(() => import("./Pages/Explore-Packages/Manali"));
-const Goa = lazy(() => import("./Pages/Explore-Packages/Goa"));
+// const Goa = lazy(() => import("./Pages/Explore-Packages/Goa"));
 const Maharashtra = lazy(() => import("./Pages/Domestic/Maharashtra"));
 
 const App = () => {
@@ -78,7 +85,7 @@ const App = () => {
             />
 
             {/* Explore Packages */}
-            <Route path="/manali-Packages" element={<Manali />} />
+            {/* <Route path="/manali-Packages" element={<Manali />} />
             <Route path="/goa-Packages" element={<Goa />} />
             <Route path="/kerala-Packages" element={<Kerala />} />
             <Route path="/rajasthan-Packages" element={<Rajasthan />} />
@@ -89,7 +96,7 @@ const App = () => {
             <Route path="/agra-Packages" element={<Agra />} />
             <Route path="/udaipur-Packages" element={<Udaipur />} />
             <Route path="/ladakh-Packages" element={<Ladakh />} />
-            <Route path="/ooty-Packages" element={<Ooty />} />
+            <Route path="/ooty-Packages" element={<Ooty />} /> */}
 
             {/* Booking */}
             <Route path="/booking/:packageId" element={<BookingForm />} />
@@ -101,13 +108,25 @@ const App = () => {
 
             {/* State Pages */}
             <Route path="/maharashtra" element={<Maharashtra />} />
+
+            {/* Maharashtra */}
+            <Route path="/Goa" element={<Goa/>} />
             <Route path="/profile" element={<Profile />} />
+            {/* Goa */}
+            <Route path="/stay" element={<GoaStay />} />
+            <Route path="/beach-shacks" element={<GoaBeachShacks />} />
+            <Route path="/water-sports" element={<GoaWaterSports />} />
+            <Route path="/villas-homestays" element={<GoaVillasHomestays />} />
+
+            <Route path="/locations/:id" element={<LocationDetail />} />
+
             {/* <Route path="/overview" element={<OverviewTab />} /> */}
             <Route path="/bookings" element={<BookingsTab />} />
             <Route path="/enquiries" element={<EnquiriesTab />} />
           <Route path="/saved" element={<SavedTab />} />
             <Route path="/settings" element={<SettingsTab />} />
 
+ 
             {/* 404 */}
             <Route path="*" element={<PageNotFound />} />
 

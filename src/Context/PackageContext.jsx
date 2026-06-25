@@ -49,7 +49,8 @@ export const PackageProvider = ({ children }) => {
     const fetchTypes = async () => {
       setLoading(true);
       try {
-        const res = await api.get('/packages/:types', { signal: controller.signal });
+        const res = await api.get(`/packages/${packageTypes}`, { signal: controller.signal });
+        console.log('typeAPI',res)
         setPackageTypes(res.data || []);
       } catch (err) {
         // FIX 1: Don't crash on 404 — endpoint may not exist yet on the backend.

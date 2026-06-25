@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import toast from 'react-hot-toast';
 import { PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import api from '../services/api';
-import PackageModal from '../components/PackageModal';
-import DeleteConfirmModal from '../components/DeleteConfirmModal';
-import LoadingSkeleton from '../components/LoadingSkeleton';
+import api from '../../utils/api';
+// import PackageModal from '../components/PackageModal';
+// import DeleteConfirmModal from '../components/DeleteConfirmModal';
+// import LoadingSkeleton from '../../Components/s';
 
 const Packages = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,7 +17,7 @@ const Packages = () => {
   
   const queryClient = useQueryClient();
   
-  const { data, isLoading, refetch } = useQuery(
+  const { data, isLoading, refetch } = useQueary(
     ['packages', currentPage, searchTerm, statusFilter],
     () => api.get('/packages', {
       params: {
@@ -77,7 +77,7 @@ const Packages = () => {
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
           <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-50">
               <input
                 type="text"
                 placeholder="Search packages..."

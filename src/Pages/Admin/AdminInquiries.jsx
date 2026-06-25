@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import api from "../api";
+import api from "../../utils/api";
+// import Packages from "./Packages";
 
 function AdminInquiries() {
   const [inquiries, setInquiries] = useState([]);
@@ -52,5 +53,9 @@ function AdminInquiries() {
     </div>
   );
 }
+
+
+
+{/* <Packages/> */}
 
 export default AdminInquiries;

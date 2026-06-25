@@ -5,7 +5,7 @@ import axios from "axios";
 import TourPackageCard from "../../Components/TourPackageCard";
 import PackageContext from "../../Context/PackageContext";
 import { FaSearch, FaArrowUp, FaPhone, FaEnvelope, FaWhatsapp, FaFilter, FaTimes, FaSortAmountDown, FaThLarge, FaList, FaStar, FaMapMarkerAlt, FaArrowRight } from "react-icons/fa";
-import Header from "../../Components/Header/Header";
+// import Header from "../../Components/Header/Header";
 import api from '../../utils/api.js'
 
 // ── Skeleton Card ─────────────────────────────────────────────────────────────
@@ -703,7 +703,6 @@ const BaseTourPage = () => {
         }
       `}</style>
 
-      <Header />
 
       {/* ── HERO ───────────────────────────────────────────────────────────── */}
       <section className="btb-hero">
@@ -904,7 +903,7 @@ const BaseTourPage = () => {
                 {filteredPackages.map((pkg, i) => (
                   <div key={pkg._id || i} className="btb-list-card">
                     <img
-                      src={pkg.images?.[0] || pkg.image || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}
+                      src={pkg.images?.[0] || pkg.images || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}
                       alt={pkg.location}
                       className="btb-list-img"
                       onError={e => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}

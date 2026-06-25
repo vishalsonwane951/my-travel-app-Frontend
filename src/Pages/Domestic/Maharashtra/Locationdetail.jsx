@@ -316,7 +316,7 @@ function LocationDetail() {
               </div>
               <div className="ld-ticket-row">
                 <span className="ld-ticket-key">📍 Region</span>
-                <span className="ld-ticket-val">{location.location}</span>
+                <span className="ld-ticket-val">{location.region}</span>
               </div>
               <div className="ld-ticket-row">
                 <span className="ld-ticket-key">{meta.icon} Category</span>

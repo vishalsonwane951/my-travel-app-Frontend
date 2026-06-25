@@ -458,7 +458,7 @@ const Footer = () => {
           </div>
 
           {/* Newsletter */}
-          <div className="ftr-newsletter">
+          {/* <div className="ftr-newsletter">
             <div className="ftr-newsletter-inner">
               <div className="ftr-newsletter-left">
                 <h3 className="ftr-newsletter-title">Get Exclusive Travel Deals 🎁</h3>
@@ -498,7 +498,7 @@ const Footer = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="ftr-divider" />
 

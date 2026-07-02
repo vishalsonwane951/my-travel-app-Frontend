@@ -5,6 +5,7 @@ import {
   getPlaceDetails,
   highlightMatch,
 } from '../../Data/destination.js';
+import api from '../../utils/api.js';
 
 const TP_STYLES = `
 .tp-scope {

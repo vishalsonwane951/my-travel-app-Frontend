@@ -566,20 +566,16 @@ export default function TripPlannerModal({ open, onClose, onItinerary }) {
   setErrors({});
   setLoading(true);
   try {
-    const res = await fetch('http://localhost:5000/api/plan-trip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        destination: dest.value.trim(),
-        area: area.value.trim(),
-        checkin,
-        checkout,
-        travelers,
-        tripType,
-        pace,
-        diet,
-        budget,
-      }),
+    const res = await api.post('/plan-trip', {
+      destination: dest.value.trim(),
+      area: area.value.trim(),
+      checkin,
+      checkout,
+      travelers,
+      tripType,
+      pace,
+      diet,
+      budget,
     });
 
     const data = await res.json();

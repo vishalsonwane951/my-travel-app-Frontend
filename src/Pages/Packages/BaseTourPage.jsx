@@ -73,8 +73,8 @@ const useDynamicPricing = () => {
 
 // ── Tour type metadata ────────────────────────────────────────────────────────
 const TOUR_META = {
-  'custom-tour':     { title: 'Custom Tours',     icon: '🎨', grad: 'linear-gradient(135deg, #FF6B6B, #FF8E53)', desc: 'Personalized journeys built around your dreams.' },
-  'adventure-tour':  { title: 'Adventure Tours',  icon: '🏔️', grad: 'linear-gradient(135deg, #4ECDC4, #2C3E50)', desc: 'Thrilling experiences for the bold and brave.' },
+  'custom-tour':     { title: 'Custom Tours',     icon: '🎨', grad: 'linear-gradient(135deg, #5BC0EB, #E8F4FD)', desc: 'Personalized journeys built around your dreams.' },
+  'adventure-tour':  { title: 'Adventure Tours',  icon: '🏔️', grad: 'linear-gradient(135deg, #5BC0EB, #E8F4FD)', desc: 'Thrilling experiences for the bold and brave.' },
   'family-tour':     { title: 'Family Tours',     icon: '👨‍👩‍👧‍👦', grad: 'linear-gradient(135deg, #FFE66D, #FFB347)', desc: 'Joyful journeys for every generation.' },
   'group-tour':      { title: 'Group Tours',      icon: '🚌', grad: 'linear-gradient(135deg, #A37BFF, #6B4EFF)', desc: 'Better together — explore as a community.' },
   'city-tour':       { title: 'City Tours',       icon: '🌆', grad: 'linear-gradient(135deg, #FF9F1C, #FCCF31)', desc: 'Uncover the soul of iconic cities.' },
@@ -585,8 +585,10 @@ const BaseTourPage = () => {
           box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
         .btb-list-img {
-          width: 220px; flex-shrink: 0;
+          width: 420px; flex-shrink: 0;
           object-fit: cover;
+          border-radius: 16px;
+          height:280px
         }
         .btb-list-content {
           flex: 1; padding: 1.25rem 1.5rem;
@@ -903,7 +905,7 @@ const BaseTourPage = () => {
                 {filteredPackages.map((pkg, i) => (
                   <div key={pkg._id || i} className="btb-list-card">
                     <img
-                      src={pkg.images?.[0] || pkg.images || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}
+                      src={pkg?.images || pkg.images || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}
                       alt={pkg.location}
                       className="btb-list-img"
                       onError={e => e.target.src = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400&q=80'}

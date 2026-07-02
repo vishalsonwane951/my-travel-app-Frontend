@@ -20,9 +20,10 @@ import {
   FaBars, FaSlidersH, FaChartLine, FaTrophy
 } from 'react-icons/fa';
 import TourPackageCard from '../Components/TourPackageCard.jsx';
-import TripPlannerModal from '../Components/TripPlannerModal.jsx';
+import TripPlannerModal from '../Pages/AITrip Planner/TripPlannerModal.jsx';
 import ItineraryResult from '../Components/ItineraryResult.jsx';
 import NewsletterSubscribe from '../Components/Newslettersubscribe.jsx';
+import ItineraryTimeline from './AITrip Planner/Itinerarytimeline.jsx';
 
 // ─── FIX 1: Lazy-load heavy sections (code splitting) ─────────
 const Domestic = lazy(() => import('./Domestic.jsx'));
@@ -608,7 +609,7 @@ const HeroSection = React.memo(({ onBookNow, onSearch }) => {
             className="hero-img"
             loading={i === 0 ? 'eager' : 'lazy'}
             fetchPriority={i === 0 ? 'high' : 'low'}
-            // onError={e => e.target.src = '/placeholder.jpg'}
+          // onError={e => e.target.src = '/placeholder.jpg'}
           />
           <div className="hero-overlay" />
         </div>
@@ -928,7 +929,7 @@ const TourCard = React.memo(({ card, onFavourite, isFav, onBookNow, onRate, rati
         loading="lazy"
         decoding="async"
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        // onError={e => e.target.src = '/placeholder.jpg'}
+      // onError={e => e.target.src = '/placeholder.jpg'}
       />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%)', borderRadius: '20px 20px 0 0' }} />
       <button onClick={() => onFavourite(card._id)} style={{ position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s' }}>
@@ -979,7 +980,7 @@ const WishlistDrawer = React.memo(({ open, onClose, wishlist, items }) => {
             </div>
           ) : savedItems.map((item, i) => (
             <div key={i} style={{ display: 'flex', gap: 14, padding: '14px 0', borderBottom: '1px solid #F9FAFB' }}>
-              <img src={getImageUrl(item.images || item.image || item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width: 70, height: 70, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }}/>
+              <img src={getImageUrl(item.images || item.image || item.img)} alt={item.title} loading="lazy" decoding="async" style={{ width: 70, height: 70, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
                 <div style={{ fontFamily: 'Outfit', fontSize: '0.75rem', color: '#9CA3AF', marginBottom: 8 }}>India • 4.8 ★</div>
@@ -1002,6 +1003,8 @@ const ItineraryOverlay = ({ itinerary, onPlanAgain }) => (
         <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)' }}>Your AI Itinerary ✨</div>
       </div>
       <ItineraryResult itinerary={itinerary} onPlanAgain={onPlanAgain} />
+      {/* <ItineraryTimeline itinerary={itinerary}  /> */}
+
     </div>
   </div>
 );
@@ -1022,7 +1025,7 @@ const AboutSection = React.memo(({ onBookNow }) => {
   }, [testimonials.length]);
 
   return (
-    
+
     <section id="about" style={{ background: 'var(--ink)', padding: '96px 0', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
         <Reveal style={{ textAlign: 'center', marginBottom: 64 }}>
@@ -1126,25 +1129,25 @@ function Start() {
   }, []);
 
   useEffect(() => {
-  const state = location.state;
-  if (!state) return;
+    const state = location.state;
+    if (!state) return;
 
-  // Clear state immediately so it doesn't re-trigger
-  navigate(location.pathname, { replace: true, state: {} });
+    // Clear state immediately so it doesn't re-trigger
+    navigate(location.pathname, { replace: true, state: {} });
 
-  if (state.scrollToAbout) {
-    setTimeout(() => aboutRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-  }
+    if (state.scrollToAbout) {
+      setTimeout(() => aboutRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+    }
 
-  if (state.scrollToDomestic) {
-    setTimeout(() => domesticRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-  }
+    if (state.scrollToDomestic) {
+      setTimeout(() => domesticRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+    }
 
-  if (state.scrollToInternational) {
-    setTimeout(() => intlRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
-  }
+    if (state.scrollToInternational) {
+      setTimeout(() => intlRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+    }
 
-}, [location]);
+  }, [location]);
 
 
   // ─── FIX 1: Single Promise.all for all critical data ────────
@@ -1267,7 +1270,7 @@ function Start() {
           ))}
         </div>
       </section>
-      <NewsletterSubscribe/>
+      <NewsletterSubscribe />
 
       {/* FIX 3: Sections mount only when scrolled near them */}
       {/* <div ref={domesticRef} id="domestic">

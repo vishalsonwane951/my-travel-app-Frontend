@@ -16,11 +16,12 @@ import {
   FaCamera, FaRegStar,
 } from "react-icons/fa";
 import { AuthContext } from "../Context/AuthContext";
-import TripPlannerModal from "../Components/TripPlannerModal";
+import TripPlannerModal from "../Pages/AITrip Planner/TripPlannerModal.jsx";
 import api from "../utils/api.js";
 import LocationMap from "../Components/Locationmap.jsx";
 import ReviewsAndQA from "../Components/ReviewPage.jsx";
 import ContributeSection from "../Components/Contributesection.jsx";
+import ReviewProvider from "../Context/Reviewcontext.jsx";
 
 // Bootstrap CDN injector
 (function injectBootstrap() {
@@ -310,6 +311,8 @@ const QA_PER_PAGE = 3;
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ItineraryPage() {
   const { type, location } = useParams();
+
+  console.log(type,location)
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
@@ -1086,29 +1089,21 @@ export default function ItineraryPage() {
           </div>
         </section>
       )}
+      
 
-      <ReviewProvider packageId={pkg?._id}>
-      <ReviewsAndQA
-        ref={reviewsRef}                       // keeps scroll-spy working
-        onOpenContribute={(tab) => contributeCompRef.current?.openModal(tab)}
-      />
+  <ReviewsAndQA
+    ref={reviewsRef}
+    onOpenContribute={(tab) => contributeCompRef.current?.openModal(tab)}
+    pkgId={pkg?._id}
 
+  />
 
-      <ContributeSection
-        ref={contributeCompRef}                // imperative handle — openModal(tab)
-        sectionRef={contributeRef}             // keeps scroll-spy working
-        packageTitle={pkg?.title || `${locationTitle} ${typeTitle}`}
-        user={user}
-        onReviewSubmit={(review) => {
-          // Optional: persist to your API, then close is handled internally
-          console.log("New review:", review);
-        }}
-        onQuestionSubmit={(question) => {
-          // Optional: persist to your API
-          console.log("New question:", question);
-        }}
-      />
-      </ReviewProvider>
+  <ContributeSection
+    ref={contributeCompRef}
+    sectionRef={contributeRef}
+    packageTitle={pkg?.title || `${locationTitle} ${typeTitle}`}
+    user={user}
+  />
 
 
       {/* ══ REVIEWS ══

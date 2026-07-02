@@ -21,7 +21,7 @@ const [showSaved, setShowSaved] = useState(false);
     className="btn-primary"
     style={{ padding: '12px 24px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}
   >
-    <FaCalendarAlt /> AI Trip Planner ✨
+    <FaCalendarAlt /> AI Trip Plannerde ✨
   </button>
 
   {/* NEW: import express from 'express's button */}
